@@ -19,7 +19,7 @@ const contactInfo = [
   {
     icon: Mail,
     title: "Email",
-    lines: ["contact@infinitygym.dz"],
+    lines: ["infinity.gym.ig@gmail.com"],
   },
   {
     icon: Clock,

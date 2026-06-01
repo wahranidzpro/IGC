@@ -80,7 +80,7 @@ const DEFAULT_OPENING_HOURS: OpeningHours = {
 const DEFAULTS: ClubInfo = {
   name: 'Infinity Gym Center',
   phone: '+213 6XX XXX XXX',
-  email: 'contact@infinitygym.dz',
+  email: 'infinity.gym.ig@gmail.com',
   website: 'www.infinitygym.dz',
   address: 'Alger, Algérie',
   capacity: 50,

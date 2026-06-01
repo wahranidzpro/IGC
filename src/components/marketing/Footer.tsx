@@ -48,7 +48,7 @@ const socials = [
 const contactInfo = [
   { icon: MapPin, text: "Saïda, Algérie" },
   { icon: Phone, text: "+213 (0) 123 456 789" },
-  { icon: Mail, text: "contact@infinity-gym.dz" },
+  { icon: Mail, text: "infinity.gym.ig@gmail.com" },
   { icon: Clock, text: "6h - 23h · 7J/7" },
 ]
 

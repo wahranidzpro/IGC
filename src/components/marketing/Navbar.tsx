@@ -195,13 +195,7 @@ export default function Navbar() {
             >
               Se connecter
             </Link>
-            <Link
-              href="/signup"
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-brand-red via-brand-accent to-brand-red bg-[length:200%_100%] hover:bg-right-top text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:brightness-110 transition-all active:scale-95 shadow-lg shadow-brand-red/30 animate-gradient"
-            >
-              <Sparkles className="w-4 h-4" />
-              Je m&apos;inscris
-            </Link>
+
           </div>
 
           <div className="flex lg:hidden items-center gap-2">
@@ -259,12 +253,7 @@ export default function Navbar() {
             >
               Se connecter
             </Link>
-            <Link
-              href="/signup"
-              className="block px-4 py-3 text-sm font-bold text-center bg-gradient-to-r from-brand-red via-brand-accent to-brand-red text-white rounded-xl mt-2"
-            >
-              Je m&apos;inscris
-            </Link>
+
           </div>
         </div>
       )}

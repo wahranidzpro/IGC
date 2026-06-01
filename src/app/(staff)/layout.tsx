@@ -1,16 +1,17 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import Image from "next/image"
 import { useAuth } from "@/hooks/useAuth"
 import { Sidebar } from "@/components/layout/Sidebar"
 import { Bell, Menu, X } from "lucide-react"
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default function StaffLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const { user, loading } = useAuth()
+  const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
 
   useEffect(() => { setMobileOpen(false) }, [pathname])
@@ -35,21 +36,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="min-h-screen flex bg-gray-50">
+    <div className="min-h-screen flex bg-gradient-to-b from-[#0B0B0B] via-[#150606] to-[#0B0B0B]">
       <div className="hidden lg:flex">
-        <Sidebar />
+        <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
       </div>
 
-      <div className="flex-1 flex flex-col min-w-0">
-        <header className="lg:hidden sticky top-0 z-30 bg-white border-b flex items-center justify-between px-4 h-14">
-          <button onClick={() => setMobileOpen(!mobileOpen)}>
+      <div className="flex-1 flex flex-col min-w-0 transition-all duration-300">
+        <header className="lg:hidden sticky top-0 z-30 bg-[#0B0B0B] border-b border-white/10 flex items-center justify-between px-4 h-14">
+          <button onClick={() => setMobileOpen(!mobileOpen)} className="text-white">
             {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
           <div className="flex items-center gap-2">
             <Image src="/logo-transparent.png" alt="" width={24} height={26} />
-            <span className="text-sm font-bold">Infinity Gym</span>
+            <span className="text-sm font-bold text-white">Infinity Gym</span>
           </div>
-          <button className="relative">
+          <button className="relative text-white">
             <Bell className="w-5 h-5" />
             <span className="absolute -top-1 -right-1 w-2 h-2 bg-[#E10600] rounded-full" />
           </button>

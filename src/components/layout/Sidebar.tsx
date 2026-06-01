@@ -11,6 +11,7 @@ import {
   Building2, ChevronDown, Trophy, Star, UserPlus, Calendar,
   Wrench, Box, Languages, Bot, Database, BarChart3, DoorOpen, Wifi,
   Activity, ShoppingCart, QrCode, Dumbbell, Fingerprint, Gift, ShoppingBag,
+  ChevronLeft, ChevronRight,
 } from "lucide-react"
 
 interface NavItem {
@@ -208,6 +209,16 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
       </nav>
 
       <div className="p-4 space-y-2 border-t border-white/10">
+        {onToggle && (
+          <button
+            onClick={onToggle}
+            className={`flex items-center gap-3 w-full px-4 py-2.5 rounded-lg text-white/50 hover:bg-white/5 hover:text-white transition-all ${collapsed ? "justify-center" : ""}`}
+            title={collapsed ? "Développer" : "Réduire"}
+          >
+            {collapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
+            {!collapsed && <span className="font-medium text-sm">Réduire</span>}
+          </button>
+        )}
         {collapsed && (
           <button
             onClick={() => setLang(lang === "fr" ? "ar" : "fr")}
