@@ -1,0 +1,20 @@
+{
+  "name": "Infinity Gym Center",
+  "short_name": "Infinity Gym",
+  "description": "Gestion de salle de sport - Systeme de gestion des adherents",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a1a2e",
+  "theme_color": "#f97316",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo-transparent.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["health", "fitness"],
+  "lang": "fr"
+}
