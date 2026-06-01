@@ -169,7 +169,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-2">
           <Image
-            src="/logo.jpg"
+            src="/logo-transparent.png"
             alt="Infinity Gym Center"
             width={100}
             height={106}

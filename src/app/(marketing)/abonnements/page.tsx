@@ -69,7 +69,7 @@ export default function AbonnementsPage() {
         title="Nos abonnements"
         subtitle="Des formules adaptées à tous les objectifs et tous les budgets. Rejoignez la salle de sport premium de Saïda."
         height="large"
-        image="https://images.unsplash.com/photo-1570829460005-c840387bb1ca?w=1920&q=80"
+        image="/images/hero-abonnements.jpg"
       />
 
       <SectionWrapper>

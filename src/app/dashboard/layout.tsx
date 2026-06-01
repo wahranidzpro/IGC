@@ -6,10 +6,12 @@ import Image from "next/image"
 import Link from "next/link"
 import { useAuth } from "@/hooks/useAuth"
 import { cn } from "@/lib/utils"
+import { startHeartbeat } from "@/lib/device"
+import { createBrowserClient } from "@supabase/ssr"
 import {
   LayoutDashboard, QrCode, CreditCard, DoorOpen, Dumbbell,
   Apple, TrendingUp, Users, MessageSquare, Bell, User, Settings,
-  ChevronDown, LogOut, Menu, X,
+  ChevronDown, LogOut, Menu, X, Bot, CalendarDays, Gift, UserPlus,
 } from "lucide-react"
 
 const navSections = [
@@ -29,6 +31,7 @@ const navSections = [
       { label: "Présences", href: "/dashboard/attendance", icon: DoorOpen },
       { label: "Entraînements", href: "/dashboard/workout", icon: Dumbbell },
       { label: "Progrès", href: "/dashboard/progress", icon: TrendingUp },
+      { label: "Coach IA", href: "/ai-coach", icon: Bot },
     ],
   },
   {
@@ -36,6 +39,19 @@ const navSections = [
     items: [
       { label: "Nutrition", href: "/dashboard/nutrition", icon: Apple },
       { label: "Mon coach", href: "/dashboard/coach", icon: Users },
+    ],
+  },
+  {
+    label: "Réservation",
+    items: [
+      { label: "Cours & Coach", href: "/dashboard/booking", icon: CalendarDays },
+    ],
+  },
+  {
+    label: "Avantages",
+    items: [
+      { label: "Bons plans", href: "/dashboard/bon-plan", icon: Gift },
+      { label: "Parrainage", href: "/dashboard/referral", icon: UserPlus },
     ],
   },
   {
@@ -49,7 +65,7 @@ const navSections = [
 
 const bottomNavItems = [
   { label: "Accueil", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Mon QR", href: "/dashboard/qr", icon: QrCode },
+  { label: "Coach IA", href: "/ai-coach", icon: Bot },
   { label: "Sport", href: "/dashboard/workout", icon: Dumbbell },
   { label: "Messages", href: "/dashboard/messages", icon: MessageSquare },
   { label: "Profil", href: "/dashboard/profile", icon: User },
@@ -78,7 +94,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
         <div key={section.label}>
           <button
             onClick={() => toggle(section.label)}
-            className="flex items-center justify-between w-full px-3 py-2 text-xs font-semibold uppercase tracking-wider text-white/40 hover:text-white/60 transition-colors"
+            className="flex items-center justify-between w-full px-3 py-2 text-xs font-semibold uppercase tracking-wider text-white/40 hover:text-brand-red transition-colors"
           >
             {section.label}
             <ChevronDown
@@ -121,12 +137,49 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname()
   const { user, loading, logout } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
 
   useEffect(() => {
     if (!loading && !user) router.push("/login")
   }, [user, loading, router])
 
   useEffect(() => { setSidebarOpen(false) }, [pathname])
+
+  useEffect(() => {
+    document.body.classList.add('dashboard-active')
+    return () => document.body.classList.remove('dashboard-active')
+  }, [])
+
+  useEffect(() => {
+    const stop = user ? startHeartbeat() : undefined
+    return () => stop?.()
+  }, [user])
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("dashboard-session")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "profiles",
+          filter: `id=eq.${user?.id}`,
+        },
+        (payload: any) => {
+          const profile = payload.new as any
+          if (profile.deviceFingerprint === null && profile.deviceLocked === false) {
+            logout()
+          }
+        }
+      )
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [user, logout])
 
   if (loading) {
     return (
@@ -139,10 +192,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      <aside className="hidden lg:flex flex-col w-64 bg-brand-black text-white h-screen shrink-0 fixed left-0 top-0 z-40">
+      <aside className="hidden lg:flex flex-col w-64 bg-gradient-to-b from-[#0B0B0B] via-[#150606] to-[#0B0B0B] text-white h-screen shrink-0 fixed left-0 top-0 z-40 border-r border-white/5">
         <div className="p-5 border-b border-white/10">
           <Link href="/dashboard" className="flex items-center gap-3">
-            <Image src="/logo.jpg" alt="" width={38} height={40} className="rounded-full" />
+            <Image src="/logo-transparent.png" alt="" width={38} height={40} />
             <div>
               <h1 className="text-base font-bold leading-tight">Infinity</h1>
               <p className="text-[10px] text-white/40">Gym Center</p>
@@ -153,15 +206,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <SidebarNav />
 
         <div className="p-4 border-t border-white/10">
-          <div className="flex items-center gap-3 mb-3 px-2">
-            <div className="w-8 h-8 rounded-full bg-brand-red/20 flex items-center justify-center text-brand-red text-xs font-bold">
-              M
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{user.email?.split("@")[0]}</p>
-              <p className="text-[10px] text-white/40">Membre</p>
-            </div>
-          </div>
+      <div className="flex items-center gap-2 mb-3 px-2">
+        <div className="w-1 h-8 bg-brand-red rounded-full" />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium truncate">{user.email?.split("@")[0]}</p>
+          <p className="text-[10px] text-brand-red/80">Membre</p>
+        </div>
+      </div>
           <button
             onClick={logout}
             className="flex items-center gap-2 w-full px-3 py-2 rounded-xl text-sm text-white/40 hover:text-white hover:bg-white/5 transition-colors"
@@ -178,7 +229,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
           <div className="flex items-center gap-2">
-            <Image src="/logo.jpg" alt="" width={24} height={26} className="rounded-full" />
+            <Image src="/logo-transparent.png" alt="" width={24} height={26} className="rounded-full" />
             <span className="text-sm font-bold">Infinity Gym</span>
           </div>
           <button onClick={() => router.push("/dashboard/notifications")} className="relative">
@@ -190,10 +241,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {sidebarOpen && (
           <div className="lg:hidden fixed inset-0 z-40">
             <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
-            <aside className="absolute left-0 top-0 bottom-0 w-72 bg-brand-black text-white h-full overflow-y-auto">
+            <aside className="absolute left-0 top-0 bottom-0 w-72 bg-gradient-to-b from-[#0B0B0B] via-[#150606] to-[#0B0B0B] text-white h-full overflow-y-auto">
               <div className="p-5 border-b border-white/10 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <Image src="/logo.jpg" alt="" width={32} height={34} className="rounded-full" />
+                  <Image src="/logo-transparent.png" alt="" width={32} height={34} className="rounded-full" />
                   <span className="font-bold text-sm">Infinity Gym</span>
                 </div>
                 <button onClick={() => setSidebarOpen(false)}>
@@ -217,7 +268,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <main className="flex-1">{children}</main>
       </div>
 
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-brand-black border-t border-white/10 safe-area-bottom">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-gradient-to-r from-[#0B0B0B] via-[#150606] to-[#0B0B0B] border-t border-white/5 safe-area-bottom">
         <div className="flex items-center justify-around h-14">
           {bottomNavItems.map((item) => {
             const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))

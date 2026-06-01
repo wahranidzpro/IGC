@@ -4,10 +4,7 @@ import { useAuth } from "@/hooks/useAuth"
 import { Users, DoorOpen, CreditCard, AlertTriangle } from "lucide-react"
 
 const quickActions = [
-  { label: "Nouvel adhérent", href: "/reception/new-member", icon: Users, color: "bg-blue-500" },
-  { label: "Enregistrer paiement", href: "/reception/payments", icon: CreditCard, color: "bg-green-500" },
   { label: "Scanner QR", href: "/dashboard/qr", icon: DoorOpen, color: "bg-purple-500" },
-  { label: "Pointage manuel", href: "/reception/attendance", icon: AlertTriangle, color: "bg-orange-500" },
 ]
 
 const stats = [

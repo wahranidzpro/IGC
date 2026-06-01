@@ -8,42 +8,42 @@ const coaches = [
     role: "Head Coach",
     speciality: "Musculation & Powerlifting",
     bio: "10 ans d'expérience en coaching sportif. Ancien compétiteur de powerlifting, il accompagne les membres vers leurs objectifs de force.",
-    image: "https://images.unsplash.com/photo-1567013127542-490d757e51fc?w=300&q=80",
+    image: "/images/coach-mohamed.jpg",
   },
   {
     name: "Ines B.",
     role: "Coach Fitness",
     speciality: "Cardio & Perte de poids",
     bio: "Spécialiste en entraînement cardiovasculaire et nutrition. Elle aide nos membres à transformer leur corps durablement.",
-    image: "https://images.unsplash.com/photo-1594381898411-846e7d193883?w=300&q=80",
+    image: "/images/coach-ines.jpg",
   },
   {
     name: "Karim D.",
     role: "Coach Cross Training",
     speciality: "HIIT & Functional Training",
     bio: "Passionné de cross-training et de sports fonctionnels. Il conçoit des WOD intenses qui repoussent vos limites.",
-    image: "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=300&q=80",
+    image: "/images/coach-karim.jpg",
   },
   {
     name: "Sarah M.",
     role: "Coach Cours Collectifs",
     speciality: "BodyPump, RPM, Yoga",
     bio: "Experte en cours collectifs et bien-être. Elle anime nos sessions avec énergie et bienveillance.",
-    image: "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=300&q=80",
+    image: "/images/coach-sarah.jpg",
   },
   {
     name: "Redouane K.",
     role: "Coach Boxing",
     speciality: "Boxe anglaise & K1",
     bio: "Ancien boxeur professionnel avec 8 ans de carrière. Il encadre nos sessions boxing pour tous niveaux.",
-    image: "https://images.unsplash.com/photo-1579783483458-83d02115394a?w=300&q=80",
+    image: "/images/coach-redouane.jpg",
   },
   {
     name: "Myriam T.",
     role: "Coach Bien-être",
     speciality: "Stretching & Récupération",
     bio: "Spécialiste en mobilité et récupération. Elle accompagne les membres pour améliorer leur souplesse et prévenir les blessures.",
-    image: "https://images.unsplash.com/photo-1599447343596-deb1a8e7f73b?w=300&q=80",
+    image: "/images/coach-myriam.jpg",
   },
 ]
 
@@ -54,7 +54,7 @@ export default function CoachsPage() {
         title="Nos coaches"
         subtitle="Une équipe de professionnels diplômés passionnés par leur métier, dédiée à votre réussite."
         height="large"
-        image="https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=1920&q=80"
+        image="/images/hero-coachs.jpg"
       />
 
       <SectionWrapper>

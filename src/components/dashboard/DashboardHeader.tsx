@@ -14,7 +14,7 @@ export default function DashboardHeader() {
     <header className="flex items-center justify-between p-4 md:p-6 border-b">
       <div className="flex items-center gap-3">
         <Image
-          src="/logo.jpg"
+          src="/logo-transparent.png"
           alt="Infinity Gym Center"
           width={36}
           height={38}

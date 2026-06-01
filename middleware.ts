@@ -3,14 +3,14 @@ import type { NextRequest } from 'next/server'
 import { createServerClient } from "@supabase/ssr"
 import type { Database } from "@/lib/supabase/database.types"
 
-const protectedPaths = ['/admin', '/members', '/payments', '/pos', '/checkin', '/products', '/coaches', '/programs', '/plans', '/notifications', '/settings', '/turnstiles', '/rfid', '/access', '/ai-coach', '/events', '/expenses', '/fidelity', '/commissions', '/private-coaching', '/consumables', '/equipment', '/finance', '/personnel', '/coach']
+const protectedPaths = ['/admin', '/reception', '/members', '/payments', '/pos', '/checkin', '/products', '/coaches', '/programs', '/plans', '/notifications', '/settings', '/turnstiles', '/rfid', '/access', '/ai-coach', '/events', '/expenses', '/fidelity', '/commissions', '/private-coaching', '/consumables', '/equipment', '/finance', '/personnel', '/coach']
 
 const receptionAllowedPaths = ['/checkin', '/members', '/payments', '/pos', '/products', '/coaches', '/programs', '/plans', '/notifications', '/turnstiles', '/access', '/events', '/expenses', '/fidelity', '/commissions', '/private-coaching', '/consumables', '/equipment']
 const coachAllowedPaths = ['/coach', '/members', '/coaches', '/programs', '/plans', '/private-coaching', '/ai-coach']
 const adherentAllowedPaths = ['/ai-coach', '/members/profile']
 
 function hasRoleAccess(role: string, pathname: string): boolean {
-  if (role === 'admin') return true
+  if (role === 'admin' || role === 'staff') return true
   if (role === 'reception') return receptionAllowedPaths.some(p => pathname.startsWith(p))
   if (role === 'coach') return coachAllowedPaths.some(p => pathname.startsWith(p))
   if (role === 'adherent') return adherentAllowedPaths.some(p => pathname.startsWith(p))
@@ -72,7 +72,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/admin/:path*', '/members/:path*', '/payments/:path*', '/pos/:path*',
+    '/admin/:path*', '/reception/:path*', '/members/:path*', '/payments/:path*', '/pos/:path*',
     '/checkin/:path*', '/products/:path*', '/coaches/:path*', '/programs/:path*',
     '/plans/:path*', '/notifications/:path*', '/settings/:path*', '/turnstiles/:path*',
     '/rfid/:path*', '/access/:path*', '/ai-coach/:path*', '/events/:path*', '/expenses/:path*',

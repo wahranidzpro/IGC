@@ -35,7 +35,7 @@ export default function ContactPage() {
         title="Contactez-nous"
         subtitle="Une question ? Besoin d'informations ? Notre équipe est là pour vous répondre."
         height="medium"
-        image="https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=1920&q=80"
+        image="/images/hero-activites.jpg"
       />
 
       <SectionWrapper>
@@ -101,7 +101,7 @@ export default function ContactPage() {
 
             <div
               className="aspect-[16/9] rounded-2xl bg-cover bg-center"
-              style={{ backgroundImage: "url(https://images.unsplash.com/photo-1569336415962-a4bd9f18cd07?w=800&q=80)" }}
+              style={{ backgroundImage: "url(/images/contact-map.jpg)" }}
             />
           </div>
         </div>

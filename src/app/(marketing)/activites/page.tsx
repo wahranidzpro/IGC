@@ -8,56 +8,56 @@ const espaces = [
     title: "Musculation",
     description: "Espace dédié à la prise de masse et au développement de la force. Machines guidées, poids libres et zone deadlift.",
     items: ["Machines Technogym dernière génération", "Barres olympiques et haltères jusqu'à 50kg", "Cages à squat et bancs de développé"],
-    image: "https://images.unsplash.com/photo-1532386236358-a33d8a9844f0?w=600&q=80",
+    image: "/images/musculation.jpg",
     href: "#",
   },
   {
     title: "Cardio Training",
     description: "Zone cardio connectée pour brûler des calories et améliorer votre endurance cardiovasculaire.",
     items: ["Tapis de course, rameurs, elliptiques", "Vélos connectés avec programmes", "Escaliers et machines à grimper"],
-    image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=600&q=80",
+    image: "/images/cardio.jpg",
     href: "#",
   },
   {
     title: "Cross Training",
     description: "Espace fonctionnel de 200m² pour des séances HIIT, WOD et entraînements à haute intensité.",
     items: ["Cordes, medecine-balls, kettlebells", "Box jumps et pneus", "Programmes quotidiens"],
-    image: "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=600&q=80",
+    image: "/images/cross-training.jpg",
     href: "#",
   },
   {
     title: "Cours Collectifs",
     description: "Plus de 30 cours par semaine animés par nos coachs diplômés dans notre studio dédié.",
     items: ["BodyPump, RPM, Yoga, Pilates", "HIIT, Step, Abdos-Fessiers", "Cours en petit groupe"],
-    image: "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=600&q=80",
+    image: "/images/cours-collectifs.jpg",
     href: "#",
   },
   {
     title: "Boxing",
     description: "Espace boxe avec ring professionnel, sacs de frappe et zone de combat.",
     items: ["Ring réglementaire", "Sacs de frappe et paos", "Cours collectifs et coaching individuel"],
-    image: "https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?w=600&q=80",
+    image: "/images/boxing.jpg",
     href: "#",
   },
   {
     title: "Zone Sport de Force",
     description: "Section dédiée au powerlifting et à l'haltérophilie avec équipement compétition.",
     items: ["Plateforme Eleiko", "Barres de compétition", "Matériel compétition"],
-    image: "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=600&q=80",
+    image: "/images/sport-force.jpg",
     href: "#",
   },
   {
     title: "Espace Bien-être",
     description: "Zone stretching, mobilité et récupération pour prendre soin de votre corps après l'effort.",
     items: ["Tapis de sol et blocs yoga", "Rouleaux de massage", "Fauteuil hydromassant"],
-    image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=600&q=80",
+    image: "/images/bien-etre.jpg",
     href: "#",
   },
   {
     title: "Espace Femme",
     description: "Un espace réservé aux femmes pour s'entraîner en toute sérénité.",
     items: ["Machines adaptées", "Cours réservés", "Ambiance conviviale et sécurisée"],
-    image: "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=600&q=80",
+    image: "/images/espace-femme.jpg",
     href: "#",
   },
 ]
@@ -69,7 +69,7 @@ export default function ActivitesPage() {
         title="Activités & services"
         subtitle="Musculation, cardio, cross-training, boxing, cours collectifs… Trouvez l'activité qui vous correspond et dépassez vos objectifs."
         height="large"
-        image="https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=1920&q=80"
+        image="/images/hero-activites.jpg"
       />
 
       <SectionWrapper>
@@ -114,7 +114,7 @@ export default function ActivitesPage() {
           </div>
           <div
             className="aspect-[4/3] rounded-2xl bg-cover bg-center border border-white/10"
-            style={{ backgroundImage: "url(https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=800&q=80)" }}
+            style={{ backgroundImage: "url(/images/activites-app.jpg)" }}
           />
         </div>
       </SectionWrapper>

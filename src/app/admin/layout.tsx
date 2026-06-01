@@ -78,7 +78,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="p-6 border-b">
           <div className="flex items-center gap-3 mb-2">
             <Image
-              src="/logo.jpg"
+              src="/logo-transparent.png"
               alt="Infinity Gym Center"
               width={40}
               height={43}
@@ -105,7 +105,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <div className="flex-1 flex flex-col min-w-0">
         <header className="lg:hidden flex items-center justify-between p-4 bg-card border-b">
           <div className="flex items-center gap-2">
-            <Image src="/logo.jpg" alt="" width={28} height={30} className="rounded-full" />
+            <Image src="/logo-transparent.png" alt="" width={28} height={30} className="rounded-full" />
             <h1 className="text-lg font-bold text-primary">IGC Admin</h1>
           </div>
           <button onClick={() => setMobileOpen(!mobileOpen)}>

@@ -1,34 +1,65 @@
 import { NextRequest } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { verifyCookie } from '@/lib/cookie-signature';
+import { createServerClient } from '@supabase/ssr';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+export async function verifyAdmin(
+  request: NextRequest
+): Promise<{ authorized: boolean; role?: string; error?: string }> {
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() { return request.cookies.getAll(); },
+        setAll() {},
+      },
+    }
+  );
 
-async function getCookieData(request: NextRequest) {
-  const cookie = request.cookies.get('infinity-gym-auth');
-  if (!cookie) return null;
-  return verifyCookie(cookie.value);
-}
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) {
+    return { authorized: false, error: 'Not authenticated' };
+  }
 
-export async function verifyAdmin(request: NextRequest): Promise<{ authorized: boolean; role?: string; error?: string }> {
-  const authData = await getCookieData(request);
-  if (!authData?.username || !authData?.role) return { authorized: false, error: 'Not authenticated' };
+  const role = user.user_metadata?.role as string | undefined;
+  if (!role) {
+    return { authorized: false, error: 'Role not found in user metadata' };
+  }
 
-  if (authData.role === 'admin') return { authorized: true, role: 'admin' };
-
-  if (!supabaseUrl || !supabaseServiceKey) return { authorized: false, error: 'Supabase not configured' };
-
-  const supabase = createClient(supabaseUrl, supabaseServiceKey, { auth: { persistSession: false, autoRefreshToken: false } });
-  const { data: user } = await supabase.from('gym_users').select('role').eq('username', authData.username).maybeSingle();
-
-  if (user?.role === 'admin') return { authorized: true, role: 'admin' };
+  if (role === 'admin') return { authorized: true, role: 'admin' };
 
   return { authorized: false, error: 'Admin access required' };
 }
 
-export async function verifyAuthenticated(request: NextRequest): Promise<{ authorized: boolean; username?: string; role?: string; error?: string }> {
-  const authData = await getCookieData(request);
-  if (!authData?.username || !authData?.role) return { authorized: false, error: 'Not authenticated' };
-  return { authorized: true, username: authData.username as string, role: authData.role as string };
+export async function verifyAuthenticated(
+  request: NextRequest
+): Promise<{
+  authorized: boolean;
+  username?: string;
+  role?: string;
+  error?: string;
+}> {
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() { return request.cookies.getAll(); },
+        setAll() {},
+      },
+    }
+  );
+
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) {
+    return { authorized: false, error: 'Not authenticated' };
+  }
+
+  const username = user.email?.replace('@infinitygym.local', '') ?? (user.user_metadata?.username as string | undefined);
+  const role = user.user_metadata?.role as string | undefined;
+
+  if (!username || !role) {
+    return { authorized: false, error: 'User metadata incomplete' };
+  }
+
+  return { authorized: true, username, role };
 }

@@ -4,8 +4,8 @@
   "description": "Gestion de salle de sport - Systeme de gestion des adherents",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#1a1a2e",
-  "theme_color": "#f97316",
+  "background_color": "#0B0B0B",
+  "theme_color": "#E10600",
   "orientation": "portrait-primary",
   "icons": [
     {

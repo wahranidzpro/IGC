@@ -28,10 +28,11 @@ export default function Newsletter() {
             </button>
           </form>
         </div>
-        <div className="w-full lg:w-72 aspect-[4/3] rounded-2xl bg-gradient-to-br from-brand-red/20 to-brand-black overflow-hidden flex items-center justify-center">
-          <div className="text-center p-6">
+        <div className="w-full lg:w-72 aspect-[4/3] rounded-2xl bg-gradient-to-br from-brand-red via-brand-accent to-brand-black overflow-hidden flex items-center justify-center relative">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.1),transparent_60%)]" />
+          <div className="text-center p-6 relative z-10">
             <div className="text-5xl mb-2">💪</div>
-            <p className="text-white/40 text-xs">Infinity Gym Center News</p>
+            <p className="text-white/60 text-xs">Infinity Gym Center News</p>
           </div>
         </div>
       </div>

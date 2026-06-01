@@ -1,3 +1,4 @@
+import { Camera, Globe } from "lucide-react"
 import Hero from "@/components/marketing/Hero"
 import SectionWrapper, { SectionHeader } from "@/components/marketing/SectionWrapper"
 import Newsletter from "@/components/marketing/Newsletter"
@@ -12,14 +13,14 @@ const categories = [
 ]
 
 const galleryItems = [
-  { label: "Espace musculation", desc: "Machines Technogym et poids libres", image: "https://images.unsplash.com/photo-1532386236358-a33d8a9844f0?w=600&q=80" },
-  { label: "Zone cardio", desc: "Tapis de course et vélos connectés", image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=600&q=80" },
-  { label: "Zone cross training", desc: "Espace fonctionnel 200m²", image: "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=600&q=80" },
-  { label: "Studio cours collectifs", desc: "Sonorisation et écrans géants", image: "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=600&q=80" },
-  { label: "Ring de boxe", desc: "Ring réglementaire professionnel", image: "https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?w=600&q=80" },
-  { label: "Espace bien-être", desc: "Hydromassage et stretching", image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=600&q=80" },
-  { label: "Vestiaires premium", desc: "Douches et casiers sécurisés", image: "https://images.unsplash.com/photo-1540497077202-7c8a3999166f?w=600&q=80" },
-  { label: "Hall d'accueil", desc: "Espace détente et nutrition", image: "https://images.unsplash.com/photo-1534105615256-b1c9f5bee7c4?w=600&q=80" },
+  { label: "Espace musculation", desc: "Machines Technogym et poids libres", image: "/images/musculation.jpg" },
+  { label: "Zone cardio", desc: "Tapis de course et vélos connectés", image: "/images/cardio.jpg" },
+  { label: "Zone cross training", desc: "Espace fonctionnel 200m²", image: "/images/cross-training.jpg" },
+  { label: "Studio cours collectifs", desc: "Sonorisation et écrans géants", image: "/images/cours-collectifs.jpg" },
+  { label: "Ring de boxe", desc: "Ring réglementaire professionnel", image: "/images/boxing.jpg" },
+  { label: "Espace bien-être", desc: "Hydromassage et stretching", image: "/images/bien-etre.jpg" },
+  { label: "Vestiaires premium", desc: "Douches et casiers sécurisés", image: "/images/vestiaires.jpg" },
+  { label: "Hall d'accueil", desc: "Espace détente et nutrition", image: "/images/hall-accueil.jpg" },
 ]
 
 export default function GaleriePage() {
@@ -29,7 +30,7 @@ export default function GaleriePage() {
         title="Galerie"
         subtitle="Découvrez nos installations premium à travers notre galerie photos."
         height="medium"
-        image="https://images.unsplash.com/photo-1534105615256-b1c9f5bee7c4?w=1920&q=80"
+        image="/images/hero-galerie.jpg"
       />
 
       <SectionWrapper>
@@ -64,6 +65,35 @@ export default function GaleriePage() {
               {cat.name}
             </span>
           ))}
+        </div>
+      </SectionWrapper>
+
+      <SectionWrapper>
+        <SectionHeader
+          title="Suivez-nous"
+          subtitle="Retrouvez-nous sur les réseaux sociaux"
+        />
+        <div className="flex flex-wrap gap-6 justify-center">
+          <a
+            href="https://www.instagram.com/infin.itygym/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex items-center gap-4 px-8 py-5 rounded-2xl bg-gradient-to-br from-pink-600 via-purple-600 to-orange-500 text-white font-bold text-lg shadow-xl shadow-pink-600/20 hover:shadow-pink-600/40 hover:-translate-y-0.5 transition-all"
+          >
+            <Camera className="w-7 h-7" />
+            <span>Instagram</span>
+            <span className="text-white/60 text-sm font-normal">@infin.itygym</span>
+          </a>
+          <a
+            href="https://www.facebook.com/100090491113441/?locale=pl_PL"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex items-center gap-4 px-8 py-5 rounded-2xl bg-gradient-to-br from-blue-700 to-blue-500 text-white font-bold text-lg shadow-xl shadow-blue-700/20 hover:shadow-blue-700/40 hover:-translate-y-0.5 transition-all"
+          >
+            <Globe className="w-7 h-7" />
+            <span>Facebook</span>
+            <span className="text-white/60 text-sm font-normal">Infinity Gym Center</span>
+          </a>
         </div>
       </SectionWrapper>
 

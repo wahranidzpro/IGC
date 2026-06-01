@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
   const auth = await verifyAdmin(request);
   if (!auth.authorized) return NextResponse.json({ error: auth.error }, { status: 401 });
 
-  const supabase = getSupabase(false);
+  const supabase = getSupabase(true);
   if (!supabase) return NextResponse.json({ error: 'Supabase not configured', users: [] }, { status: 503 });
 
   const { data, error } = await supabase.from('gym_users').select('id, username, role, name, phone, is_locked, created_at').order('created_at', { ascending: false });

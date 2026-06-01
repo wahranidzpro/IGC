@@ -12,42 +12,42 @@ const articles = [
     excerpt: "Découvrez les bonnes pratiques pour commencer la musculation en toute sécurité et maximiser vos résultats dès les premières semaines.",
     category: "Conseils",
     date: "15 Mai 2026",
-    image: "https://images.unsplash.com/photo-1532386236358-a33d8a9844f0?w=600&q=80",
+    image: "/images/musculation.jpg",
   },
   {
     title: "Les bienfaits du cross-training sur le corps",
     excerpt: "Le cross-training transforme votre condition physique. Voici pourquoi cette discipline complète séduit de plus en plus d'adeptes.",
     category: "Entraînement",
     date: "8 Mai 2026",
-    image: "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=600&q=80",
+    image: "/images/cross-training.jpg",
   },
   {
     title: "Nutrition sportive : que manger avant et après l'effort ?",
     excerpt: "Optimisez vos performances et votre récupération grâce à une alimentation adaptée à vos objectifs fitness.",
     category: "Nutrition",
     date: "1 Mai 2026",
-    image: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=600&q=80",
+    image: "/images/nutrition.jpg",
   },
   {
     title: "5 erreurs à éviter quand on fait du cardio",
     excerpt: "Le cardio est essentiel mais mal fait, il peut être contre-productif. Évitez ces erreurs courantes pour des séances efficaces.",
     category: "Conseils",
     date: "22 Avril 2026",
-    image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=600&q=80",
+    image: "/images/cardio.jpg",
   },
   {
     title: "Pourquoi Saïda a besoin d'une salle de sport premium",
     excerpt: "Infinity Gym Center arrive pour révolutionner le fitness à Saïda et proposer des installations dignes des plus grands clubs.",
     category: "Infinity",
     date: "15 Avril 2026",
-    image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600&q=80",
+    image: "/images/musculation.jpg",
   },
   {
     title: "Programme abdos : 30 jours pour des résultats visibles",
     excerpt: "Suivez notre programme abdos progressif sur 30 jours et constatez les résultats par vous-même.",
     category: "Programmes",
     date: "8 Avril 2026",
-    image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=600&q=80",
+    image: "/images/hero-coachs.jpg",
   },
 ]
 
@@ -58,7 +58,7 @@ export default function BlogPage() {
         title="Blog"
         subtitle="Conseils fitness, nutrition, programmes d'entraînement et actualités Infinity Gym Center."
         height="medium"
-        image="https://images.unsplash.com/photo-1531306728370-e2ebd9d7bb99?w=1920&q=80"
+        image="/images/hero-blog.jpg"
       />
 
       <SectionWrapper>

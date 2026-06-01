@@ -11,10 +11,6 @@ import {
 
 const navItems = [
   { label: "Tableau de bord", href: "/reception", icon: LayoutDashboard },
-  { label: "Nouvel adhérent", href: "/reception/new-member", icon: UserPlus },
-  { label: "Adhérents", href: "/reception/members", icon: Users },
-  { label: "Paiements", href: "/reception/payments", icon: CreditCard },
-  { label: "Présences", href: "/reception/attendance", icon: DoorOpen },
 ]
 
 function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
@@ -77,7 +73,7 @@ export default function ReceptionLayout({ children }: { children: React.ReactNod
       <aside className="hidden lg:flex flex-col w-64 bg-card border-r h-screen shrink-0">
         <div className="p-6 border-b">
           <div className="flex items-center gap-3 mb-2">
-            <Image src="/logo.jpg" alt="" width={40} height={43} className="rounded-full" />
+            <Image src="/logo-transparent.png" alt="" width={40} height={43} className="rounded-full" />
             <div>
               <h1 className="text-xl font-bold text-primary">IGC Réception</h1>
               <p className="text-xs text-muted-foreground">Accueil & gestion</p>
@@ -99,7 +95,7 @@ export default function ReceptionLayout({ children }: { children: React.ReactNod
       <div className="flex-1 flex flex-col min-w-0">
         <header className="lg:hidden flex items-center justify-between p-4 bg-card border-b">
           <div className="flex items-center gap-2">
-            <Image src="/logo.jpg" alt="" width={28} height={30} className="rounded-full" />
+            <Image src="/logo-transparent.png" alt="" width={28} height={30} className="rounded-full" />
             <h1 className="text-lg font-bold text-primary">IGC Réception</h1>
           </div>
           <button onClick={() => setMobileOpen(!mobileOpen)}>

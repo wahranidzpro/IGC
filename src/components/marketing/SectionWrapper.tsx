@@ -13,7 +13,7 @@ export default function SectionWrapper({ children, className, dark, id }: Sectio
       id={id}
       className={cn(
         "py-16 sm:py-20 lg:py-28",
-        dark ? "bg-brand-black text-white" : "bg-white text-brand-black",
+        dark ? "bg-gradient-to-br from-brand-black via-[#1a0808] to-brand-black text-white" : "bg-white text-brand-black",
         className
       )}
     >

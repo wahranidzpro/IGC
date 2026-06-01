@@ -1,5 +1,6 @@
 const DEVICE_KEY = "igc_device_id"
 const DEVICE_NAME_KEY = "igc_device_name"
+const HEARTBEAT_INTERVAL = 30000
 
 export function getDeviceFingerprint(): string {
   if (typeof window === "undefined") return ""
@@ -88,4 +89,61 @@ export async function confirmTransferOtp(
     body: JSON.stringify({ profileId, otp, fingerprint, name }),
   })
   return res.json()
+}
+
+export async function sendHeartbeat(): Promise<{ ok: boolean }> {
+  const fingerprint = getDeviceFingerprint()
+  if (!fingerprint) return { ok: false }
+  try {
+    const res = await fetch("/api/device/heartbeat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fingerprint }),
+    })
+    return { ok: res.ok }
+  } catch {
+    return { ok: false }
+  }
+}
+
+export function startHeartbeat(onLost?: () => void) {
+  const interval = setInterval(async () => {
+    const { ok } = await sendHeartbeat()
+    if (!ok) onLost?.()
+  }, HEARTBEAT_INTERVAL)
+
+  sendHeartbeat()
+
+  return () => clearInterval(interval)
+}
+
+export async function checkActiveDevice(): Promise<{
+  allowed: boolean
+  activeDeviceName?: string
+  activeDeviceId?: string
+  reason?: string
+}> {
+  const fingerprint = getDeviceFingerprint()
+  if (!fingerprint) return { allowed: false, reason: "DEVICE_NOT_IDENTIFIED" }
+
+  try {
+    const res = await fetch("/api/device/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fingerprint }),
+    })
+    return res.json()
+  } catch {
+    return { allowed: false, reason: "NETWORK_ERROR" }
+  }
+}
+
+export function isMobileDevice(): boolean {
+  if (typeof window === "undefined") return false
+  return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || navigator.maxTouchPoints > 0
+}
+
+export function isPWA(): boolean {
+  if (typeof window === "undefined") return false
+  return window.matchMedia("(display-mode: standalone)").matches
 }

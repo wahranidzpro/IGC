@@ -146,7 +146,7 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
       <aside className="hidden lg:flex flex-col w-64 bg-brand-black text-white h-screen shrink-0 fixed left-0 top-0 z-40">
         <div className="p-5 border-b border-white/10">
           <Link href="/coach" className="flex items-center gap-3">
-            <Image src="/logo.jpg" alt="" width={38} height={40} className="rounded-full" />
+            <Image src="/logo-transparent.png" alt="" width={38} height={40} className="rounded-full" />
             <div>
               <h1 className="text-base font-bold leading-tight">IGC Coach</h1>
               <p className="text-[10px] text-white/40">Espace entraîneur</p>
@@ -182,7 +182,7 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
             {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
           <div className="flex items-center gap-2">
-            <Image src="/logo.jpg" alt="" width={24} height={26} className="rounded-full" />
+            <Image src="/logo-transparent.png" alt="" width={24} height={26} className="rounded-full" />
             <span className="text-sm font-bold">IGC Coach</span>
           </div>
           <button onClick={() => router.push("/coach/messages")} className="relative">
@@ -197,7 +197,7 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
             <aside className="absolute left-0 top-0 bottom-0 w-72 bg-brand-black text-white h-full overflow-y-auto">
               <div className="p-5 border-b border-white/10 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <Image src="/logo.jpg" alt="" width={32} height={34} className="rounded-full" />
+                  <Image src="/logo-transparent.png" alt="" width={32} height={34} className="rounded-full" />
                   <span className="font-bold text-sm">IGC Coach</span>
                 </div>
                 <button onClick={() => setSidebarOpen(false)}>

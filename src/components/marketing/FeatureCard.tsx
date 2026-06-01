@@ -19,7 +19,7 @@ export default function FeatureCard({
   items,
 }: FeatureCardProps) {
   const content = (
-    <div className="group relative bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 h-full">
+    <div className="group relative bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 h-full before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-brand-red before:via-brand-accent before:to-brand-red before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100">
       {image && (
         <div className="aspect-[16/10] bg-gray-100 overflow-hidden">
           <div
