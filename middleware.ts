@@ -25,7 +25,7 @@ export async function middleware(request: NextRequest) {
 
   if (!isProtected && !isApiRoute) return NextResponse.next()
 
-  const publicApiPaths = ['/api/auth/login', '/api/auth/logout', '/api/auth/session']
+  const publicApiPaths = ['/api/auth/login', '/api/auth/logout', '/api/auth/session', '/api/setup-admin']
   if (isApiRoute && publicApiPaths.some(p => pathname.startsWith(p))) return NextResponse.next()
 
   let supabaseResponse = NextResponse.next({ request })

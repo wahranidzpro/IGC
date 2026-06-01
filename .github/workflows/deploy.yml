@@ -1,0 +1,79 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      rollback:
+        description: 'Rollback to previous deployment'
+        required: false
+        default: 'false'
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  validate:
+    name: Lint & TypeScript
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+      - run: npx next build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
+  deploy:
+    name: Deploy to Vercel
+    needs: validate
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - name: Install Vercel CLI
+        run: npm i -g vercel
+      - name: Pull Vercel Environment
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Build Project
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Deploy to Vercel
+        id: deploy
+        run: |
+          vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }} > deployment_url.txt
+          echo "url=$(cat deployment_url.txt)" >> $GITHUB_OUTPUT
+      - name: Save deployment hash for rollback
+        run: |
+          vercel list --prod --token=${{ secrets.VERCEL_TOKEN }} --json | jq -r '.[0].name' > .deploy-hash
+          echo "Deployed: $(cat deployment_url.txt)"
+      - name: Health check
+        run: |
+          curl -f -s -o /dev/null -w "%{http_code}" "$(cat deployment_url.txt)" || exit 1
+
+  rollback:
+    name: Rollback
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.rollback == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install Vercel CLI
+        run: npm i -g vercel
+      - name: Rollback Vercel deployment
+        run: |
+          PREVIOUS=$(vercel list --prod --token=${{ secrets.VERCEL_TOKEN }} --json | jq -r '.[1].name')
+          echo "Rolling back to: $PREVIOUS"
+          vercel promote $PREVIOUS --token=${{ secrets.VERCEL_TOKEN }}

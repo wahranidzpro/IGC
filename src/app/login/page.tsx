@@ -2,219 +2,232 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
 import Image from "next/image"
 import { useAuth } from "@/hooks/useAuth"
 import { Button } from "@/components/ui/button"
-import { verifyDevice, registerDevice, requestTransferOtp, confirmTransferOtp } from "@/lib/device"
-import { ShieldAlert, Smartphone, CheckCircle2 } from "lucide-react"
+import { Shield, Dumbbell, ArrowRight, Lock, Eye, EyeOff } from "lucide-react"
 
-type LoginStep = "form" | "device_lock" | "otp_sent" | "success"
+type LoginTab = "admin" | "adherent"
 
 export default function LoginPage() {
   const router = useRouter()
   const { user, loading, login } = useAuth()
-  const [email, setEmail] = useState("")
+  const [tab, setTab] = useState<LoginTab>("admin")
+  const [username, setUsername] = useState("")
+  const [phone, setPhone] = useState("")
   const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
   const [submitting, setSubmitting] = useState(false)
-  const [step, setStep] = useState<LoginStep>("form")
-  const [deviceReason, setDeviceReason] = useState("")
-  const [otp, setOtp] = useState("")
-  const [otpError, setOtpError] = useState("")
-  const [otpSending, setOtpSending] = useState(false)
-  const [otpMessage, setOtpMessage] = useState("")
-  const [profileId, setProfileId] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!loading && user) router.push("/dashboard")
+    if (!loading && user) router.push("/admin")
   }, [user, loading, router])
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0B0B0B] via-[#1a0808] to-[#0B0B0B]">
+      <div className="animate-spin w-8 h-8 border-4 border-[#E10600] border-t-transparent rounded-full" />
+    </div>
+  )
   if (user) return null
+
+  const formatPhone = (val: string) => {
+    const digits = val.replace(/\D/g, "")
+    if (digits.length <= 2) return digits
+    if (digits.length <= 4) return `${digits.slice(0, 2)} ${digits.slice(2)}`
+    if (digits.length <= 6) return `${digits.slice(0, 2)} ${digits.slice(2, 4)} ${digits.slice(4)}`
+    if (digits.length <= 8) return `${digits.slice(0, 2)} ${digits.slice(2, 4)} ${digits.slice(4, 6)} ${digits.slice(6)}`
+    return `${digits.slice(0, 2)} ${digits.slice(2, 4)} ${digits.slice(4, 6)} ${digits.slice(6, 8)} ${digits.slice(8, 10)}`
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
     setSubmitting(true)
 
-    const result = await login(email, password)
-    if (result.error) {
-      setError(result.error)
+    const identifier = tab === "admin" ? username : phone.replace(/\s/g, "")
+    if (!identifier || !password) {
+      setError("Veuillez remplir tous les champs")
       setSubmitting(false)
       return
     }
 
-    const deviceCheck = await verifyDevice({ email })
-    if (deviceCheck.allowed) {
-      if (deviceCheck.reason === "PREMIER_APPAREIL" && deviceCheck.profileId) {
-        await registerDevice(deviceCheck.profileId)
-      }
-      router.push("/dashboard")
+    const email = `${identifier}@infinitygym.local`
+    const result = await login(email, password)
+    if (result.error) {
+      setError(result.error === "Invalid login credentials" ? "Identifiants incorrects" : result.error)
+      setSubmitting(false)
       return
     }
-
-    setProfileId(deviceCheck.profileId || null)
-    setDeviceReason(deviceCheck.reason || "")
-    setStep("device_lock")
-    setSubmitting(false)
-  }
-
-  const handleRequestOtp = async () => {
-    if (!profileId) return
-    setOtpSending(true)
-    setOtpError("")
-    const res = await requestTransferOtp(profileId)
-    if (res.success) {
-      setOtpMessage(res.error || "Code envoyé")
-      setStep("otp_sent")
-    } else {
-      setOtpError(res.error || "Erreur d'envoi")
-    }
-    setOtpSending(false)
-  }
-
-  const handleConfirmOtp = async () => {
-    if (!profileId || !otp) return
-    setOtpError("")
-    setSubmitting(true)
-    const res = await confirmTransferOtp(profileId, otp)
-    if (res.success) {
-      setStep("success")
-      setTimeout(() => router.push("/dashboard"), 1500)
-    } else {
-      setOtpError(res.error || "Code invalide")
-    }
-    setSubmitting(false)
-  }
-
-  if (step === "device_lock") {
-    return (
-      <main className="min-h-screen flex items-center justify-center p-4">
-        <div className="w-full max-w-sm space-y-6 text-center">
-          <ShieldAlert className="w-16 h-16 text-destructive mx-auto" />
-          <h1 className="text-2xl font-bold">Appareil non reconnu</h1>
-          <p className="text-sm text-muted-foreground">
-            Un nouvel appareil tente d&apos;accéder à votre compte.
-            Pour des raisons de sécurité, veuillez vérifier votre identité.
-          </p>
-
-          <div className="space-y-3">
-            <Button className="w-full" onClick={handleRequestOtp} disabled={otpSending}>
-              <Smartphone className="w-4 h-4 mr-2" />
-              {otpSending ? "Envoi..." : "Envoyer un code de vérification"}
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => { setStep("form"); setError(""); setProfileId(null) }}
-            >
-              Retour à la connexion
-            </Button>
-          </div>
-        </div>
-      </main>
-    )
-  }
-
-  if (step === "otp_sent") {
-    return (
-      <main className="min-h-screen flex items-center justify-center p-4">
-        <div className="w-full max-w-sm space-y-6 text-center">
-          <Smartphone className="w-16 h-16 text-primary mx-auto" />
-          <h1 className="text-2xl font-bold">Code de vérification</h1>
-          <p className="text-sm text-muted-foreground">
-            {otpMessage || "Un code à 6 chiffres vous a été envoyé par email."}
-          </p>
-
-          <div className="space-y-4">
-            <input
-              type="text"
-              maxLength={6}
-              value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-              className="w-full text-center text-2xl tracking-[0.5em] rounded-md border border-input bg-background px-3 py-3 font-mono"
-              placeholder="000000"
-            />
-            {otpError && <p className="text-sm text-destructive">{otpError}</p>}
-            <Button className="w-full" onClick={handleConfirmOtp} disabled={submitting || otp.length !== 6}>
-              {submitting ? "Vérification..." : "Transférer l'accès"}
-            </Button>
-            <button
-              className="text-sm text-muted-foreground hover:underline w-full"
-              onClick={handleRequestOtp}
-            >
-              Renvoyer le code
-            </button>
-          </div>
-        </div>
-      </main>
-    )
-  }
-
-  if (step === "success") {
-    return (
-      <main className="min-h-screen flex items-center justify-center p-4">
-        <div className="w-full max-w-sm text-center space-y-4">
-          <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto" />
-          <h1 className="text-2xl font-bold">Appareil autorisé</h1>
-          <p className="text-muted-foreground">Redirection vers le tableau de bord...</p>
-        </div>
-      </main>
-    )
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-4">
-      <div className="w-full max-w-sm space-y-6">
-        <div className="text-center space-y-2">
+    <main className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-[#0B0B0B] via-[#1a0808] to-[#0B0B0B]">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
           <Image
             src="/logo-transparent.png"
             alt="Infinity Gym Center"
-            width={100}
-            height={106}
+            width={90}
+            height={96}
             priority
-            className="mx-auto mb-2"
+            className="mx-auto mb-4"
           />
-          <h1 className="text-2xl font-bold">Infinity Gym Center</h1>
-          <p className="text-muted-foreground text-sm">Connectez-vous à votre compte</p>
+          <h1 className="text-3xl font-bold text-white">Infinity Gym Center</h1>
+          <p className="text-white/50 text-sm mt-1">Système de gestion de salle de sport</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium">Email</label>
-            <input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              placeholder="exemple@email.com"
-            />
+        <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-1 shadow-2xl border border-white/10">
+          <div className="flex bg-black/40 rounded-xl p-1 mb-6">
+            <button
+              onClick={() => { setTab("admin"); setError("") }}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-medium transition-all ${tab === "admin" ? "bg-gradient-to-r from-[#E10600] to-[#FF6B00] text-white shadow-lg" : "text-white/60 hover:text-white"}`}
+            >
+              <Shield className="w-4 h-4" />
+              Administrateur
+            </button>
+            <button
+              onClick={() => { setTab("adherent"); setError("") }}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-medium transition-all ${tab === "adherent" ? "bg-gradient-to-r from-[#E10600] to-[#FF6B00] text-white shadow-lg" : "text-white/60 hover:text-white"}`}
+            >
+              <Dumbbell className="w-4 h-4" />
+              Adhérent
+            </button>
           </div>
-          <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-medium">Mot de passe</label>
-            <input
-              id="password"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              placeholder="••••••••"
-            />
-          </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
-          <Button type="submit" className="w-full" disabled={submitting}>
-            {submitting ? "Connexion..." : "Se connecter"}
-          </Button>
-        </form>
 
-        <p className="text-center text-sm text-muted-foreground">
-          Pas encore de compte ?{" "}
-          <Link href="/signup" className="text-primary hover:underline">S&apos;inscrire</Link>
-        </p>
+          <div className="px-6 pb-6">
+            {tab === "admin" ? (
+              <div>
+                <h2 className="text-lg font-semibold text-white mb-1">Connexion Staff</h2>
+                <p className="text-white/40 text-sm mb-6">Accédez au tableau de bord</p>
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-white/80">Nom d&apos;utilisateur</label>
+                    <input
+                      type="text"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      className="w-full rounded-xl bg-white/10 border border-white/10 px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#E10600] focus:ring-1 focus:ring-[#E10600] transition-all"
+                      placeholder="admin"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-white/80">Mot de passe</label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full rounded-xl bg-white/10 border border-white/10 px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#E10600] focus:ring-1 focus:ring-[#E10600] transition-all pr-10"
+                        placeholder="••••••••"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {error && (
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+                      <p className="text-red-400 text-sm">{error}</p>
+                    </div>
+                  )}
+
+                  <Button
+                    type="submit"
+                    disabled={submitting}
+                    className="w-full py-6 rounded-xl bg-gradient-to-r from-[#E10600] to-[#FF6B00] text-white font-bold hover:opacity-90 transition-all text-base"
+                  >
+                    {submitting ? "Connexion..." : "Se connecter"}
+                    {!submitting && <ArrowRight className="w-4 h-4 ml-2" />}
+                  </Button>
+                </form>
+
+                <div className="mt-4 text-center">
+                  <button
+                    onClick={() => router.push("/forgot-password")}
+                    className="text-sm text-white/40 hover:text-[#FF6B00] transition-colors"
+                  >
+                    Mot de passe oublié ?
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <h2 className="text-lg font-semibold text-white mb-1">Connexion Adhérent</h2>
+                <p className="text-white/40 text-sm mb-6">Accédez à votre espace</p>
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-white/80">Numéro de téléphone</label>
+                    <input
+                      type="text"
+                      value={phone}
+                      onChange={(e) => setPhone(formatPhone(e.target.value))}
+                      className="w-full rounded-xl bg-white/10 border border-white/10 px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#E10600] focus:ring-1 focus:ring-[#E10600] transition-all tracking-wider"
+                      placeholder="05 XX XX XX XX"
+                      maxLength={14}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-white/80">Mot de passe</label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full rounded-xl bg-white/10 border border-white/10 px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#E10600] focus:ring-1 focus:ring-[#E10600] transition-all pr-10"
+                        placeholder="••••••••"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {error && (
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+                      <p className="text-red-400 text-sm">{error}</p>
+                    </div>
+                  )}
+
+                  <Button
+                    type="submit"
+                    disabled={submitting}
+                    className="w-full py-6 rounded-xl bg-gradient-to-r from-[#E10600] to-[#FF6B00] text-white font-bold hover:opacity-90 transition-all text-base"
+                  >
+                    {submitting ? "Connexion..." : "Accéder à mon espace"}
+                    {!submitting && <ArrowRight className="w-4 h-4 ml-2" />}
+                  </Button>
+                </form>
+
+                <div className="mt-6 p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
+                  <p className="text-yellow-400 text-xs text-center">
+                    ⚠️ Pas encore inscrit ? Veuillez vous rapprocher de l&apos;administration du club pour créer votre compte adhérent.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-6 text-center">
+          <button
+            onClick={() => setTab(tab === "admin" ? "adherent" : "admin")}
+            className="text-sm text-white/30 hover:text-white/60 transition-colors"
+          >
+            {tab === "admin" ? "Connexion Adhérent" : "Connexion Staff"}
+          </button>
+        </div>
       </div>
     </main>
   )
