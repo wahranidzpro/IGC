@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { useAuth } from "@/hooks/useAuth"
+import { useAuth } from "@/lib/auth/context"
 import { Button } from "@/components/ui/button"
 
 export default function SignupPage() {

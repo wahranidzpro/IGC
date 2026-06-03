@@ -1,8 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useAuth } from "@/hooks/useAuth"
+import { useAuth } from "@/lib/auth/context"
 import { createClient } from "@/lib/supabase/client"
+import { mapRow, mapRows } from "@/lib/utils/transform"
 import {
   Bell, CheckCheck, CreditCard, MessageSquare, Megaphone, Inbox,
 } from "lucide-react"
@@ -52,24 +53,24 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     if (!user) { setLoading(false); return }
-    const uid = user.id
+    const uid = user?.id as string
     const supabase = createClient()
 
     async function load() {
       try {
-        const { data: mData } = await supabase.from("members").select("id").eq("profileId", uid).maybeSingle()
+        const { data: mData } = await supabase.from("members").select("id").eq("profile_id", uid).maybeSingle()
         const memberId = (mData as { id?: string } | null)?.id
         if (!memberId) { setLoading(false); return }
 
         const { data: n, error: err } = await supabase
           .from("notifications")
           .select("*")
-          .eq("memberId", memberId)
-          .order("createdAt", { ascending: false })
+          .eq("member_id", memberId)
+          .order("created_at", { ascending: false })
           .limit(50)
 
         if (err) throw err
-        setNotifs((n as unknown as Notification[]) || [])
+        setNotifs(mapRows<Notification>(n as unknown as Record<string, unknown>[]))
       } catch (e) {
         setError("Impossible de charger les notifications")
         console.error(e)
@@ -87,7 +88,7 @@ export default function NotificationsPage() {
   const markAsRead = async (id: string) => {
     setNotifs((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)))
     try {
-      await createClient().from("notifications").update({ isRead: true } as never).eq("id", id)
+      await createClient().from("notifications").update({ is_read: true } as never).eq("id", id)
     } catch { /* ignore */ }
   }
 
@@ -96,10 +97,10 @@ export default function NotificationsPage() {
     setSaving(true)
     setNotifs((prev) => prev.map((n) => ({ ...n, isRead: true })))
     try {
-      const { data: mData } = await createClient().from("members").select("id").eq("profileId", user.id).maybeSingle()
+      const { data: mData } = await createClient().from("members").select("id").eq("profile_id", user?.id as string).maybeSingle()
       const memberId = (mData as { id?: string } | null)?.id
       if (memberId) {
-        await createClient().from("notifications").update({ isRead: true } as never).eq("memberId", memberId).eq("isRead", false)
+        await createClient().from("notifications").update({ is_read: true } as never).eq("member_id", memberId).eq("is_read", false)
       }
     } catch { /* ignore */ }
     finally { setSaving(false) }

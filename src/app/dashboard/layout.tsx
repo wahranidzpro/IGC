@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
-import { useAuth } from "@/hooks/useAuth"
+import { useAuth } from "@/lib/auth/context"
 import { cn } from "@/lib/utils"
 import { startHeartbeat } from "@/lib/device"
 import { createBrowserClient } from "@supabase/ssr"
@@ -229,7 +229,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
           <div className="flex items-center gap-2">
-            <Image src="/logo-transparent.png" alt="" width={24} height={26} className="rounded-full" />
+            <Image src="/logo-transparent.png" alt="" width={24} height={26} className="rounded-full cursor-pointer" />
             <span className="text-sm font-bold">Infinity Gym</span>
           </div>
           <button onClick={() => router.push("/dashboard/notifications")} className="relative">
@@ -244,7 +244,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <aside className="absolute left-0 top-0 bottom-0 w-72 bg-gradient-to-b from-[#0B0B0B] via-[#150606] to-[#0B0B0B] text-white h-full overflow-y-auto">
               <div className="p-5 border-b border-white/10 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <Image src="/logo-transparent.png" alt="" width={32} height={34} className="rounded-full" />
+                  <Image src="/logo-transparent.png" alt="" width={32} height={34} className="rounded-full cursor-pointer" />
                   <span className="font-bold text-sm">Infinity Gym</span>
                 </div>
                 <button onClick={() => setSidebarOpen(false)}>

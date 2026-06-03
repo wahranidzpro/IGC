@@ -477,7 +477,7 @@ export async function getSyncStatus() {
     const { data } = await s
       .from('sync_logs')
       .select('*')
-      .order('created_at', { ascending: false })
+      .order('started_at', { ascending: false })
       .limit(5);
     lastSyncLog = data || [];
   } catch {

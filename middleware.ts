@@ -1,73 +1,60 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
-import { createServerClient } from "@supabase/ssr"
-import type { Database } from "@/lib/supabase/database.types"
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { verifyCookie } from '@/lib/cookie-signature';
 
-const protectedPaths = ['/admin', '/reception', '/members', '/payments', '/pos', '/checkin', '/products', '/coaches', '/programs', '/plans', '/notifications', '/settings', '/turnstiles', '/rfid', '/access', '/ai-coach', '/events', '/expenses', '/fidelity', '/commissions', '/private-coaching', '/consumables', '/equipment', '/finance', '/personnel', '/coach']
+const protectedPaths = ['/admin', '/reception', '/members', '/payments', '/pos', '/checkin', '/products', '/coaches', '/programs', '/plans', '/notifications', '/settings', '/turnstiles', '/rfid', '/access', '/ai-coach', '/events', '/expenses', '/fidelity', '/commissions', '/private-coaching', '/consumables', '/equipment', '/finance', '/personnel', '/coach', '/dashboard'];
 
-const receptionAllowedPaths = ['/checkin', '/members', '/payments', '/pos', '/products', '/coaches', '/programs', '/plans', '/notifications', '/turnstiles', '/access', '/events', '/expenses', '/fidelity', '/commissions', '/private-coaching', '/consumables', '/equipment']
-const coachAllowedPaths = ['/coach', '/members', '/coaches', '/programs', '/plans', '/private-coaching', '/ai-coach']
-const adherentAllowedPaths = ['/ai-coach', '/members/profile']
+const receptionAllowedPaths = ['/reception', '/checkin', '/members', '/payments', '/pos', '/products', '/coaches', '/programs', '/plans', '/notifications', '/turnstiles', '/access', '/events', '/expenses', '/fidelity', '/commissions', '/private-coaching', '/consumables', '/equipment'];
+const coachAllowedPaths = ['/coach', '/members', '/coaches', '/programs', '/plans', '/private-coaching', '/ai-coach'];
+const adherentAllowedPaths = ['/ai-coach', '/members/profile', '/dashboard'];
 
 function hasRoleAccess(role: string, pathname: string): boolean {
-  if (role === 'admin' || role === 'staff') return true
-  if (role === 'reception') return receptionAllowedPaths.some(p => pathname.startsWith(p))
-  if (role === 'coach') return coachAllowedPaths.some(p => pathname.startsWith(p))
-  if (role === 'adherent') return adherentAllowedPaths.some(p => pathname.startsWith(p))
-  return false
+  if (role === 'admin' || role === 'staff') return true;
+  if (role === 'reception') return receptionAllowedPaths.some(p => pathname.startsWith(p));
+  if (role === 'coach') return coachAllowedPaths.some(p => pathname.startsWith(p));
+  if (role === 'adherent') return adherentAllowedPaths.some(p => pathname.startsWith(p));
+  return false;
 }
 
 export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl
+  const { pathname } = request.nextUrl;
 
-  const isProtected = protectedPaths.some(p => pathname.startsWith(p))
-  const isApiRoute = pathname.startsWith('/api/')
+  const isProtected = protectedPaths.some(p => pathname.startsWith(p));
+  const isApiRoute = pathname.startsWith('/api/');
+  if (!isProtected && !isApiRoute) return NextResponse.next();
 
-  if (!isProtected && !isApiRoute) return NextResponse.next()
+  // Public API routes that don't require auth
+  const publicApiPaths = ['/api/auth/login', '/api/auth/logout', '/api/auth/session', '/api/setup-admin'];
+  if (isApiRoute && publicApiPaths.some(p => pathname.startsWith(p))) return NextResponse.next();
 
-  const publicApiPaths = ['/api/auth/login', '/api/auth/logout', '/api/auth/session', '/api/setup-admin']
-  if (isApiRoute && publicApiPaths.some(p => pathname.startsWith(p))) return NextResponse.next()
-
-  let supabaseResponse = NextResponse.next({ request })
-
-  const supabase = createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return request.cookies.getAll() },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
-        },
-      },
-    }
-  )
-
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
+  const authCookie = request.cookies.get('infinity-gym-auth');
+  if (!authCookie?.value) {
     if (isApiRoute) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
-    const loginUrl = new URL('/login', request.url)
-    loginUrl.searchParams.set('redirect', pathname)
-    return NextResponse.redirect(loginUrl)
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('redirect', pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
-  const role = user.user_metadata?.role as string || 'adherent'
-
-  if (!hasRoleAccess(role, pathname)) {
+  const authData = await verifyCookie(authCookie.value);
+  if (!authData || !authData.role || !authData.username) {
     if (isApiRoute) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
     }
-    return NextResponse.redirect(new URL('/', request.url))
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('redirect', pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
-  return supabaseResponse
+  if (!hasRoleAccess(authData.role as string, pathname)) {
+    if (isApiRoute) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    return NextResponse.redirect(new URL('/', request.url));
+  }
+
+  return NextResponse.next();
 }
 
 export const config = {
@@ -79,6 +66,7 @@ export const config = {
     '/fidelity/:path*', '/commissions/:path*', '/private-coaching/:path*',
     '/consumables/:path*', '/equipment/:path*', '/finance/:path*', '/personnel/:path*',
     '/coach/:path*',
+    '/dashboard/:path*',
     '/api/:path*',
   ],
-}
+};

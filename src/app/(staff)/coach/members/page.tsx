@@ -1,8 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useAuth } from "@/hooks/useAuth"
+import { useAuth } from "@/lib/auth/context"
 import { createClient } from "@/lib/supabase/client"
+import { mapRow, mapRows } from "@/lib/utils/transform"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import {
@@ -36,43 +37,47 @@ export default function MembersPage() {
 
   useEffect(() => {
     if (!user) { setLoading(false); return }
-    const uid = user.id
+    const uid = user?.id as string
     const supabase = createClient()
 
     async function load() {
       try {
-        const { data: cData } = await supabase.from("coaches").select("id").eq("profileId", uid).maybeSingle()
-        const coachId = (cData as { id?: string } | null)?.id
+        const cRow = await supabase.from("coaches").select("id").eq("profile_id", uid).maybeSingle()
+          .then(r => mapRow<{ id: string }>(r.data))
+        const coachId = cRow?.id
         if (!coachId) { setLoading(false); return }
 
-        const { data: mcData } = await supabase
+        const mcRows = await supabase
           .from("member_coaches")
-          .select("memberId")
-          .eq("coachId", coachId)
-          .eq("isActive", true)
-        const memberIds = ((mcData as { memberId: string }[]) || []).map((m) => m.memberId)
+          .select("member_id")
+          .eq("coach_id", coachId)
+          .eq("is_active", true)
+          .then(r => mapRows<{ memberId: string }>(r.data))
+        const memberIds = mcRows.map((m) => m.memberId)
         if (memberIds.length === 0) { setLoading(false); return }
 
-        const { data: mData } = await supabase
+        const allMembers = await supabase
           .from("members")
           .select("*")
           .in("id", memberIds)
-        const allMembers = (mData as Member[]) || []
+          .then(r => mapRows<Member>(r.data))
 
-        const { data: pData } = await supabase
+        const pRows = await supabase
           .from("profiles")
           .select("*")
           .in("id", allMembers.map((m) => m.profileId))
-        const profiles = ((pData as Profile[]) || []).reduce((acc, p) => {
+          .then(r => mapRows<Profile>(r.data))
+        const profiles = pRows.reduce((acc, p) => {
           acc[p.id] = p; return acc
         }, {} as Record<string, Profile>)
 
-        const { data: msData } = await supabase
+        const msRows = await supabase
           .from("memberships")
           .select("*")
-          .in("memberId", memberIds)
+          .in("member_id", memberIds)
           .eq("status", "active")
-        const activeMemberships = ((msData as Membership[]) || []).reduce((acc, m) => {
+          .then(r => mapRows<Membership>(r.data))
+        const activeMemberships = msRows.reduce((acc, m) => {
           if (!acc[m.memberId]) acc[m.memberId] = m; return acc
         }, {} as Record<string, Membership>)
 
@@ -100,14 +105,14 @@ export default function MembersPage() {
     setDetailLoading(true)
     const supabase = createClient()
     try {
-      const [attRes, payRes, progRes] = await Promise.all([
-        supabase.from("attendance").select("*").eq("memberId", member.id).order("timestamp", { ascending: false }).limit(20),
-        supabase.from("payments").select("*").eq("memberId", member.id).order("paidAt", { ascending: false }).limit(10),
-        supabase.from("progress_logs").select("*").eq("memberId", member.id).order("loggedAt", { ascending: false }).limit(20),
+      const [attRows, payRows, progRows] = await Promise.all([
+        supabase.from("attendance").select("*").eq("member_id", member.id).order("timestamp", { ascending: false }).limit(20).then(r => mapRows<Attendance>(r.data)),
+        supabase.from("payments").select("*").eq("member_id", member.id).order("paid_at", { ascending: false }).limit(10).then(r => mapRows<Payment>(r.data)),
+        supabase.from("progress_logs").select("*").eq("member_id", member.id).order("logged_at", { ascending: false }).limit(20).then(r => mapRows<ProgressLog>(r.data)),
       ])
-      setMemberAttendance((attRes.data as unknown as Attendance[]) || [])
-      setMemberPayments((payRes.data as Payment[]) || [])
-      setMemberProgress((progRes.data as unknown as ProgressLog[]) || [])
+      setMemberAttendance(attRows)
+      setMemberPayments(payRows)
+      setMemberProgress(progRows)
     } catch { /* ignore */ }
     finally { setDetailLoading(false) }
   }

@@ -1,20 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
 
 export async function POST(request: NextRequest) {
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return request.cookies.getAll(); },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value));
-        },
-      },
-    }
+  const isSecure = request.url.startsWith('https://') || request.headers.get('x-forwarded-proto') === 'https';
+  const secureFlag = isSecure ? '; Secure' : '';
+  const response = NextResponse.json({ success: true });
+
+  response.headers.set(
+    'Set-Cookie',
+    `infinity-gym-auth=; path=/; max-age=0; HttpOnly; SameSite=Strict${secureFlag}`
   );
 
-  await supabase.auth.signOut();
-  return NextResponse.json({ success: true });
+  return response;
 }

@@ -1,8 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useAuth } from "@/hooks/useAuth"
+import { useAuth } from "@/lib/auth/context"
 import { createClient } from "@/lib/supabase/client"
+import { mapRow, mapRows } from "@/lib/utils/transform"
 import Image from "next/image"
 import {
   User, Mail, Phone, Calendar, Camera, Check, X,
@@ -30,16 +31,16 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!user) return
-    const uid = user.id
+    const uid = user?.id as string
     const supabase = createClient()
 
     async function load() {
-      const { data: p } = await supabase.from("profiles").select("*").eq("id", uid).single()
-      const prof = p as unknown as Profile | null
+      const { data: p } = await supabase.from("profiles").select("*").eq("id", uid).maybeSingle()
+      const prof = p ? mapRow<Profile>(p) : null
       if (prof) setProfile(prof)
 
-      const { data: m } = await supabase.from("members").select("*").eq("profileId", uid).maybeSingle()
-      const mem = m as unknown as Member | null
+      const { data: m } = await supabase.from("members").select("*").eq("profile_id", uid).maybeSingle()
+      const mem = m ? mapRow<Member>(m) : null
       if (mem) setMember(mem)
 
       setForm({
@@ -62,20 +63,21 @@ export default function ProfilePage() {
     try {
       const supabase = createClient()
       await supabase.from("profiles").update({
-        firstName: form.firstName,
-        lastName: form.lastName,
+        first_name: form.firstName,
+        last_name: form.lastName,
         phone: form.phone || null,
-      } as never).eq("id", user.id)
+      } as never).eq("id", user?.id as string)
 
-      const { data: m } = await supabase.from("members").select("*").eq("profileId", user.id).maybeSingle()
-      const memberId = (m as { id?: string } | null)?.id
+      const { data: m } = await supabase.from("members").select("*").eq("profile_id", user?.id as string).maybeSingle()
+      const memberRow = m ? mapRow<Member>(m) : null
+      const memberId = memberRow?.id
       if (memberId) {
         await supabase.from("members").update({
-          birthDate: form.birthDate || null,
+          birth_date: form.birthDate || null,
           gender: form.gender || null,
-          emergencyContact: form.emergencyContact || null,
-          emergencyPhone: form.emergencyPhone || null,
-          fitnessGoal: form.fitnessGoal || null,
+          emergency_contact: form.emergencyContact || null,
+          emergency_phone: form.emergencyPhone || null,
+          fitness_goal: form.fitnessGoal || null,
         } as never).eq("id", memberId)
       }
 

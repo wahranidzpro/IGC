@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { mapRow, mapRows } from "@/lib/utils/transform"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Receipt, UserCheck } from "lucide-react"
@@ -32,9 +33,9 @@ export default function AdminAbonnementsPage() {
       const { data } = await supabase
         .from("memberships")
         .select("*, member:members(profile:profiles(*))")
-        .order("endDate", { ascending: true })
+        .order("end_date", { ascending: true })
         .limit(50)
-      if (data) setMemberships(data as unknown as MembershipRow[])
+      if (data) setMemberships(mapRows<MembershipRow>(data))
       setLoading(false)
     }
     load()

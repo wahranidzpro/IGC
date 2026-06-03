@@ -1,13 +1,14 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useAuth } from "@/hooks/useAuth"
+import { useAuth } from "@/lib/auth/context"
 import { createClient } from "@/lib/supabase/client"
+import { mapRow, mapRows } from "@/lib/utils/transform"
 import {
   CreditCard, Calendar, AlertTriangle, CheckCircle, XCircle,
   RefreshCw, ShieldCheck, TrendingUp, Clock,
 } from "lucide-react"
-import type { Membership, Payment } from "@/types"
+import type { Member, Membership, Payment } from "@/types"
 
 const typeLabels: Record<string, string> = {
   monthly: "Mensuel",
@@ -25,31 +26,32 @@ export default function MembershipPage() {
 
   useEffect(() => {
     if (!user) { setLoading(false); return }
-    const uid = user.id
+    const uid = user?.id as string
     const supabase = createClient()
 
     async function load() {
       try {
-        const { data: mData } = await supabase.from("members").select("*").eq("profileId", uid).maybeSingle()
-        const memberId = (mData as { id?: string } | null)?.id
+        const { data: mData } = await supabase.from("members").select("*").eq("profile_id", uid).maybeSingle()
+        const m = mData ? mapRow<Member>(mData) : null
+        const memberId = m?.id
         if (!memberId) { setLoading(false); return }
 
         const { data: ms } = await supabase
           .from("memberships")
           .select("*")
-          .eq("memberId", memberId)
-          .order("startDate", { ascending: false })
-        const all = (ms as unknown as Membership[]) || []
+          .eq("member_id", memberId)
+          .order("start_date", { ascending: false })
+        const all = ms ? mapRows<Membership>(ms) : []
         setActiveMembership(all.find((m) => m.status === "active") || null)
         setHistory(all)
 
         const { data: pts } = await supabase
           .from("payments")
           .select("*")
-          .eq("memberId", memberId)
-          .order("paidAt", { ascending: false })
+          .eq("member_id", memberId)
+          .order("paid_at", { ascending: false })
           .limit(10)
-        if (pts) setPayments(pts as unknown as Payment[])
+        if (pts) setPayments(mapRows<Payment>(pts))
       } catch {
         console.error("Erreur chargement abonnement")
       } finally {

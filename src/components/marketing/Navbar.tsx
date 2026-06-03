@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { useTheme } from "@/lib/context/theme-context"
@@ -39,14 +38,37 @@ const megaMenuItems = [
     icon: Users,
     mega: [
       { label: "Nos coachs", href: "/coachs" },
-      { label: "Personal Training", href: "/private-coaching" },
-      { label: "Coach IA", href: "/ai-coach" },
     ],
   },
   {
-    label: "Galerie",
-    href: "/galerie",
+    label: "Home Training",
+    href: "/home-training",
+    icon: Dumbbell,
+    mega: [
+      { label: "Programmes à domicile", href: "/home-training#programmes" },
+      { label: "Vidéos d'entraînement", href: "/home-training#videos" },
+      { label: "Planning hebdomadaire", href: "/home-training#planning" },
+    ],
+  },
+  {
+    label: "Nutrition",
+    href: "/nutrition",
+    icon: Sparkles,
+    mega: [
+      { label: "Conseils nutrition", href: "/nutrition#conseils" },
+      { label: "Recettes healthy", href: "/nutrition#recettes" },
+      { label: "Coach nutrition", href: "/nutrition#coach" },
+    ],
+  },
+  {
+    label: "Média",
+    href: "/galerie-media",
     icon: ImageIcon,
+    mega: [
+      { label: "Galerie photos", href: "/galerie-media#galerie" },
+      { label: "Vidéos d'entraînement", href: "/galerie-media#videos" },
+      { label: "Transformations", href: "/galerie-media#transformations" },
+    ],
   },
   {
     label: "Contact",
@@ -55,7 +77,7 @@ const megaMenuItems = [
   },
 ]
 
-const megaLabels = new Set(["Activités", "Abonnements", "Coaches"])
+const megaLabels = new Set(["Activités", "Abonnements", "Coaches", "Home Training", "Nutrition", "Média"])
 
 export default function Navbar() {
   const pathname = usePathname()
@@ -82,30 +104,18 @@ export default function Navbar() {
         "fixed top-0 left-0 right-0 z-50 transition-all duration-500",
         scrolled
           ? isDark
-            ? "bg-gradient-to-r from-[#0B0B0B] via-[#1a0808] to-[#0B0B0B]/95 backdrop-blur-xl shadow-2xl shadow-black/30"
+            ? "bg-gradient-to-r from-[#0A0A0A] via-[#1A0808] to-[#0A0A0A]/95 backdrop-blur-xl shadow-2xl shadow-black/50"
             : "bg-white/95 backdrop-blur-xl shadow-lg"
           : "bg-gradient-to-b from-black/60 to-transparent"
       )}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 lg:h-20">
-          <Link href="/" className="flex items-center gap-3 shrink-0 group">
-            <div className="relative">
-              <Image
-                src="/logo-transparent.png"
-                alt="Infinity Gym Center"
-                width={40}
-                height={43}
-                className="rounded-xl transition-transform duration-300 group-hover:scale-105"
-              />
-              <div className="absolute -inset-1 bg-brand-red/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity blur" />
-            </div>
-            <span className={cn(
-              "font-bold text-lg tracking-tight hidden sm:block transition-colors",
-              isDark ? "text-white" : "text-brand-black"
-            )}>
-              Infinity Gym
-            </span>
+          <Link href="/" className={cn(
+            "font-bold text-lg tracking-tight transition-colors shrink-0",
+            isDark ? "text-white" : "text-brand-black"
+          )}>
+            Infinity Gym
           </Link>
 
           <nav className="hidden lg:flex items-center gap-1">

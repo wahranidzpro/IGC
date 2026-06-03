@@ -5,6 +5,7 @@ import Link from "next/link"
 import Hero from "@/components/marketing/Hero"
 import SectionWrapper, { SectionHeader } from "@/components/marketing/SectionWrapper"
 import FeatureCard from "@/components/marketing/FeatureCard"
+import ServicesGrid from "@/components/marketing/ServicesGrid"
 import StatsBanner from "@/components/marketing/StatsBanner"
 import Testimonials from "@/components/marketing/Testimonials"
 import Newsletter from "@/components/marketing/Newsletter"
@@ -121,7 +122,7 @@ export default function HomePage() {
         title="Repoussez vos limites"
         subtitle="Salle de sport premium à Saïda. Musculation, cardio, cross-training et cours collectifs — 7J/7 dans un environnement moderne et motivant."
         cta={{ label: "Découvrir nos abonnements", href: "/abonnements" }}
-        secondaryCta={{ label: "Visiter la salle", href: "/galerie" }}
+        secondaryCta={{ label: "Visiter la salle", href: "/galerie-media" }}
         image="/images/hero-home.jpg"
       >
         <div className="mt-8 flex flex-wrap gap-6 text-sm">
@@ -132,10 +133,6 @@ export default function HomePage() {
           <span className="flex items-center gap-2 text-white/50">
             <span className="w-1.5 h-1.5 bg-brand-red rounded-full" />
             7J/7
-          </span>
-          <span className="flex items-center gap-2 text-white/50">
-            <span className="w-1.5 h-1.5 bg-brand-red rounded-full" />
-            Essai gratuit
           </span>
         </div>
       </Hero>
@@ -202,6 +199,10 @@ export default function HomePage() {
           ))}
         </div>
       </SectionWrapper>
+
+      <RevealSection>
+        <ServicesGrid />
+      </RevealSection>
 
       <AccentBar />
 

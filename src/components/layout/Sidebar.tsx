@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useAuth } from "@/hooks/useAuth"
+import { useAuth } from "@/lib/auth/context"
 import { useLanguage } from "@/lib/context/language-context"
 import { useState } from "react"
 import {
@@ -34,7 +34,8 @@ const navSections: NavSection[] = [
     icon: <Home className="w-4 h-4" />,
     defaultOpen: true,
     items: [
-      { href: "/admin", labelKey: "sidebar.dashboard", icon: <Home className="w-5 h-5" />, roles: ["admin", "reception", "coach"] },
+      { href: "/admin", labelKey: "sidebar.dashboard", icon: <Home className="w-5 h-5" />, roles: ["admin", "reception"] },
+      { href: "/coach", labelKey: "sidebar.dashboard", icon: <Home className="w-5 h-5" />, roles: ["coach"] },
       { href: "/checkin", labelKey: "sidebar.checkin", icon: <QrCode className="w-5 h-5" />, roles: ["admin", "reception"] },
       { href: "/members", labelKey: "sidebar.members", icon: <Users className="w-5 h-5" />, roles: ["admin", "reception", "coach"] },
       { href: "/members/habits", labelKey: "sidebar.habits", icon: <BarChart3 className="w-5 h-5" />, roles: ["admin"] },
@@ -122,7 +123,7 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
   const pathname = usePathname()
-  const { user, logout } = useAuth()
+  const { user, role, logout } = useAuth()
   const { t, lang, setLang } = useLanguage()
   const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {}
@@ -136,12 +137,12 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
     setOpenSections((prev) => ({ ...prev, [titleKey]: !prev[titleKey] }))
   }
 
-  const role = user?.role || "adherent"
+  const effectiveRole = role || "adherent"
 
   const filteredSections = navSections
     .map((section) => ({
       ...section,
-      items: section.items.filter((item) => item.roles.includes(role)),
+      items: section.items.filter((item) => item.roles.includes(effectiveRole)),
     }))
     .filter((section) => section.items.length > 0)
 

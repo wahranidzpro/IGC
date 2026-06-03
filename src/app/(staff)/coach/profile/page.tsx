@@ -1,8 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useAuth } from "@/hooks/useAuth"
+import { useAuth } from "@/lib/auth/context"
 import { createClient } from "@/lib/supabase/client"
+import { mapRow, mapRows } from "@/lib/utils/transform"
 import Image from "next/image"
 import {
   User, Mail, Phone, Award, BookOpen, Save, AlertCircle, RefreshCw,
@@ -26,18 +27,18 @@ export default function CoachProfilePage() {
 
   useEffect(() => {
     if (!user) { setLoading(false); return }
-    const uid = user.id
+    const uid = user?.id as string
     const supabase = createClient()
 
     async function load() {
       try {
         const [{ data: pData }, { data: cData }] = await Promise.all([
           supabase.from("profiles").select("*").eq("id", uid).maybeSingle(),
-          supabase.from("coaches").select("*").eq("profileId", uid).maybeSingle(),
+          supabase.from("coaches").select("*").eq("profile_id", uid).maybeSingle(),
         ])
 
-        const p = pData as Profile | null
-        const c = cData as Coach | null
+        const p = mapRow<Profile>(pData as Record<string, unknown> | null)
+        const c = mapRow<Coach>(cData as Record<string, unknown> | null)
         setProfile(p)
         setCoach(c)
         if (p) {
@@ -82,10 +83,10 @@ export default function CoachProfilePage() {
     const supabase = createClient()
     try {
       await supabase.from("profiles").update({
-        firstName: form.firstName,
-        lastName: form.lastName,
+        first_name: form.firstName,
+        last_name: form.lastName,
         phone: form.phone || null,
-      } as never).eq("id", user.id)
+      } as never).eq("id", user?.id as string)
 
       if (coach) {
         await supabase.from("coaches").update({
@@ -95,13 +96,13 @@ export default function CoachProfilePage() {
         } as never).eq("id", coach.id)
       } else {
         const { data } = await supabase.from("coaches").insert({
-          profileId: user.id,
+          profile_id: user.id,
           speciality: form.speciality || null,
           bio: form.bio || null,
           certifications: form.certifications,
-          isActive: true,
-        } as never).select().single()
-        if (data) setCoach(data as unknown as Coach)
+          is_active: true,
+        } as never).select().maybeSingle()
+        if (data) setCoach(mapRow<Coach>(data as Record<string, unknown>))
       }
 
       setSaved(true)

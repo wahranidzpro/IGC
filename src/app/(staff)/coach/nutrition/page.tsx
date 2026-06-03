@@ -1,8 +1,9 @@
 "use client"
 
 import React, { useEffect, useState } from "react"
-import { useAuth } from "@/hooks/useAuth"
+import { useAuth } from "@/lib/auth/context"
 import { createClient } from "@/lib/supabase/client"
+import { mapRow, mapRows } from "@/lib/utils/transform"
 import {
   Apple, Plus, AlertCircle, RefreshCw, ChevronRight, Save,
   Users, Trash2, X, Sunrise, Sun, Sunset, Moon, Flame,
@@ -57,32 +58,32 @@ export default function NutritionPage() {
 
   useEffect(() => {
     if (!user) { setLoading(false); return }
-    const uid = user.id
+    const uid = user?.id as string
     const supabase = createClient()
 
     async function load() {
       try {
-        const { data: cData } = await supabase.from("coaches").select("*").eq("profileId", uid).maybeSingle()
+        const { data: cData } = await supabase.from("coaches").select("*").eq("profile_id", uid).maybeSingle()
         const cId = (cData as { id?: string } | null)?.id
         if (!cId) { setLoading(false); return }
         setCoachId(cId)
 
         const [progRes, mcRes, pRes] = await Promise.all([
-          supabase.from("nutrition_programs").select("*").eq("coachId", cId).order("createdAt", { ascending: false }),
-          supabase.from("member_coaches").select("memberId").eq("coachId", cId).eq("isActive", true),
-          supabase.from("profiles").select("id, firstName, lastName"),
+          supabase.from("nutrition_programs").select("*").eq("coach_id", cId).order("created_at", { ascending: false }),
+          supabase.from("member_coaches").select("member_id").eq("coach_id", cId).eq("is_active", true),
+          supabase.from("profiles").select("id, first_name, last_name"),
         ])
 
-        setPrograms((progRes.data as unknown as NutritionProgram[]) || [])
-        const memberIds = ((mcRes.data as { memberId: string }[]) || []).map((m) => m.memberId)
-        const allProfiles = ((pRes.data as Profile[]) || []).reduce((acc, p) => {
+        setPrograms(mapRows<NutritionProgram>(progRes.data) || [])
+        const memberIds = ((mcRes.data as { member_id: string }[]) || []).map((m) => m.member_id)
+        const allProfiles = (mapRows<Profile>(pRes.data) || []).reduce((acc, p) => {
           acc[p.id] = `${p.firstName} ${p.lastName}`; return acc
         }, {} as Record<string, string>)
 
         if (memberIds.length > 0) {
-          const { data: mData } = await supabase.from("members").select("id, profileId").in("id", memberIds)
-          setMembers(((mData as { id: string; profileId: string }[]) || []).map((m) => ({
-            id: m.id, name: allProfiles[m.profileId] || "Inconnu",
+          const { data: mData } = await supabase.from("members").select("id, profile_id").in("id", memberIds)
+          setMembers(((mData as { id: string; profile_id: string }[]) || []).map((m) => ({
+            id: m.id, name: allProfiles[m.profile_id] || "Inconnu",
           })))
         }
       } catch {
@@ -157,18 +158,18 @@ export default function NutritionPage() {
       const { data, error: err } = await supabase
         .from("nutrition_programs")
         .insert({
-          coachId,
+          coach_id: coachId,
           name: formData.name,
           description: formData.description || null,
           meals,
-          assignedTo: formData.assignedTo,
+          assigned_to: formData.assignedTo,
         } as never)
         .select()
-        .single()
+        .maybeSingle()
 
       if (err) throw err
       if (data) {
-        setPrograms((prev) => [data as unknown as NutritionProgram, ...prev])
+        setPrograms((prev) => [mapRow<NutritionProgram>(data)!, ...prev])
         setShowForm(false)
         setFormData({ name: "", description: "", meals: [], assignedTo: [] })
       }

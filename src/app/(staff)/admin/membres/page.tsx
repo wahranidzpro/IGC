@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { mapRow, mapRows } from "@/lib/utils/transform"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -36,18 +37,19 @@ export default function AdminMembresPage() {
       const { data } = await supabase
         .from("members")
         .select("*, profile:profiles(*)")
-        .order("createdAt", { ascending: false })
+        .order("created_at", { ascending: false })
         .limit(50)
       if (data) {
         const enriched: MemberRow[] = await Promise.all(
-          (data as any[]).map(async (m) => {
+          mapRows<any>(data).map(async (m) => {
             const { data: ms } = await supabase
               .from("memberships")
-              .select("planName, endDate, status")
-              .eq("memberId", m.id)
+              .select("plan_name, end_date, status")
+              .eq("member_id", m.id)
               .eq("status", "active")
               .maybeSingle()
-            return { ...m, membership: ms || null } as MemberRow
+            const membership = mapRow<{ planName: string; endDate: string; status: string }>(ms)
+            return { ...m, membership } as MemberRow
           })
         )
         setMembers(enriched)

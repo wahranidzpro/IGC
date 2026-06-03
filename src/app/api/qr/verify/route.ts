@@ -31,47 +31,47 @@ export async function POST(request: Request) {
     .from("qr_tokens")
     .select("*")
     .eq("token", rawToken)
-    .single()
+    .maybeSingle()
 
   if (findError || !qrToken) {
     return NextResponse.json({ valid: false, reason: "TOKEN_NOT_FOUND" })
   }
 
-  if (qrToken.isUsed) {
+  if (qrToken.is_used) {
     return NextResponse.json({ valid: false, reason: "TOKEN_ALREADY_USED" })
   }
 
-  if (new Date(qrToken.expiresAt) < new Date()) {
+  if (new Date(qrToken.expires_at) < new Date()) {
     return NextResponse.json({ valid: false, reason: "TOKEN_EXPIRED" })
   }
 
   const { data: member } = await supabase
     .from("members")
-    .select("id, status, profileId")
-    .eq("profileId", qrToken.memberId)
-    .single()
+    .select("id, status, profile_id")
+    .eq("profile_id", qrToken.member_id)
+    .maybeSingle()
 
   if (!member || member.status !== "active") {
-    return NextResponse.json({ valid: false, memberId: qrToken.memberId, reason: "MEMBER_NOT_ACTIVE" })
+    return NextResponse.json({ valid: false, memberId: qrToken.member_id, reason: "MEMBER_NOT_ACTIVE" })
   }
 
   const now = new Date().toISOString()
 
   await supabase
     .from("qr_tokens")
-    .update({ isUsed: true, usedAt: now, deviceId: deviceId || null })
+    .update({ is_used: true, used_at: now, device_id: deviceId || null })
     .eq("id", qrToken.id)
 
   await supabase
     .from("attendance")
     .insert({
-      memberId: member.id,
-      deviceId: deviceId || null,
-      clubId: null,
+      member_id: member.id,
+      device_id: deviceId || null,
+      club_id: null,
       type: "entry",
       method: "qr",
       timestamp: now,
     })
 
-  return NextResponse.json({ valid: true, memberId: qrToken.memberId })
+  return NextResponse.json({ valid: true, memberId: qrToken.member_id })
 }

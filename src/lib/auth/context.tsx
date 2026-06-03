@@ -1,148 +1,544 @@
-'use client'
-import { createContext, useContext, createElement, useState, useEffect, ReactNode } from 'react'
-import { supabase } from '@/lib/supabase/client'
+'use client';
 
-interface User { id: string; email?: string; role?: string; name?: string; username?: string; pin?: string; is_locked?: boolean; coachId?: string | number; firstName?: string }
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { db, Member } from '@/lib/db/dexie-db';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
+import { canAccessApp, fetchAccessStatus } from '@/lib/auth/authorization';
+import { logger } from '@/lib/logger';
 
-interface AccessStatus {
-  granted: boolean
-  message: string
-  reason?: string
+type Role = 'admin' | 'reception' | 'coach' | 'adherent' | null;
+type LoginMode = 'admin' | 'adherent';
+export type UserRole = 'admin' | 'reception' | 'coach' | 'member' | 'adherent'
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  username: string;
+  role: Role;
+  name: string;
+  phone?: string;
+  supabaseUserId: string;
+  gymUserId?: string;
+  coachId?: number | string;
+}
+
+const ROLE_HIERARCHY: Record<string, number> = {
+  admin: 100,
+  reception: 60,
+  staff: 60,
+  coach: 40,
+  member: 10,
+}
+
+export function getDashboardPath(role: string): string {
+  if (role === "admin" || role === "staff") return "/admin"
+  if (role === "reception") return "/reception"
+  if (role === "coach") return "/coach"
+  return "/dashboard"
 }
 
 interface AuthContextType {
-  user: User | null
-  loading: boolean
-  error: string | null
-  role: string | null
-  accessStatus: AccessStatus | null
-  login: (username: string, password: string, mode?: string) => Promise<{ success: boolean; error?: string }>
-  loginAsAdherent: (phone: string, password: string) => Promise<{ success: boolean; error?: string }>
-  logout: () => Promise<void>
-  signOut: () => Promise<void>
-  refreshUser: () => Promise<void>
-  checkAccess: () => Promise<void>
-  createUserInCloud: (user: { username: string; password: string; pin: string; role: string; name: string; phone?: string }) => Promise<{ id?: string }>
-  updateUserInCloud: (data: Record<string, any>) => Promise<void>
-  deleteUserFromCloud: (userId: string) => Promise<void>
+  isAuthenticated: boolean;
+  role: Role;
+  user: AuthUser | Member | null;
+  loginMode: LoginMode;
+  login: (username: string, password: string, mode?: LoginMode) => Promise<{ success: boolean; error?: string }>;
+  loginAsAdherent: (phone: string, rfidCode: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => void;
+  hasRole: (...roles: UserRole[]) => boolean;
+  hasAccess: (minLevel: number) => boolean;
+  dashboardPath: string;
+  signup: (email: string, password: string) => Promise<{ error?: string }>;
+  loading: boolean;
+  isStructureLocked: boolean;
+  checkStructureLock: () => Promise<boolean>;
+  accessStatus: { granted: boolean; message: string; reason: string } | null;
+  checkAccess: () => Promise<boolean>;
 }
 
-const AuthContext = createContext<AuthContextType>({
-  user: null, loading: true, error: null, role: null, accessStatus: null,
-  login: async () => ({ success: false }),
-  loginAsAdherent: async () => ({ success: false }),
-  logout: async () => {},
-  signOut: async () => {},
-  refreshUser: async () => {},
-  checkAccess: async () => {},
-  createUserInCloud: async () => ({}),
-  updateUserInCloud: async () => {},
-  deleteUserFromCloud: async () => {},
-})
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+function authLog(tag: string, msg: string, data?: any) {
+  const line = `[AUTH:${tag}] ${msg}${data ? ' ' + JSON.stringify(data).substring(0, 150) : ''}`;
+  logger.info(line);
+}
+
+async function setServerCookie(username: string, role: string, supabaseUserId?: string) {
+  try {
+    await fetch('/api/auth/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, role, supabaseUserId }),
+    });
+  } catch (err) {
+    authLog('COOKIE', 'Failed to set server cookie', err);
+  }
+}
+
+function clearAuthCookie() {
+  fetch('/api/auth/session', { method: 'DELETE' }).catch(() => {});
+  authLog('COOKIE', 'Cleared auth cookie');
+}
+
+async function fetchGymUserFromDB(supabaseUserId: string): Promise<{
+  id: string; username: string; role: Role; name: string; phone?: string
+} | null> {
+  if (!isSupabaseConfigured || !supabase) return null;
+  try {
+    const result = await (supabase as any)
+      .from('gym_users')
+      .select('id, username, role, name, phone')
+      .eq('auth_user_id', supabaseUserId)
+      .maybeSingle();
+    if (result.error || !result.data) {
+      authLog('GYM_USER', 'Not found or error', result.error);
+      return null;
+    }
+    return { id: result.data.id, username: result.data.username, role: result.data.role as Role, name: result.data.name, phone: result.data.phone || undefined };
+  } catch (err) {
+    authLog('GYM_USER', 'Exception', err);
+    return null;
+  }
+}
+
+async function resolveCoachId(username: string, phone?: string): Promise<string | undefined> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data: gu } = await (supabase as any)
+        .from('gym_users')
+        .select('id')
+        .eq('username', username)
+        .maybeSingle();
+      if (gu?.id) {
+        const { data: coach } = await (supabase as any)
+          .from('coaches')
+          .select('id')
+          .eq('profile_id', gu.id)
+          .maybeSingle();
+        if (coach?.id) return coach.id as string;
+      }
+    } catch {}
+  }
+  try {
+    const pinUser = await db.pinUsers.where('username').equals(username).first();
+    if (pinUser?.coachId) return String(pinUser.coachId);
+    if (phone) {
+      const coach = await db.coaches.where('phone').equals(phone).first();
+      if (coach?.id) return String(coach.id);
+    }
+  } catch {}
+  return undefined;
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error] = useState<string | null>(null)
-  const [accessStatus, setAccessStatus] = useState<AccessStatus | null>(null)
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [role, setRole] = useState<Role>(null);
+  const [user, setUser] = useState<AuthUser | Member | null>(null);
+  const [loginMode, setLoginMode] = useState<LoginMode>('admin');
+  const [isStructureLocked, setIsStructureLocked] = useState(false);
+  const [accessStatus, setAccessStatus] = useState<{ granted: boolean; message: string; reason: string } | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  useEffect(() => {
-    supabase?.auth.getUser().then(({ data }) => {
-      if (data.user) setUser({ id: data.user.id, email: data.user.email, ...data.user.user_metadata as any })
-      setLoading(false)
-    })
+  const loading = !isInitialized
+
+  const hasRole = useCallback((...roles: UserRole[]) => {
+    return roles.includes((role ?? 'member') as UserRole)
+  }, [role])
+
+  const hasAccess = useCallback((minLevel: number) => {
+    return (ROLE_HIERARCHY[role ?? 'member'] ?? 0) >= minLevel
+  }, [role])
+
+  const dashboardPath = getDashboardPath(role ?? 'member')
+
+  const signup = useCallback(async (email: string, password: string) => {
+    const username = email.split('@')[0]
+    try {
+      await createUserInCloud({ username, password, pin: '0000', role: 'member', name: username })
+      return {}
+    } catch (e: any) {
+      return { error: e.message }
+    }
   }, [])
 
-  const role = user?.role || null
+  const checkAccess = useCallback(async (overrideUserId?: string): Promise<boolean> => {
+    if (!isSupabaseConfigured || !supabase) {
+      setAccessStatus({ granted: true, message: 'Mode local - accès autorisé', reason: 'LOCAL_MODE' });
+      return true;
+    }
+
+    const uid: string | null | undefined = overrideUserId || (user && 'supabaseUserId' in user ? (user as AuthUser).supabaseUserId : user?.id?.toString());
+    if (!uid) {
+      setAccessStatus({ granted: false, message: 'Session non trouvée', reason: 'NO_SESSION' });
+      return false;
+    }
+
+    try {
+      const result = await canAccessApp(uid);
+      setAccessStatus({
+        granted: result.granted,
+        message: result.message,
+        reason: result.reason,
+      });
+      return result.granted;
+    } catch {
+      setAccessStatus({ granted: false, message: 'Erreur de vérification', reason: 'ERROR' });
+      return false;
+    }
+  }, [user]);
+
+  useEffect(() => {
+    checkStructureLock();
+    initAuth();
+  }, []);
+
+  const initAuth = useCallback(async () => {
+    authLog('INIT', 'Starting auth initialization...');
+
+    try {
+      if (isSupabaseConfigured && supabase) {
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (session?.user) {
+          authLog('INIT', `Supabase session found for: ${session.user.email}`);
+
+          const gymUser = await fetchGymUserFromDB(session.user.id);
+
+          if (gymUser) {
+            const authUser: AuthUser = {
+              id: gymUser.id,
+              email: session.user.email || '',
+              username: gymUser.username,
+              role: gymUser.role,
+              name: gymUser.name,
+              phone: gymUser.phone,
+              supabaseUserId: session.user.id,
+              gymUserId: gymUser.id,
+            };
+
+            if (gymUser.role === 'coach') {
+              authUser.coachId = await resolveCoachId(gymUser.username, gymUser.phone);
+            }
+
+            setIsAuthenticated(true);
+            setRole(gymUser.role);
+            setUser(authUser);
+            setLoginMode('admin');
+            await setServerCookie(gymUser.username, gymUser.role || '', session.user.id);
+            authLog('INIT', `Session restored for: ${gymUser.username} (${gymUser.role})`);
+
+            await checkAccess(session.user.id);
+          } else {
+            authLog('INIT', 'Supabase session exists but no gym_user found');
+            await supabase.auth.signOut();
+            clearAuthCookie();
+          }
+        } else {
+          authLog('INIT', 'No Supabase session, checking cookie fallback...');
+
+          let cookieData: { username?: string; role?: string; supabaseUserId?: string } | null = null;
+          try {
+            const res = await fetch('/api/auth/session');
+            if (res.ok) cookieData = await res.json();
+          } catch {}
+          if (cookieData?.supabaseUserId) {
+            const gymUser = await fetchGymUserFromDB(cookieData.supabaseUserId);
+            if (gymUser) {
+              const authUser: AuthUser = {
+                id: gymUser.id,
+                email: '',
+                username: gymUser.username,
+                role: gymUser.role,
+                name: gymUser.name,
+                phone: gymUser.phone,
+                supabaseUserId: cookieData.supabaseUserId,
+                gymUserId: gymUser.id,
+              };
+              if (gymUser.role === 'coach') {
+                authUser.coachId = await resolveCoachId(gymUser.username, gymUser.phone);
+              }
+              setIsAuthenticated(true);
+              setRole(gymUser.role);
+              setUser(authUser);
+              setLoginMode('admin');
+              authLog('INIT', `Cookie session restored for: ${gymUser.username}`);
+            }
+          }
+        }
+
+        supabase.auth.onAuthStateChange(async (event, session) => {
+          authLog('AUTH_STATE', `Event: ${event}`, { hasSession: !!session });
+          if (event === 'SIGNED_OUT') {
+            setIsAuthenticated(false);
+            setRole(null);
+            setUser(null);
+            setLoginMode('admin');
+            clearAuthCookie();
+          }
+        });
+      } else {
+        authLog('INIT', 'Supabase not configured - running in local mode');
+      }
+    } catch (err) {
+      authLog('INIT', 'Auth init error', err);
+    }
+
+    setIsInitialized(true);
+    authLog('INIT', 'Auth initialization complete');
+  }, [checkAccess]);
+
+  const checkStructureLock = async (): Promise<boolean> => {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data: s } = await (supabase as any)
+          .from('settings')
+          .select('value')
+          .eq('key', 'structure_locked')
+          .maybeSingle();
+        if (s) {
+          const isLocked = s.value === 'true';
+          setIsStructureLocked(isLocked);
+          return isLocked;
+        }
+      } catch {}
+    }
+    try {
+      const locked = await db.settings.where('key').equals('structure_locked').first();
+      const isLocked = locked?.value === 'true';
+      setIsStructureLocked(isLocked);
+      return isLocked;
+    } catch {
+      return false;
+    }
+  };
+
+  const loginAsAdherent = async (phone: string, _password: string): Promise<{ success: boolean; error?: string }> => {
+    const cleanPhone = phone.replace(/\D/g, '');
+    try {
+      if (isSupabaseConfigured && supabase) {
+        const { data: profile } = await (supabase as any)
+          .from('profiles')
+          .select('id, first_name, last_name, phone')
+          .ilike('phone', `%${cleanPhone}`)
+          .maybeSingle();
+        if (profile) {
+          const { data: memberRow } = await (supabase as any)
+            .from('members')
+            .select('id, status')
+            .eq('profile_id', profile.id)
+            .maybeSingle();
+          if (memberRow && (memberRow.status === 'active' || memberRow.status === 'inactive')) {
+            setIsAuthenticated(true);
+            setRole('adherent');
+            setUser({
+              id: memberRow.id,
+              profileId: profile.id,
+              firstName: profile.first_name,
+              lastName: profile.last_name,
+              phone: profile.phone,
+              status: memberRow.status,
+            } as any);
+            setLoginMode('adherent');
+            await setServerCookie(profile.phone || profile.id || '', 'adherent');
+            return { success: true };
+          }
+          if (memberRow) {
+            return { success: false, error: 'Votre abonnement a expiré. Veuillez contacter l\'administration.' };
+          }
+        }
+      }
+      const all = await db.members.toArray();
+      const found = all.find(m => m.phone.replace(/[\s\-\+\(\)]/g, '').startsWith(cleanPhone));
+
+      if (!found) {
+        return { success: false, error: 'Numéro de téléphone non trouvé' };
+      }
+      if (found.status !== 'active' && found.status !== 'inactive') {
+        return { success: false, error: 'Votre abonnement a expiré. Veuillez contacter l\'administration.' };
+      }
+
+      setIsAuthenticated(true);
+      setRole('adherent');
+      setUser(found);
+      setLoginMode('adherent');
+      await setServerCookie(found.phone || found.id?.toString() || '', 'adherent');
+      return { success: true };
+    } catch (err) {
+      authLog('LOGIN', 'Adherent login error', err);
+      return { success: false, error: 'Erreur lors de la connexion' };
+    }
+  };
+
+  const login = async (username: string, password: string, mode: LoginMode = 'admin'): Promise<{ success: boolean; error?: string }> => {
+    if (mode === 'adherent') {
+      return loginAsAdherent(username, password);
+    }
+
+    authLog('LOGIN', `Login attempt: ${username}`);
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        return { success: false, error: data.error === 'Supabase not configured' ? 'Supabase n\'est pas configuré. Contactez l\'administration.' : (data.error || 'Identifiants invalides') };
+      }
+
+      const { user: apiUser } = data;
+
+      if (!apiUser.role) {
+        authLog('LOGIN', `No role for ${username}`);
+        return { success: false, error: 'Compte sans rôle défini' };
+      }
+
+      if (apiUser.is_locked) {
+        return { success: false, error: 'Compte verrouillé' };
+      }
+
+      // Sign in to Supabase Auth so RLS works client-side
+      if (supabase) {
+        try {
+          const email = `${apiUser.username}@infinitygym.local`;
+          await supabase.auth.signInWithPassword({ email, password });
+        } catch (authErr) {
+          authLog('LOGIN', 'Supabase Auth signIn failed (non-critical)', authErr);
+        }
+      }
+
+      const supabaseUserId = apiUser.supabaseUserId || apiUser.id;
+      const authUser: AuthUser = {
+        id: apiUser.id,
+        email: `${apiUser.username}@infinitygym.local`,
+        username: apiUser.username,
+        role: apiUser.role as Role,
+        name: apiUser.name || apiUser.username,
+        phone: apiUser.phone,
+        supabaseUserId,
+      };
+
+      if (authUser.role === 'coach') {
+        authUser.coachId = await resolveCoachId(apiUser.username, apiUser.phone);
+      }
+
+      setIsAuthenticated(true);
+      setRole(authUser.role);
+      setUser(authUser);
+      setLoginMode('admin');
+      authLog('LOGIN', `Login SUCCESS: ${username} (${authUser.role})`);
+
+      await checkAccess(authUser.supabaseUserId);
+      return { success: true };
+    } catch (err) {
+      authLog('LOGIN', 'Login exception', err);
+      return { success: false, error: 'Erreur de connexion au serveur' };
+    }
+  };
 
   const logout = async () => {
-    await supabase?.auth.signOut()
-    setUser(null)
-    setAccessStatus(null)
-  }
+    setIsAuthenticated(false);
+    setRole(null);
+    setUser(null);
+    setLoginMode('admin');
+    setAccessStatus(null);
+    clearAuthCookie();
 
-  const signOut = logout
-
-  const checkAccess = async () => {
-    setAccessStatus({ granted: true, message: 'Accès autorisé' })
-  }
-
-  const login = async (username: string, password: string, mode?: string): Promise<{ success: boolean; error?: string }> => {
-    try {
-      const { data, error: err } = await supabase!.auth.signInWithPassword({
-        email: `${username}@app.local`,
-        password,
-      })
-      if (err) return { success: false, error: err.message }
-      if (data.user) {
-        setUser({ id: data.user.id, email: data.user.email, ...data.user.user_metadata as any })
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.auth.signOut();
+      } catch (err) {
+        authLog('LOGOUT', 'Supabase signOut error', err);
       }
-      return { success: true }
-    } catch (e: any) {
-      return { success: false, error: e.message }
     }
+
+    authLog('LOGOUT', 'User logged out');
+  };
+
+  if (!isInitialized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--background)' }}>
+        <div className="animate-spin w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full"></div>
+      </div>
+    );
   }
 
-  const loginAsAdherent = async (phone: string, password: string): Promise<{ success: boolean; error?: string }> => {
-    try {
-      const { data, error: err } = await supabase!.auth.signInWithPassword({
-        email: `${phone}@adherent.local`,
-        password,
-      })
-      if (err) return { success: false, error: err.message }
-      if (data.user) {
-        setUser({ id: data.user.id, email: data.user.email, ...data.user.user_metadata as any })
-      }
-      return { success: true }
-    } catch (e: any) {
-      return { success: false, error: e.message }
-    }
-  }
-
-  return createElement(AuthContext.Provider, {
-    value: {
-      user, loading, error, role, accessStatus,
-      login, loginAsAdherent, logout, signOut,
-      refreshUser: async () => {},
-      checkAccess,
-      createUserInCloud,
-      updateUserInCloud,
-      deleteUserFromCloud,
-    }
-  }, children)
-}
-
-export async function createUserInCloud(user: { username: string; password: string; pin: string; role: string; name: string; phone?: string }): Promise<{ id?: string }> {
-  try {
-    const { data, error } = await (supabase!.from('users') as any).insert({
-      username: user.username,
-      password: user.password,
-      pin: user.pin,
-      role: user.role,
-      name: user.name,
-      phone: user.phone || user.username,
-    }).select('id').single()
-    if (error) throw error
-    return { id: data?.id }
-  } catch (e) {
-    return {}
-  }
-}
-
-export async function updateUserInCloud(data: Record<string, any>): Promise<void> {
-  try {
-    const username = data.username
-    if (!username) return
-    await (supabase!.from('users') as any).update(data).eq('username', username)
-  } catch {}
-}
-
-export async function deleteUserFromCloud(userId: string): Promise<void> {
-  try {
-    await (supabase!.from('users') as any).delete().eq('username', userId)
-  } catch {}
+  return (
+    <AuthContext.Provider
+      value={{
+        isAuthenticated,
+        role,
+        user,
+        loginMode,
+        login,
+        loginAsAdherent,
+        logout,
+        hasRole,
+        hasAccess,
+        dashboardPath,
+        signup,
+        loading,
+        isStructureLocked,
+        checkStructureLock,
+        accessStatus,
+        checkAccess,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {
-  return useContext(AuthContext)
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 }
+
+async function createUserInCloud(userData: { username: string; password: string; pin: string; role: string; name: string; phone?: string }) {
+  authLog('CREATE', `Creating cloud user: ${userData.username} (role: ${userData.role})`);
+  const res = await fetch('/api/auth/signup', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(userData),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    authLog('CREATE', `Failed: ${res.status}`, data);
+    throw new Error(data.error || 'Failed to create user');
+  }
+  authLog('CREATE', `Created successfully: ${userData.username}`);
+  return data;
+}
+
+async function updateUserInCloud(updateData: { id?: string; username?: string; password?: string; pin?: string; role?: string; name?: string; phone?: string; is_locked?: boolean }) {
+  authLog('UPDATE', `Updating cloud user: ${updateData.username || updateData.id}`);
+  const res = await fetch('/api/auth/users', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updateData),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    authLog('UPDATE', `Failed: ${res.status}`, data);
+    throw new Error(data.error || 'Failed to update user');
+  }
+  authLog('UPDATE', `Updated successfully: ${updateData.username || updateData.id}`);
+  return data;
+}
+
+async function deleteUserFromCloud(username: string) {
+  authLog('DELETE', `Deleting cloud user: ${username}`);
+  const res = await fetch(`/api/auth/users?username=${encodeURIComponent(username)}`, { method: 'DELETE' });
+  if (!res.ok) {
+    authLog('DELETE', `Failed: ${res.status}`);
+  } else {
+    authLog('DELETE', `Deleted: ${username}`);
+  }
+}
+
+export { createUserInCloud, updateUserInCloud, deleteUserFromCloud };

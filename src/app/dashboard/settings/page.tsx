@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useAuth } from "@/hooks/useAuth"
+import { useAuth } from "@/lib/auth/context"
 import {
   Lock, Smartphone, Monitor, Shield, History, LogOut, Trash2,
   Eye, EyeOff, Check, X, Clock, Laptop, Bell,

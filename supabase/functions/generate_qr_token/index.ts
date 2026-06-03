@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
     const { data: member, error: memberError } = await supabase
       .from("members")
       .select("id, status")
-      .eq("profileId", memberId)
+      .eq("profile_id", memberId)
       .maybeSingle()
 
     if (memberError || !member) {
@@ -46,9 +46,9 @@ Deno.serve(async (req) => {
 
     await supabase
       .from("qr_tokens")
-      .update({ isUsed: true })
-      .eq("memberId", memberId)
-      .eq("isUsed", false)
+      .update({ is_used: true })
+      .eq("member_id", memberId)
+      .eq("is_used", false)
 
     const token = crypto.randomUUID()
     const expiresAt = new Date(Date.now() + 5000).toISOString()
@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
 
     const { error: insertError } = await supabase
       .from("qr_tokens")
-      .insert({ memberId, token, expiresAt })
+      .insert({ member_id: memberId, token, expires_at: expiresAt })
 
     if (insertError) {
       console.error("Insert error:", insertError)

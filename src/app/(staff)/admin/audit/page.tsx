@@ -17,12 +17,12 @@ export default function AuditPage() {
   const [userFilter, setUserFilter] = useState<string>('all');
   const [suspiciousOnly, setSuspiciousOnly] = useState(false);
 
+  const allLogs = useLiveQuery(() => db.auditLogs.orderBy('createdAt').reverse().toArray(), []);
+
   if (role !== 'admin') {
     router.push('/');
     return null;
   }
-
-  const allLogs = useLiveQuery(() => db.auditLogs.orderBy('createdAt').reverse().toArray(), []);
   const members = useLiveQuery(() => db.members.toArray(), []);
 
   const filteredLogs = useMemo(() => {

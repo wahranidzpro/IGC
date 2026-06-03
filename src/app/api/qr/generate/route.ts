@@ -30,7 +30,7 @@ export async function POST() {
     .from("profiles")
     .select("role")
     .eq("id", user.id)
-    .single()
+    .maybeSingle()
 
   if (!profile || profile.role !== "member") {
     return NextResponse.json({ error: "Accès réservé aux membres" }, { status: 403 })
@@ -40,16 +40,16 @@ export async function POST() {
 
   await supabase
     .from("qr_tokens")
-    .update({ isUsed: true })
-    .eq("memberId", memberId)
-    .eq("isUsed", false)
+    .update({ is_used: true })
+    .eq("member_id", memberId)
+    .eq("is_used", false)
 
   const token = crypto.randomUUID()
   const expiresAt = new Date(Date.now() + 15000).toISOString()
 
   const { error: insertError } = await supabase
     .from("qr_tokens")
-    .insert({ memberId, token, expiresAt })
+    .insert({ member_id: memberId, token, expires_at: expiresAt })
 
   if (insertError) {
     return NextResponse.json({ error: "Erreur de création du token" }, { status: 500 })

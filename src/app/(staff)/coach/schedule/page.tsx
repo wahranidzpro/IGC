@@ -1,8 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useAuth } from "@/hooks/useAuth"
+import { useAuth } from "@/lib/auth/context"
 import { createClient } from "@/lib/supabase/client"
+import { mapRow, mapRows } from "@/lib/utils/transform"
 import {
   Calendar, ChevronLeft, ChevronRight, Plus, X, Save,
   Dumbbell, Users, Clock, AlertCircle, RefreshCw, Trash2,
@@ -44,12 +45,12 @@ export default function SchedulePage() {
 
   useEffect(() => {
     if (!user) { setLoading(false); return }
-    const uid = user.id
+    const uid = user?.id as string
     const supabase = createClient()
 
     async function load() {
       try {
-        const { data: cData } = await supabase.from("coaches").select("*").eq("profileId", uid).maybeSingle()
+        const { data: cData } = await supabase.from("coaches").select("*").eq("profile_id", uid).maybeSingle()
         const cId = (cData as { id?: string } | null)?.id
         if (!cId) { setLoading(false); return }
         setCoachId(cId)
@@ -60,12 +61,12 @@ export default function SchedulePage() {
         const { data } = await supabase
           .from("schedules")
           .select("*")
-          .eq("coachId", cId)
-          .gte("startTime", startOfMonth.toISOString())
-          .lte("startTime", endOfMonth.toISOString())
-          .order("startTime", { ascending: true })
+          .eq("coach_id", cId)
+          .gte("start_time", startOfMonth.toISOString())
+          .lte("start_time", endOfMonth.toISOString())
+          .order("start_time", { ascending: true })
 
-        setSchedules((data as unknown as Schedule[]) || [])
+        setSchedules(mapRows<Schedule>(data) || [])
       } catch {
         setError("Impossible de charger le planning")
       } finally {
@@ -109,20 +110,20 @@ export default function SchedulePage() {
       const { data, error: err } = await supabase
         .from("schedules")
         .insert({
-          coachId,
+          coach_id: coachId,
           title: formData.title,
           description: formData.description || null,
           type: formData.type,
-          startTime: new Date(formData.startTime).toISOString(),
-          endTime: new Date(endTime).toISOString(),
-          memberId: formData.memberId || null,
+          start_time: new Date(formData.startTime).toISOString(),
+          end_time: new Date(endTime).toISOString(),
+          member_id: formData.memberId || null,
         } as never)
         .select()
-        .single()
+        .maybeSingle()
 
       if (err) throw err
       if (data) {
-        setSchedules((prev) => [...prev, data as unknown as Schedule])
+        setSchedules((prev) => [...prev, mapRow<Schedule>(data)!])
         setShowForm(false)
         setFormData({ title: "", description: "", type: "coaching", startTime: "", endTime: "", memberId: "" })
       }

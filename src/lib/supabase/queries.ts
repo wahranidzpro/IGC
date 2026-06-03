@@ -24,17 +24,17 @@ export const memberQueries = {
   update: (id: string, data: Record<string, unknown>) =>
     sb().from("members").update(data).eq("id", id),
   search: (query: string) =>
-    sb().from("members").select("*, profile:profiles(*)").textSearch("firstName", query),
+    sb().from("members").select("*, profile:profiles(*)").textSearch("first_name", query),
   byStatus: (status: string) =>
     sb().from("members").select("*, profile:profiles(*)").eq("status", status),
 }
 
 export const membershipQueries = {
   listByMember: (memberId: string) =>
-    sb().from("memberships").select("*").eq("memberId", memberId)
-      .order("createdAt", { ascending: false } as never),
+    sb().from("memberships").select("*").eq("member_id", memberId)
+      .order("created_at", { ascending: false } as never),
   activeByMember: (memberId: string) =>
-    sb().from("memberships").select("*").eq("memberId", memberId).eq("status", "active").single(),
+    sb().from("memberships").select("*").eq("member_id", memberId).eq("status", "active").single(),
   create: (data: Record<string, unknown>) =>
     sb().from("memberships").insert(data).select().single(),
   renew: (id: string, data: Record<string, unknown>) =>
@@ -44,14 +44,14 @@ export const membershipQueries = {
 export const paymentQueries = {
   list: (clubId?: string) => {
     let q = sb().from("payments").select("*, member:members(*)")
-    if (clubId) q = q.eq("member.clubId", clubId)
+    if (clubId) q = q.eq("member.club_id", clubId)
     return q
   },
   create: (data: Record<string, unknown>) =>
     sb().from("payments").insert(data).select().single(),
   today: () =>
     sb().from("payments").select("*, member:members(*)")
-      .gte("createdAt", new Date().toISOString().slice(0, 10)),
+      .gte("created_at", new Date().toISOString().slice(0, 10)),
 }
 
 export const attendanceQueries = {
@@ -59,11 +59,11 @@ export const attendanceQueries = {
     let q = sb().from("attendance")
       .select("*, member:members(*, profile:profiles(*)), device:devices(*)")
       .gte("timestamp", new Date().toISOString().slice(0, 10))
-    if (clubId) q = q.eq("clubId", clubId)
+    if (clubId) q = q.eq("club_id", clubId)
     return q
   },
   byMember: (memberId: string, limit = 10) =>
-    sb().from("attendance").select("*").eq("memberId", memberId)
+    sb().from("attendance").select("*").eq("member_id", memberId)
       .order("timestamp", { ascending: false } as never).limit(limit),
   record: (data: Record<string, unknown>) =>
     sb().from("attendance").insert(data).select().single(),
@@ -72,7 +72,7 @@ export const attendanceQueries = {
 export const deviceQueries = {
   list: (clubId?: string) => {
     let q = sb().from("devices").select("*")
-    if (clubId) q = q.eq("clubId", clubId)
+    if (clubId) q = q.eq("club_id", clubId)
     return q
   },
 }

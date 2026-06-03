@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { QRCodeSVG } from "qrcode.react"
-import { useAuth } from "@/hooks/useAuth"
+import { useAuth } from "@/lib/auth/context"
 
 const REFRESH_INTERVAL = 5000
 const TOKEN_LIFETIME = 15

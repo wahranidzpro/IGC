@@ -3,6 +3,7 @@
 import { useEffect, useRef, Fragment } from "react"
 import Link from "next/link"
 import { ArrowRight, Play } from "lucide-react"
+import Image from "next/image"
 
 interface HeroProps {
   title: string
@@ -59,8 +60,13 @@ export default function Hero({
               transform: "translate(var(--mouse-x, 0), var(--mouse-y, 0)) scale(1.05)",
             }}
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/50" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/70 to-black/40" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+
+          {/* Logo Watermark */}
+          <div className="logo-watermark hidden lg:flex">
+            <img src="/logo-transparent.png" alt="" className="w-1/2 h-1/2 object-contain opacity-[0.04]" />
+          </div>
         </>
       )}
 
@@ -75,15 +81,11 @@ export default function Hero({
         }}
       />
 
-      <div className="absolute inset-0 opacity-30">
-        <div
-          className="absolute top-1/4 left-1/4 w-96 h-96 bg-brand-red/10 rounded-full blur-[120px] animate-pulse"
-          style={{ animationDuration: "8s" }}
-        />
-        <div
-          className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-brand-red/5 rounded-full blur-[100px] animate-pulse"
-          style={{ animationDuration: "6s", animationDelay: "1s" }}
-        />
+      <div className="absolute inset-0 opacity-40">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-brand-orange/15 rounded-full blur-[120px] animate-pulse" style={{ animationDuration: "8s" }} />
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-brand-red/10 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: "6s", animationDelay: "1s" }} />
+        <div className="absolute top-1/3 right-1/3 w-64 h-64 bg-brand-cyan/8 rounded-full blur-[90px] animate-pulse" style={{ animationDuration: "7s", animationDelay: "2s" }} />
+        <div className="absolute bottom-1/3 left-1/3 w-72 h-72 bg-brand-gold/8 rounded-full blur-[110px] animate-pulse" style={{ animationDuration: "9s", animationDelay: "0.5s" }} />
       </div>
 
       <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">

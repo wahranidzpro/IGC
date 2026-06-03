@@ -3,14 +3,14 @@
 import { useState, useEffect } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import Image from "next/image"
-import { useAuth } from "@/hooks/useAuth"
+import { useAuth } from "@/lib/auth/context"
 import { Sidebar } from "@/components/layout/Sidebar"
 import { Bell, Menu, X } from "lucide-react"
 
 export default function StaffLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
-  const { user, loading } = useAuth()
+  const { user, role, loading } = useAuth()
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
 
@@ -29,7 +29,6 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
   }
   if (!user) return null
 
-  const role = user.role
   if (role !== "admin" && role !== "reception" && role !== "coach") {
     router.push("/dashboard")
     return null
@@ -47,7 +46,7 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
             {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
           <div className="flex items-center gap-2">
-            <Image src="/logo-transparent.png" alt="" width={24} height={26} />
+            <Image src="/logo-transparent.png" alt="" width={24} height={26} className="cursor-pointer" />
             <span className="text-sm font-bold text-white">Infinity Gym</span>
           </div>
           <button className="relative text-white">

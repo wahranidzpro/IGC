@@ -31,6 +31,23 @@
   --brand-green: #06D6A0;
   --brand-gold: #FFD166;
   --sidebar: hsl(0 0% 9%);
+  /* NEW REDESIGN COLORS - Enhanced palette */
+  --brand-orange: #FF6B00;
+  --brand-orange-dark: #E05E00;
+  --brand-cyan: #00B4D8;
+  --brand-emerald: #06D6A0;
+  --brand-gold: #FFD166;
+  --brand-purple: #7B2CBF;
+  --brand-surface: #1A1A1A;
+  --brand-surface-light: #2A2A2A;
+  
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, #FF6B00, #E10600);
+  --gradient-cta: linear-gradient(135deg, #FF6B00, #E10600, #FF6B00);
+  --gradient-dark: linear-gradient(135deg, #0A0A0A, #1A0808, #0A0A0A);
+  --gradient-card: linear-gradient(135deg, #1A1A1A, #2A1A1A);
+  --gradient-green: linear-gradient(135deg, #06D6A0, #00B4D8);
+  --gradient-gold: linear-gradient(135deg, #FFD166, #FF6B00);
 }
 
 .dark {
@@ -54,6 +71,8 @@
   --input: hsl(0 0% 15%);
   --ring: hsl(4 100% 44%);
   --sidebar: hsl(0 0% 8%);
+  --brand-surface: #1A1A1A;
+  --brand-surface-light: #2A2A2A;
 }
 
 @theme inline {
@@ -165,4 +184,137 @@
 .animate-gradient {
   animation: gradient-shift 3s ease infinite;
   background-size: 200% 200%;
+}
+
+/* === REDESIGN UTILITIES === */
+.gradient-primary { background: var(--gradient-primary); }
+.gradient-cta { background: var(--gradient-cta); background-size: 200% 100%; animation: gradient-shift 4s ease infinite; }
+.gradient-dark { background: var(--gradient-dark); }
+.gradient-card { background: var(--gradient-card); }
+.gradient-green { background: var(--gradient-green); }
+.gradient-gold { background: var(--gradient-gold); }
+.text-gradient { -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.glow-orange { box-shadow: 0 0 30px rgba(255, 107, 0, 0.3); }
+.glow-red { box-shadow: 0 0 30px rgba(225, 6, 0, 0.3); }
+.glow-cyan { box-shadow: 0 0 30px rgba(0, 180, 216, 0.3); }
+
+/* Logo watermark utility */
+.logo-watermark {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0.05;
+  z-index: 0;
+}
+.logo-watermark img {
+  width: 60%;
+  height: 60%;
+  object-fit: contain;
+  filter: grayscale(1);
+}
+
+/* Cursor pointer for all logo images */
+a:has(img[alt*="Infinity Gym"]),
+a:has(img[alt*="GYM"]),
+a:has(img[src*="logo"]) {
+  cursor: pointer !important;
+}
+
+/* === GYM COMPATIBILITY STYLES === */
+
+/* GYM CSS Variables for theme consistency */
+:root {
+  --primary: #f97316;
+  --primary-dark: #ea580c;
+  --surface: rgba(26, 26, 46, 0.4);
+  --surface-alt: rgba(22, 33, 62, 0.3);
+  --text: #ffffff;
+  --text-muted: rgba(255, 255, 255, 0.7);
+  color-scheme: dark;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #374151;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #4b5563;
+}
+
+/* Screensaver */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-15px); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { text-shadow: 0 0 20px rgba(249, 115, 22, 0.15); }
+  50% { text-shadow: 0 0 60px rgba(249, 115, 22, 0.4), 0 0 100px rgba(249, 115, 22, 0.15); }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes earth-rotate {
+  from { transform: rotateY(0deg); }
+  to { transform: rotateY(-360deg); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+
+.animate-spin-slow {
+  animation: spin-slow 20s linear infinite;
+}
+
+.animate-earth-rotate {
+  animation: earth-rotate 10s linear infinite;
+}
+
+body.screensaver-active {
+  cursor: none;
+}
+
+/* Mobile touch UX */
+@media (max-width: 768px) {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button, a, [role="button"], input[type="submit"], input[type="button"] {
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
+  }
+
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Prevent zoom on iOS */
+@supports (-webkit-touch-callout: none) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
 }

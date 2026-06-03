@@ -2,11 +2,11 @@
 
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/hooks/useAuth"
+import { useAuth } from "@/lib/auth/context"
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
-  const { user, loading } = useAuth()
+  const { user, role, loading } = useAuth()
 
   useEffect(() => {
     if (!loading && !user) router.push("/login")
@@ -21,8 +21,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
   if (!user) return null
 
-  const role = user.role
-  if (role !== "admin" && role !== "reception" && role !== "coach") {
+  if (role !== "admin") {
     router.push("/dashboard")
     return null
   }

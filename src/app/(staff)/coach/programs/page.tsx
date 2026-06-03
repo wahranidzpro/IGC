@@ -1,8 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useAuth } from "@/hooks/useAuth"
+import { useAuth } from "@/lib/auth/context"
 import { createClient } from "@/lib/supabase/client"
+import { mapRow, mapRows } from "@/lib/utils/transform"
 import {
   ClipboardList, Plus, Dumbbell, AlertCircle, RefreshCw,
   ChevronRight, X, Save, Trash2, Users, Clock,
@@ -35,35 +36,35 @@ export default function ProgramsPage() {
 
   useEffect(() => {
     if (!user) { setLoading(false); return }
-    const uid = user.id
+    const uid = user?.id as string
     const supabase = createClient()
 
     async function load() {
       try {
-        const { data: cData } = await supabase.from("coaches").select("*").eq("profileId", uid).maybeSingle()
+        const { data: cData } = await supabase.from("coaches").select("*").eq("profile_id", uid).maybeSingle()
         const cId = (cData as { id?: string } | null)?.id
         if (!cId) { setLoading(false); return }
         setCoachId(cId)
 
         const [progRes, mcRes, pRes] = await Promise.all([
-          supabase.from("workout_programs").select("*").eq("coachId", cId).order("createdAt", { ascending: false }),
-          supabase.from("member_coaches").select("memberId").eq("coachId", cId).eq("isActive", true),
-          supabase.from("profiles").select("id, firstName, lastName"),
+          supabase.from("workout_programs").select("*").eq("coach_id", cId).order("created_at", { ascending: false }),
+          supabase.from("member_coaches").select("member_id").eq("coach_id", cId).eq("is_active", true),
+          supabase.from("profiles").select("id, first_name, last_name"),
         ])
 
-        setPrograms((progRes.data as unknown as WorkoutProgram[]) || [])
+        setPrograms(mapRows<WorkoutProgram>(progRes.data) || [])
 
-        const memberIds = ((mcRes.data as { memberId: string }[]) || []).map((m) => m.memberId)
-        const allProfiles = ((pRes.data as Profile[]) || []).reduce((acc, p) => {
+        const memberIds = ((mcRes.data as { member_id: string }[]) || []).map((m) => m.member_id)
+        const allProfiles = (mapRows<Profile>(pRes.data) || []).reduce((acc, p) => {
           acc[p.id] = `${p.firstName} ${p.lastName}`; return acc
         }, {} as Record<string, string>)
         setMemberProfiles(allProfiles)
 
         if (memberIds.length > 0) {
-          const { data: mData } = await supabase.from("members").select("id, profileId").in("id", memberIds)
-          const mList = ((mData as { id: string; profileId: string }[]) || []).map((m) => ({
+          const { data: mData } = await supabase.from("members").select("id, profile_id").in("id", memberIds)
+          const mList = ((mData as { id: string; profile_id: string }[]) || []).map((m) => ({
             id: m.id,
-            name: allProfiles[m.profileId] || "Inconnu",
+            name: allProfiles[m.profile_id] || "Inconnu",
           }))
           setMembers(mList)
         }
@@ -112,18 +113,18 @@ export default function ProgramsPage() {
       const { data, error: err } = await supabase
         .from("workout_programs")
         .insert({
-          coachId,
+          coach_id: coachId,
           name: formData.name,
           description: formData.description || null,
           exercises: formData.exercises,
-          assignedTo: formData.assignedTo,
+          assigned_to: formData.assignedTo,
         } as never)
         .select()
-        .single()
+        .maybeSingle()
 
       if (err) throw err
       if (data) {
-        setPrograms((prev) => [data as unknown as WorkoutProgram, ...prev])
+        setPrograms((prev) => [mapRow<WorkoutProgram>(data)!, ...prev])
         setFormData({ name: "", description: "", exercises: [{ name: "", sets: 4, reps: "10-12", weight: "", rest: "60s", notes: "" }], assignedTo: [] })
         setShowForm(false)
       }

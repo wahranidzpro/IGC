@@ -1,13 +1,14 @@
 "use client"
 
 import { useEffect, useState, useMemo } from "react"
-import { useAuth } from "@/hooks/useAuth"
+import { useAuth } from "@/lib/auth/context"
 import { createClient } from "@/lib/supabase/client"
+import { mapRow, mapRows } from "@/lib/utils/transform"
 import {
   DoorOpen, Calendar, Clock, MapPin, Filter,
   TrendingUp, BarChart3, ChevronRight,
 } from "lucide-react"
-import type { Attendance, Club } from "@/types"
+import type { Attendance, Club, Member } from "@/types"
 
 type FilterKey = "today" | "week" | "month"
 
@@ -49,13 +50,14 @@ export default function AttendancePage() {
 
   useEffect(() => {
     if (!user) { setLoading(false); return }
-    const uid = user.id
+    const uid = user?.id as string
     const supabase = createClient()
 
     async function load() {
       try {
-        const { data: mData } = await supabase.from("members").select("*").eq("profileId", uid).maybeSingle()
-        const memberId = (mData as { id?: string } | null)?.id
+        const { data: mData } = await supabase.from("members").select("*").eq("profile_id", uid).maybeSingle()
+        const m = mData ? mapRow<Member>(mData) : null
+        const memberId = m?.id
         if (!memberId) { setLoading(false); return }
 
         const { data: c } = await supabase.from("clubs").select("id, name")
@@ -67,10 +69,10 @@ export default function AttendancePage() {
         const { data: a } = await supabase
           .from("attendance")
           .select("*")
-          .eq("memberId", memberId)
+          .eq("member_id", memberId)
           .gte("timestamp", yearStart)
           .order("timestamp", { ascending: false })
-        if (a) setAllAttendance(a as unknown as Attendance[])
+        if (a) setAllAttendance(mapRows<Attendance>(a))
       } catch {
         console.error("Erreur chargement présences")
       } finally {

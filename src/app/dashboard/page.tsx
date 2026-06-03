@@ -1,8 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useAuth } from "@/hooks/useAuth"
+import { useAuth } from "@/lib/auth/context"
 import { createClient } from "@/lib/supabase/client"
+import { mapRow, mapRows } from "@/lib/utils/transform"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import type { Profile, Member, Membership, Attendance } from "@/types"
@@ -68,36 +69,36 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!user) return
-    const uid = user.id
+    const uid = user?.id as string
     const supabase = createClient()
 
     async function load() {
       try {
-        const { data: p } = await supabase.from("profiles").select("*").eq("id", uid).single()
-        if (p) setProfile(p as unknown as Profile)
+        const { data: p } = await supabase.from("profiles").select("*").eq("id", uid).maybeSingle()
+        if (p) setProfile(mapRow<Profile>(p))
 
-        const { data: mData } = await supabase.from("members").select("*").eq("profileId", uid).maybeSingle()
-        const memberRow = mData as Member | null
+        const { data: mData } = await supabase.from("members").select("*").eq("profile_id", uid).maybeSingle()
+        const memberRow = mData ? mapRow<Member>(mData) : null
         if (memberRow) setMember(memberRow)
 
         if (memberRow) {
           const { data: ms } = await supabase
             .from("memberships")
             .select("*")
-            .eq("memberId", memberRow.id)
+            .eq("member_id", memberRow.id)
             .eq("status", "active")
             .maybeSingle()
-          if (ms) setMembership(ms as unknown as Membership)
+          if (ms) setMembership(mapRow<Membership>(ms))
 
           const now = new Date()
           const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
           const { data: a } = await supabase
             .from("attendance")
             .select("*")
-            .eq("memberId", memberRow.id)
+            .eq("member_id", memberRow.id)
             .gte("timestamp", startOfMonth)
             .limit(50)
-          if (a) setAttendance(a as unknown as Attendance[])
+          if (a) setAttendance(mapRows<Attendance>(a))
         }
       } catch {
         console.error("Erreur chargement dashboard")

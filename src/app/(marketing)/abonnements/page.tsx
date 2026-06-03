@@ -6,12 +6,12 @@ import { Check } from "lucide-react"
 
 const plans = [
   {
+    id: "mensuel",
     name: "Classic",
     price: "4 500 DA",
     period: "/ mois",
     description: "Accès à la salle en heures creuses",
     features: [
-      "Accès salle 8h-16h en semaine",
       "Musculation & cardio training",
       "Cours collectifs sélectionnés",
       "Application mobile",
@@ -20,6 +20,7 @@ const plans = [
     cta: { label: "Je m'abonne", href: "/signup" },
   },
   {
+    id: "trimestriel",
     name: "Premium",
     price: "6 500 DA",
     period: "/ mois",
@@ -36,6 +37,7 @@ const plans = [
     cta: { label: "Je m'abonne", href: "/signup" },
   },
   {
+    id: "annuel",
     name: "Ultimate",
     price: "8 500 DA",
     period: "/ mois",
@@ -79,7 +81,9 @@ export default function AbonnementsPage() {
         />
         <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
           {plans.map((plan) => (
-            <PricingCard key={plan.name} {...plan} />
+            <div key={plan.id} id={plan.id}>
+              <PricingCard name={plan.name} price={plan.price} period={plan.period} description={plan.description} highlighted={plan.highlighted} features={plan.features} cta={plan.cta} />
+            </div>
           ))}
         </div>
       </SectionWrapper>
@@ -98,6 +102,40 @@ export default function AbonnementsPage() {
           ))}
         </div>
       </SectionWrapper>
+
+      <section id="etudiant" className="py-20 bg-gradient-to-br from-zinc-900 to-black">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl sm:text-4xl font-black text-white mb-4">Tarif Étudiant</h2>
+          <p className="text-zinc-400 text-lg mb-6">
+            Présente ta carte étudiant et bénéficie de <strong className="text-brand-red">-20%</strong> sur tous nos abonnements.
+          </p>
+          <div className="inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-6 py-3 text-white font-bold text-xl">
+            3 600 DA <span className="text-zinc-400 text-sm font-normal">/ mois</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="coaching" className="py-20 relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-brand-red/5 via-brand-accent/5 to-brand-red/5" />
+        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl sm:text-4xl font-black text-white mb-4">Coaching Personnalisé</h2>
+          <p className="text-zinc-400 text-lg mb-6">
+            Ajoute un suivi coaching individuel à ton abonnement pour des résultats optimaux.
+          </p>
+          <div className="grid sm:grid-cols-2 gap-6 max-w-2xl mx-auto text-left">
+            {[
+              { title: "Coaching individuel", price: "+3 000 DA/mois", desc: "2 séances/semaine avec ton coach" },
+              { title: "Coaching premium", price: "+5 000 DA/mois", desc: "4 séances/semaine + suivi nutrition" },
+            ].map((opt) => (
+              <div key={opt.title} className="bg-white/5 border border-white/10 rounded-xl p-6">
+                <h3 className="font-bold text-white mb-1">{opt.title}</h3>
+                <p className="text-2xl font-black text-brand-red mb-1">{opt.price}</p>
+                <p className="text-sm text-zinc-400">{opt.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       <Newsletter />
     </>

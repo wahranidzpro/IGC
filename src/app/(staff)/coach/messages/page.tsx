@@ -1,8 +1,9 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
-import { useAuth } from "@/hooks/useAuth"
+import { useAuth } from "@/lib/auth/context"
 import { createClient } from "@/lib/supabase/client"
+import { mapRow, mapRows } from "@/lib/utils/transform"
 import Image from "next/image"
 import {
   MessageSquare, Search, Send, ChevronRight, AlertCircle, RefreshCw, Users,
@@ -37,35 +38,35 @@ export default function CoachMessagesPage() {
 
   useEffect(() => {
     if (!user) { setLoading(false); return }
-    const uid = user.id
+    const uid = user?.id as string
     const supabase = createClient()
 
     async function load() {
       try {
-        const { data: cData } = await supabase.from("coaches").select("*").eq("profileId", uid).maybeSingle()
-        const cId = (cData as { id?: string } | null)?.id
+        const { data: cData } = await supabase.from("coaches").select("*").eq("profile_id", uid).maybeSingle()
+        const cId = mapRow<{ id: string }>(cData as Record<string, unknown> | null)?.id
         if (!cId) { setLoading(false); return }
         setCoachId(cId)
 
         const { data: mcData } = await supabase
           .from("member_coaches")
-          .select("memberId")
-          .eq("coachId", cId)
-          .eq("isActive", true)
-        const memberIds = ((mcData as { memberId: string }[]) || []).map((m) => m.memberId)
+          .select("member_id")
+          .eq("coach_id", cId)
+          .eq("is_active", true)
+        const memberIds = mapRows<{ memberId: string }>(mcData as Record<string, unknown>[]).map((m) => m.memberId)
 
         if (memberIds.length === 0) { setLoading(false); return }
 
         const [{ data: mData }, { data: pData }] = await Promise.all([
-          supabase.from("members").select("id, profileId").in("id", memberIds),
-          supabase.from("profiles").select("id, firstName, lastName, avatarUrl"),
+          supabase.from("members").select("id, profile_id").in("id", memberIds),
+          supabase.from("profiles").select("id, first_name, last_name, avatar_url"),
         ])
 
-        const profiles = ((pData as Profile[]) || []).reduce((acc, p) => {
+        const profiles = mapRows<Profile>(pData as Record<string, unknown>[]).reduce((acc, p) => {
           acc[p.id] = p; return acc
         }, {} as Record<string, Profile>)
 
-        const convs: ConversationMember[] = ((mData as { id: string; profileId: string }[]) || []).map((m) => {
+        const convs: ConversationMember[] = mapRows<{ id: string; profileId: string }>(mData as Record<string, unknown>[]).map((m) => {
           const p = profiles[m.profileId]
           return {
             id: m.id,
@@ -80,11 +81,11 @@ export default function CoachMessagesPage() {
         const { data: msgData } = await supabase
           .from("messages")
           .select("*")
-          .or(`senderId.eq.${uid},receiverId.eq.${uid}`)
-          .order("createdAt", { ascending: false })
+          .or(`sender_id.eq.${uid},receiver_id.eq.${uid}`)
+          .order("created_at", { ascending: false })
           .limit(100)
 
-        const allMsgs = (msgData as unknown as Message[]) || []
+        const allMsgs = mapRows<Message>(msgData as Record<string, unknown>[])
         for (const conv of convs) {
           const memberProfile = profiles[conv.id]
           if (!memberProfile) continue
@@ -113,7 +114,7 @@ export default function CoachMessagesPage() {
   const openChat = async (memberId: string) => {
     setSelectedMember(memberId)
     if (!user) return
-    const uid = user.id
+    const uid = user?.id as string
     const supabase = createClient()
 
     const memberProfile = conversations.find((c) => c.id === memberId)
@@ -122,17 +123,17 @@ export default function CoachMessagesPage() {
     const { data } = await supabase
       .from("messages")
       .select("*")
-      .or(`and(senderId.eq.${uid},receiverId.eq.${memberId}),and(senderId.eq.${memberId},receiverId.eq.${uid})`)
-      .order("createdAt", { ascending: true })
+      .or(`and(sender_id.eq.${uid},receiver_id.eq.${memberId}),and(sender_id.eq.${memberId},receiver_id.eq.${uid})`)
+      .order("created_at", { ascending: true })
 
-    setMessages((data as unknown as Message[]) || [])
+    setMessages(mapRows<Message>(data as Record<string, unknown>[]))
 
     await supabase
       .from("messages")
-      .update({ isRead: true } as never)
-      .eq("receiverId", uid)
-      .eq("senderId", memberId)
-      .eq("isRead", false)
+      .update({ is_read: true } as never)
+      .eq("receiver_id", uid)
+      .eq("sender_id", memberId)
+      .eq("is_read", false)
 
     setConversations((prev) => prev.map((c) => c.id === memberId ? { ...c, unread: 0 } : c))
   }
@@ -145,16 +146,16 @@ export default function CoachMessagesPage() {
       const { data, error: err } = await supabase
         .from("messages")
         .insert({
-          senderId: user.id,
-          receiverId: selectedMember,
+          sender_id: user.id,
+          receiver_id: selectedMember,
           content: newMessage.trim(),
         } as never)
         .select()
-        .single()
+        .maybeSingle()
 
       if (err) throw err
       if (data) {
-        setMessages((prev) => [...prev, data as unknown as Message])
+        setMessages((prev) => [...prev, mapRow<Message>(data as Record<string, unknown>)!])
         setNewMessage("")
       }
     } catch { /* ignore */ }

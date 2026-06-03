@@ -87,14 +87,14 @@ export default function CoachsPage() {
             Prêt à commencer ?
           </h2>
           <p className="text-white/60 text-sm leading-relaxed mb-8">
-            Réservez une séance d&apos;essai gratuite avec l&apos;un de nos coaches et découvrez
+            Rencontrez l&apos;un de nos coaches et découvrez
             l&apos;expérience Infinity Gym Center.
           </p>
           <a
             href="/contact"
             className="inline-flex items-center gap-2 bg-brand-red text-white px-6 py-3.5 rounded-xl font-semibold text-sm hover:bg-red-700 transition-colors"
           >
-            Réserver un essai gratuit
+            Rencontrer un coach
           </a>
         </div>
       </SectionWrapper>

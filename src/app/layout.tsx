@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { AuthProvider as GymAuthProvider } from "@/lib/auth/context";
-import { AuthProvider as IGCAuthProvider } from "@/hooks/useAuth";
+import { AuthProvider } from "@/lib/auth/context";
 import { ThemeProvider } from "@/lib/context/theme-context";
 import { LanguageProvider } from "@/lib/context/language-context";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import SpinningLogo from "@/components/ui/SpinningLogo";
 
 export const metadata: Metadata = {
   title: "Infinity Gym Center",
@@ -41,15 +41,14 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen">
         <ErrorBoundary>
-          <GymAuthProvider>
-            <IGCAuthProvider>
-              <ThemeProvider>
-                <LanguageProvider>
-                  {children}
-                </LanguageProvider>
-              </ThemeProvider>
-            </IGCAuthProvider>
-          </GymAuthProvider>
+          <AuthProvider>
+            <ThemeProvider>
+              <LanguageProvider>
+                <SpinningLogo />
+                {children}
+              </LanguageProvider>
+            </ThemeProvider>
+          </AuthProvider>
         </ErrorBoundary>
       </body>
     </html>

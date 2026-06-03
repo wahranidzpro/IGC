@@ -27,16 +27,16 @@ export default function LoyaltyPage() {
   const [ledgerPage, setLedgerPage] = useState(0);
   const ledgerPageSize = 20;
 
-  if (role !== 'admin') {
-    router.push('/');
-    return null;
-  }
-
   useEffect(() => {
     getLoyaltyConfig().then(setConfig);
   }, []);
 
   const allLedger = useLiveQuery(() => db.pointsLedger.orderBy('createdAt').reverse().toArray(), []);
+
+  if (role !== 'admin') {
+    router.push('/');
+    return null;
+  }
   const members = useLiveQuery(() => db.members.toArray(), []);
 
   const filteredLedger = allLedger?.filter(entry => {

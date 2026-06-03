@@ -40,7 +40,7 @@ export function PinPad({ onForgotPassword }: PinPadProps) {
     return {
       name: (nameSetting?.value as string) || 'Infinity Gym Center',
       phone: (phoneSetting?.value as string) || '+213 6XX XXX XXX',
-      email: (emailSetting?.value as string) || 'infinity.gym.ig@gmail.com',
+      email: (emailSetting?.value as string) || 'contact@infinitygym.dz',
       website: (websiteSetting?.value as string) || 'www.infinitygym.dz',
     };
   }, []);
@@ -326,7 +326,7 @@ export function PinPad({ onForgotPassword }: PinPadProps) {
             </span>
             <span className="flex items-center gap-1.5">
               <Mail className="w-3.5 h-3.5" />
-              {clubInfo?.email || 'infinity.gym.ig@gmail.com'}
+              {clubInfo?.email || 'contact@infinitygym.dz'}
             </span>
             <span className="flex items-center gap-1.5">
               <Globe className="w-3.5 h-3.5" />

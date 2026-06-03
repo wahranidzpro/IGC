@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { mapRow, mapRows } from "@/lib/utils/transform"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { DollarSign } from "lucide-react"
@@ -28,8 +29,8 @@ export default function AdminRevenusPage() {
         const mStart = m.toISOString()
         const mEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 1).toISOString()
         const { data: pts } = await supabase
-          .from("payments").select("amount").gte("paidAt", mStart).lt("paidAt", mEnd)
-        months.push({ month: label, revenu: ((pts || []) as any[]).reduce((s: number, p: any) => s + p.amount, 0) })
+          .from("payments").select("amount").gte("paid_at", mStart).lt("paid_at", mEnd)
+        months.push({ month: label, revenu: (mapRows<any>(pts)).reduce((s: number, p: any) => s + p.amount, 0) })
       }
       setMonthlyData(months)
 

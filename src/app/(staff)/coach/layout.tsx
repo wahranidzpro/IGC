@@ -2,7 +2,7 @@
 
 import { useEffect } from "react"
 import { useRouter, usePathname } from "next/navigation"
-import { useAuth } from "@/hooks/useAuth"
+import { useAuth } from "@/lib/auth/context"
 
 const bottomNavItems = [
   { label: "Dashboard", href: "/coach", icon: "LayoutDashboard" },
@@ -15,17 +15,17 @@ const bottomNavItems = [
 export default function CoachLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
-  const { user, loading } = useAuth()
+  const { user, role, loading } = useAuth()
 
   useEffect(() => {
     if (!loading && !user) router.push("/login")
   }, [user, loading, router])
 
   useEffect(() => {
-    if (user && user.role !== "admin" && user.role !== "coach") {
+    if (role && role !== "admin" && role !== "coach") {
       router.push("/dashboard")
     }
-  }, [user, router])
+  }, [role, router])
 
   if (loading) {
     return (

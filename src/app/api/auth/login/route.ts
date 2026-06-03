@@ -1,11 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import bcrypt from 'bcryptjs';
+import { signCookie } from '@/lib/cookie-signature';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
+function getSupabase() {
+  if (!supabaseUrl || !supabaseServiceKey) return null;
+  return createClient(supabaseUrl, supabaseServiceKey, { auth: { persistSession: false, autoRefreshToken: false } });
+}
+
 export async function POST(request: NextRequest) {
+  const supabase = getSupabase();
+  if (!supabase) {
+    return NextResponse.json({ error: 'Supabase not configured' }, { status: 503 });
+  }
+
   const body = await request.json();
   const { username, password } = body;
 
@@ -13,38 +24,81 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Username and password required' }, { status: 400 });
   }
 
-  if (supabaseServiceKey && supabaseUrl) {
-    const serviceClient = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-    const { data: gymUser } = await serviceClient
-      .from('gym_users')
-      .select('is_locked')
-      .eq('username', username)
-      .maybeSingle();
-
-    if (gymUser?.is_locked) {
-      return NextResponse.json({ error: 'Account locked' }, { status: 403 });
-    }
-  }
-
-  const email = `${username}@infinitygym.local`;
-  const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data: user, error } = await supabase
+    .from('gym_users')
+    .select('*')
+    .eq('username', username)
+    .maybeSingle();
 
   if (error) {
+    return NextResponse.json({ error: 'Database error' }, { status: 500 });
+  }
+
+  if (!user) {
     return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
   }
 
-  return NextResponse.json({
+  if (user.is_locked) {
+    return NextResponse.json({ error: 'Account locked' }, { status: 403 });
+  }
+
+  let passwordMatch = false;
+  let pinMatch = false;
+
+  if (user.password_hash) {
+    const isHashed = user.password_hash.startsWith('$2a$') || user.password_hash.startsWith('$2b$') || user.password_hash.startsWith('$2$');
+    passwordMatch = isHashed ? await bcrypt.compare(password, user.password_hash) : password === user.password_hash;
+  }
+
+  if (!passwordMatch && user.pin) {
+    const isHashed = user.pin.startsWith('$2a$') || user.pin.startsWith('$2b$') || user.pin.startsWith('$2$');
+    pinMatch = isHashed ? await bcrypt.compare(password, user.pin) : password === user.pin;
+  }
+
+  if (!passwordMatch && !pinMatch) {
+    return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+  }
+
+  const supabaseUserId = user.auth_user_id || user.id;
+
+  // Auto-ensure subscription + membership_control exist for this user
+  if (supabaseUserId) {
+    await supabase.from('subscriptions').insert({
+      user_id: supabaseUserId, status: 'active', plan_name: 'Standard',
+    }).then((r) => {
+      if (r.error && !r.error.message?.includes('duplicate key')) {
+        console.error('[LOGIN] subscription insert error:', r.error.message);
+      }
+    });
+    await supabase.from('memberships_control').insert({
+      user_id: supabaseUserId,
+      approved_by_admin: ['admin', 'reception', 'coach'].includes(user.role),
+      approved_by_reception: ['admin', 'reception'].includes(user.role),
+    }).then((r) => {
+      if (r.error && !r.error.message?.includes('duplicate key')) {
+        console.error('[LOGIN] memberships_control insert error:', r.error.message);
+      }
+    });
+  }
+  const cookieValue = await signCookie({ username: user.username, role: user.role, supabaseUserId });
+  const isSecure = request.url.startsWith('https://') || request.headers.get('x-forwarded-proto') === 'https';
+  const secureFlag = isSecure ? '; Secure' : '';
+  const response = NextResponse.json({
     success: true,
     user: {
-      id: data.user?.id,
-      username,
-      role: data.user?.user_metadata?.role || 'adherent',
-      name: data.user?.user_metadata?.name || null,
-      phone: data.user?.user_metadata?.phone || null,
+      id: user.id,
+      username: user.username,
+      role: user.role,
+      name: user.name,
+      phone: user.phone,
+      supabaseUserId,
     },
   });
+
+  response.headers.set(
+    'Set-Cookie',
+    `infinity-gym-auth=${encodeURIComponent(cookieValue)}; path=/; max-age=86400; HttpOnly; SameSite=Strict${secureFlag}`
+  );
+
+  return response;
 }

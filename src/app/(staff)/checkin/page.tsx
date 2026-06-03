@@ -349,7 +349,7 @@ function doCheckin(memberId: number, members: Member[]) {
     const pointsAwarded = 10;
     await db.checkins.add({ memberId, timestamp: new Date(), type: 'checkin' });
     await db.members.update(memberId, {
-      sessionsLeft: Math.max(0, (member.sessionsLeft || 1) - 1),
+      sessionsLeft: member.subscriptionType === 'free_session' ? Math.max(0, (member.sessionsLeft || 1) - 1) : (member.sessionsLeft ?? 0),
       fidelityPoints: (member.fidelityPoints || 0) + pointsAwarded,
       updatedAt: new Date()
     });
@@ -579,7 +579,7 @@ export default function CheckinPage() {
     const pointsAwarded = 10;
     await db.checkins.add({ memberId, timestamp: new Date(), type: 'checkin' });
     await db.members.update(memberId, {
-      sessionsLeft: Math.max(0, (member.sessionsLeft || 1) - 1),
+      sessionsLeft: member.subscriptionType === 'free_session' ? Math.max(0, (member.sessionsLeft || 1) - 1) : (member.sessionsLeft ?? 0),
       fidelityPoints: (member.fidelityPoints || 0) + pointsAwarded,
       updatedAt: new Date()
     });

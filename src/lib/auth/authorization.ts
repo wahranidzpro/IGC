@@ -25,6 +25,7 @@ export async function canAccessApp(userId?: string | null): Promise<AccessResult
   }
 
   try {
+    // Check user role first — staff always have access
     const { data: gymUser, error: userError } = await (supabase as any)
       .from('gym_users')
       .select('role')

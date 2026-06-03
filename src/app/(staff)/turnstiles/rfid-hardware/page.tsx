@@ -133,7 +133,7 @@ export default function RfidHardwarePage() {
                 <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-sm">4</div>
                 <h3 className="text-lg font-semibold text-white">Tester dans la page Pointage</h3>
               </div>
-              <p className="text-sm text-gray-400">Ouvrez la page <Link href="/attendance" className="text-orange-400 hover:text-orange-300">Pointage</Link>, activez le mode RFID, puis scannez un badge. Le code doit apparaître dans le champ de saisie.</p>
+              <p className="text-sm text-gray-400">Ouvrez la page <Link href="/checkin" className="text-orange-400 hover:text-orange-300">Pointage</Link>, activez le mode RFID, puis scannez un badge. Le code doit apparaître dans le champ de saisie.</p>
             </div>
 
             <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">

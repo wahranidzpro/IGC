@@ -99,10 +99,18 @@ export default function ContactPage() {
               </div>
             ))}
 
-            <div
-              className="aspect-[16/9] rounded-2xl bg-cover bg-center"
-              style={{ backgroundImage: "url(/images/contact-map.jpg)" }}
-            />
+            <div className="aspect-[16/9] rounded-2xl overflow-hidden border border-gray-200">
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d8000!2d0.115!3d34.83!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zUjVYNCs0UjIsIFNhw69kYQ!5e0!3m2!1sfr!2sdz!4v1"
+                width="100%"
+                height="100%"
+                style={{ border: 0, minHeight: "300px" }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title="Infinity Gym Center - Saïda"
+              />
+            </div>
           </div>
         </div>
       </SectionWrapper>

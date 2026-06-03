@@ -12,7 +12,10 @@ const footerGroups = [
       { label: "Activités", href: "/activites" },
       { label: "Abonnements", href: "/abonnements" },
       { label: "Nos coachs", href: "/coachs" },
-      { label: "Galerie", href: "/galerie" },
+      { label: "Home Training", href: "/home-training" },
+      { label: "Nutrition", href: "/nutrition" },
+      { label: "Fidélité", href: "/fidelite" },
+      { label: "Galerie Média", href: "/galerie-media" },
       { label: "Contact", href: "/contact" },
       { label: "Bons plans", href: "/bon-plan" },
     ],
@@ -72,19 +75,19 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-10">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-10 lg:gap-8">
           <div className="sm:col-span-2 lg:col-span-2">
-            <div className="flex items-center gap-3 mb-4">
+            <Link href="/" className="flex items-center gap-3 mb-4 group">
               <Image
                 src="/logo-transparent.png"
                 alt="Infinity Gym Center"
                 width={44}
                 height={47}
-                className="rounded-xl"
+                className="rounded-xl transition-transform duration-300 group-hover:scale-105 cursor-pointer"
               />
               <div>
-                <span className="text-lg font-bold">Infinity Gym Center</span>
+                <span className="text-lg font-bold group-hover:text-brand-orange transition-colors cursor-pointer">Infinity Gym Center</span>
                 <p className="text-xs opacity-50">Saïda · Ambition nationale</p>
               </div>
-            </div>
+            </Link>
 
             <p className={cn(
               "text-sm leading-relaxed max-w-xs mb-6",
@@ -113,7 +116,7 @@ export default function Footer() {
                     key={social.label}
                     href={social.href}
                     className={cn(
-                      "w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200",
+                      "w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer",
                       isDark
                         ? "bg-white/5 text-white/40 hover:bg-brand-red hover:text-white"
                         : "bg-gray-200 text-gray-500 hover:bg-brand-red hover:text-white"

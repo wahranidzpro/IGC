@@ -1,8 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useAuth } from "@/hooks/useAuth"
+import { useAuth } from "@/lib/auth/context"
 import { createClient } from "@/lib/supabase/client"
+import { mapRow, mapRows } from "@/lib/utils/transform"
 import {
   TrendingUp, Weight, Activity, Ruler, Heart, AlertCircle, RefreshCw,
   ChevronRight, Users,
@@ -30,29 +31,33 @@ export default function ProgressPage() {
 
   useEffect(() => {
     if (!user) { setLoading(false); return }
-    const uid = user.id
+    const uid = user?.id as string
     const supabase = createClient()
 
     async function load() {
       try {
-        const { data: cData } = await supabase.from("coaches").select("*").eq("profileId", uid).maybeSingle()
-        const cId = (cData as { id?: string } | null)?.id
+        const cRow = await supabase.from("coaches").select("id").eq("profile_id", uid).maybeSingle()
+          .then(r => mapRow<{ id: string }>(r.data))
+        const cId = cRow?.id
         if (!cId) { setLoading(false); return }
         setCoachId(cId)
 
-        const [{ data: mcRes }, { data: pRes }] = await Promise.all([
-          supabase.from("member_coaches").select("memberId").eq("coachId", cId).eq("isActive", true),
-          supabase.from("profiles").select("id, firstName, lastName"),
+        const [mcRows, pRows] = await Promise.all([
+          supabase.from("member_coaches").select("member_id").eq("coach_id", cId).eq("is_active", true)
+            .then(r => mapRows<{ memberId: string }>(r.data)),
+          supabase.from("profiles").select("id, first_name, last_name")
+            .then(r => mapRows<Profile>(r.data)),
         ])
 
-        const memberIds = ((mcRes as { memberId: string }[]) || []).map((m) => m.memberId)
-        const allProfiles = ((pRes as Profile[]) || []).reduce((acc, p) => {
+        const memberIds = mcRows.map((m) => m.memberId)
+        const allProfiles = pRows.reduce((acc, p) => {
           acc[p.id] = `${p.firstName} ${p.lastName}`; return acc
         }, {} as Record<string, string>)
 
         if (memberIds.length > 0) {
-          const { data: mData } = await supabase.from("members").select("id, profileId").in("id", memberIds)
-          setMembers(((mData as { id: string; profileId: string }[]) || []).map((m) => ({
+          const mRows = await supabase.from("members").select("id, profile_id").in("id", memberIds)
+            .then(r => mapRows<{ id: string; profileId: string }>(r.data))
+          setMembers(mRows.map((m) => ({
             id: m.id, name: allProfiles[m.profileId] || "Inconnu",
           })))
         }
@@ -70,13 +75,14 @@ export default function ProgressPage() {
     setLoading(true)
     try {
       const supabase = createClient()
-      const { data } = await supabase
+      const logsData = await supabase
         .from("progress_logs")
         .select("*")
-        .eq("memberId", memberId)
-        .order("loggedAt", { ascending: false })
+        .eq("member_id", memberId)
+        .order("logged_at", { ascending: false })
         .limit(50)
-      setLogs((data as unknown as ProgressLog[]) || [])
+        .then(r => mapRows<ProgressLog>(r.data))
+      setLogs(logsData)
     } catch {
       setError("Impossible de charger la progression")
     } finally {

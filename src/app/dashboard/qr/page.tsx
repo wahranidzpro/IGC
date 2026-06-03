@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { QRCodeSVG } from "qrcode.react"
-import { useAuth } from "@/hooks/useAuth"
+import { useAuth } from "@/lib/auth/context"
 import { createClient } from "@/lib/supabase/client"
+import { mapRow, mapRows } from "@/lib/utils/transform"
 import { checkActiveDevice, isMobileDevice } from "@/lib/device"
 import {
   ShieldAlert, Clock, RefreshCw, Wifi, CircleCheck, Smartphone,
@@ -14,7 +15,7 @@ import type { Membership } from "@/types"
 const REFRESH_INTERVAL = 5000
 
 export default function MemberQRPage() {
-  const { user } = useAuth()
+  const { user, role } = useAuth()
   const [token, setToken] = useState<string | null>(null)
   const [timeLeft, setTimeLeft] = useState(REFRESH_INTERVAL / 1000)
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -35,19 +36,19 @@ export default function MemberQRPage() {
 
   useEffect(() => {
     if (!user) return
-    const uid = user.id
+    const uid = user?.id as string
     const supabase = createClient()
     async function load() {
-      const { data: m } = await supabase.from("members").select("*").eq("profileId", uid).maybeSingle()
-      const memberId = (m as { id?: string } | null)?.id
+      const { data: m } = await supabase.from("members").select("*").eq("profile_id", uid).maybeSingle()
+      const memberId = mapRow<{ id?: string }>(m as unknown as Record<string, unknown> | null)?.id
       if (memberId) {
         const { data: ms } = await supabase
           .from("memberships")
           .select("*")
-          .eq("memberId", memberId)
+          .eq("member_id", memberId)
           .eq("status", "active")
           .maybeSingle()
-        if (ms) setMembership(ms as unknown as Membership)
+        if (ms) setMembership(mapRow<Membership>(ms as unknown as Record<string, unknown> | null) as Membership)
       }
     }
     load()
@@ -122,7 +123,7 @@ export default function MemberQRPage() {
 
   const progress = (timeLeft / (REFRESH_INTERVAL / 1000)) * 100
 
-  if (user?.role !== "member") {
+  if (role !== "adherent") {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="text-center space-y-4">

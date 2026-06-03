@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/hooks/useAuth"
+import { useAuth } from "@/lib/auth/context"
 import { createClient } from "@/lib/supabase/client"
+import { mapRow, mapRows } from "@/lib/utils/transform"
 import Image from "next/image"
 import {
   MessageSquare, Star, Calendar, Award, Users, Clock,
@@ -20,30 +21,30 @@ export default function CoachPage() {
 
   useEffect(() => {
     if (!user) return
-    const uid = user.id
+    const uid = user?.id as string
     const supabase = createClient()
 
     async function load() {
       try {
-        const { data: mData } = await supabase.from("members").select("id, clubId").eq("profileId", uid).maybeSingle()
+        const { data: mData } = await supabase.from("members").select("id, club_id").eq("profile_id", uid).maybeSingle()
         const memberRow = mData as { id: string; clubId: string | null } | null
         if (!memberRow) { setLoading(false); return }
 
         const { data: mc } = await supabase
           .from("member_coaches")
-          .select("coachId")
-          .eq("memberId", memberRow.id)
-          .eq("isActive", true)
+          .select("coach_id")
+          .eq("member_id", memberRow.id)
+          .eq("is_active", true)
           .maybeSingle()
-        const assignment = mc as { coachId: string } | null
+        const assignment = mc as { coach_id: string } | null
         if (!assignment) { setLoading(false); return }
 
-        const { data: c } = await supabase.from("coaches").select("*").eq("id", assignment.coachId).single()
-        const coachRow = c as unknown as Coach | null
+        const { data: c } = await supabase.from("coaches").select("*").eq("id", assignment.coach_id).maybeSingle()
+        const coachRow = mapRow<Coach>(c as unknown as Record<string, unknown> | null)
         if (!coachRow) { setLoading(false); return }
 
-        const { data: p } = await supabase.from("profiles").select("firstName, lastName, email, avatarUrl").eq("id", coachRow.profileId).single()
-        const profileRow = p as { firstName: string; lastName: string; email: string; avatarUrl: string | null } | null
+        const { data: p } = await supabase.from("profiles").select("first_name, last_name, email, avatar_url").eq("id", coachRow.profileId).maybeSingle()
+        const profileRow = mapRow<{ firstName: string; lastName: string; email: string; avatarUrl: string | null }>(p as unknown as Record<string, unknown> | null)
         if (profileRow) setCoach({ coach: coachRow, profile: profileRow })
       } catch (e) {
         setError("Impossible de charger les informations du coach")

@@ -5,60 +5,60 @@ import Newsletter from "@/components/marketing/Newsletter"
 
 const espaces = [
   {
+    id: "musculation",
     title: "Musculation",
     description: "Espace dédié à la prise de masse et au développement de la force. Machines guidées, poids libres et zone deadlift.",
     items: ["Machines Technogym dernière génération", "Barres olympiques et haltères jusqu'à 50kg", "Cages à squat et bancs de développé"],
     image: "/images/musculation.jpg",
-    href: "#",
   },
   {
+    id: "cardio",
     title: "Cardio Training",
     description: "Zone cardio connectée pour brûler des calories et améliorer votre endurance cardiovasculaire.",
     items: ["Tapis de course, rameurs, elliptiques", "Vélos connectés avec programmes", "Escaliers et machines à grimper"],
     image: "/images/cardio.jpg",
-    href: "#",
   },
   {
+    id: "cross",
     title: "Cross Training",
     description: "Espace fonctionnel de 200m² pour des séances HIIT, WOD et entraînements à haute intensité.",
     items: ["Cordes, medecine-balls, kettlebells", "Box jumps et pneus", "Programmes quotidiens"],
     image: "/images/cross-training.jpg",
-    href: "#",
   },
   {
+    id: "cours",
     title: "Cours Collectifs",
     description: "Plus de 30 cours par semaine animés par nos coachs diplômés dans notre studio dédié.",
     items: ["BodyPump, RPM, Yoga, Pilates", "HIIT, Step, Abdos-Fessiers", "Cours en petit groupe"],
     image: "/images/cours-collectifs.jpg",
-    href: "#",
   },
   {
+    id: "boxing",
     title: "Boxing",
     description: "Espace boxe avec ring professionnel, sacs de frappe et zone de combat.",
     items: ["Ring réglementaire", "Sacs de frappe et paos", "Cours collectifs et coaching individuel"],
     image: "/images/boxing.jpg",
-    href: "#",
   },
   {
+    id: "sport-force",
     title: "Zone Sport de Force",
     description: "Section dédiée au powerlifting et à l'haltérophilie avec équipement compétition.",
     items: ["Plateforme Eleiko", "Barres de compétition", "Matériel compétition"],
     image: "/images/sport-force.jpg",
-    href: "#",
   },
   {
+    id: "bien-etre",
     title: "Espace Bien-être",
     description: "Zone stretching, mobilité et récupération pour prendre soin de votre corps après l'effort.",
     items: ["Tapis de sol et blocs yoga", "Rouleaux de massage", "Fauteuil hydromassant"],
     image: "/images/bien-etre.jpg",
-    href: "#",
   },
   {
+    id: "femme",
     title: "Espace Femme",
     description: "Un espace réservé aux femmes pour s'entraîner en toute sérénité.",
     items: ["Machines adaptées", "Cours réservés", "Ambiance conviviale et sécurisée"],
     image: "/images/espace-femme.jpg",
-    href: "#",
   },
 ]
 
@@ -79,7 +79,9 @@ export default function ActivitesPage() {
         />
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {espaces.map((espace) => (
-            <FeatureCard key={espace.title} {...espace} />
+            <div key={espace.id} id={espace.id}>
+              <FeatureCard title={espace.title} description={espace.description} items={espace.items} image={espace.image} />
+            </div>
           ))}
         </div>
       </SectionWrapper>
