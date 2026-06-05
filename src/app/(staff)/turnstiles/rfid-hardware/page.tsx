@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { ArrowLeft, Radio, Monitor, Wifi, Terminal, ArrowRight, Cpu, CheckCircle, Shield, Smartphone, Key } from 'lucide-react';
 import { useState } from 'react';
+import { logger } from "@/lib/logger"
 
 export default function RfidHardwarePage() {
   const [tab, setTab] = useState<'usb' | 'esp32'>('usb');
@@ -176,7 +177,7 @@ process.stdin.on('data', async (data) => {
   });
 
   const result = await res.json();
-  console.log('Résultat:', result);
+  logger.info('Résultat:', result);
   process.stdout.write('✓ ');
 });`}
               </pre>

@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react"
 import { motion } from "framer-motion"
-import { Camera } from "lucide-react"
+
 import { photos } from "@/lib/galerie/mockData"
 import Lightbox from "./Lightbox"
 

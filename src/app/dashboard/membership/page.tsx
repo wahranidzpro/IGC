@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { logger } from "@/lib/logger"
 import { useAuth } from "@/lib/auth/context"
 import { createClient } from "@/lib/supabase/client"
 import { mapRow, mapRows } from "@/lib/utils/transform"
@@ -53,7 +54,7 @@ export default function MembershipPage() {
           .limit(10)
         if (pts) setPayments(mapRows<Payment>(pts))
       } catch {
-        console.error("Erreur chargement abonnement")
+        logger.error('Erreur chargement abonnement')
       } finally {
         setLoading(false)
       }
@@ -64,9 +65,9 @@ export default function MembershipPage() {
   if (loading) {
     return (
       <div className="p-4 md:p-6 lg:p-8 space-y-4">
-        <div className="h-8 w-48 bg-gray-200 rounded-lg animate-pulse" />
-        <div className="h-56 bg-gray-200 rounded-2xl animate-pulse" />
-        <div className="h-40 bg-gray-200 rounded-2xl animate-pulse" />
+        <div className="h-8 w-48 rounded-lg shimmer" />
+        <div className="h-56 rounded-2xl shimmer" />
+        <div className="h-40 rounded-2xl shimmer" />
       </div>
     )
   }
@@ -86,18 +87,18 @@ export default function MembershipPage() {
   return (
     <div className="p-4 md:p-6 lg:p-8 space-y-5">
       <div>
-        <h1 className="text-xl lg:text-2xl font-bold text-brand-black">Mon abonnement</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Gérez votre abonnement et suivez vos renouvellements</p>
+        <h1 className="text-xl lg:text-2xl font-bold text-white">Mon abonnement</h1>
+        <p className="text-sm text-gray-400 mt-0.5">Gérez votre abonnement et suivez vos renouvellements</p>
       </div>
 
       {expiringSoon && activeMembership && !expired && (
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
-          <div className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
-            <AlertTriangle className="w-5 h-5 text-amber-600" />
+        <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 flex items-start gap-3">
+          <div className="w-9 h-9 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0">
+            <AlertTriangle className="w-5 h-5 text-amber-400" />
           </div>
           <div>
-            <p className="text-sm font-bold text-amber-800">Abonnement expire bientôt</p>
-            <p className="text-xs text-amber-700 mt-0.5">
+            <p className="text-sm font-bold text-amber-300">L'abonnement expire bientôt</p>
+            <p className="text-xs text-amber-400/80 mt-0.5">
               Il ne reste plus que <strong>{daysLeft} jour{daysLeft > 1 ? "s" : ""}</strong>.
               Pensez à renouveler pour continuer à profiter de nos installations.
             </p>
@@ -106,13 +107,13 @@ export default function MembershipPage() {
       )}
 
       {expired && (
-        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-start gap-3">
-          <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-            <XCircle className="w-5 h-5 text-red-600" />
+        <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 flex items-start gap-3">
+          <div className="w-9 h-9 rounded-full bg-red-500/20 flex items-center justify-center shrink-0">
+            <XCircle className="w-5 h-5 text-red-400" />
           </div>
           <div>
-            <p className="text-sm font-bold text-red-800">Abonnement expiré</p>
-            <p className="text-xs text-red-700 mt-0.5">
+            <p className="text-sm font-bold text-red-300">Abonnement expiré</p>
+            <p className="text-xs text-red-400/80 mt-0.5">
               Votre abonnement a expiré. Renouvelez dès maintenant pour réactiver votre accès.
             </p>
           </div>
@@ -120,20 +121,20 @@ export default function MembershipPage() {
       )}
 
       {!activeMembership ? (
-        <div className="bg-white rounded-2xl border p-10 text-center">
-          <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-            <XCircle className="w-8 h-8 text-gray-400" />
+        <div className="glass-strong rounded-2xl border border-white/10 p-10 text-center">
+          <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
+            <XCircle className="w-8 h-8 text-gray-500" />
           </div>
-          <h3 className="text-lg font-bold text-brand-black mb-1">Aucun abonnement actif</h3>
-          <p className="text-sm text-gray-500 mb-5">Souscrivez à un abonnement pour accéder à nos installations</p>
-          <button className="bg-brand-red text-white px-6 py-3 rounded-xl text-sm font-bold hover:bg-red-700 transition-colors shadow-lg shadow-brand-red/20">
+          <h3 className="text-lg font-bold text-white mb-1">Aucun abonnement actif</h3>
+          <p className="text-sm text-gray-400 mb-5">Souscrivez à un abonnement pour accéder à nos installations</p>
+          <button className="bg-brand-gold text-brand-black px-6 py-3 rounded-xl text-sm font-bold hover:brightness-110 transition-colors shadow-lg shadow-brand-gold/20">
             Voir les offres
           </button>
         </div>
       ) : (
         <>
-          <div className="bg-white rounded-2xl border shadow-lg shadow-black/5 overflow-hidden">
-            <div className="bg-gradient-to-r from-brand-red to-red-700 px-6 py-5 text-white">
+          <div className="glass-strong rounded-2xl border border-white/10 shadow-lg overflow-hidden">
+            <div className="bg-gradient-to-r from-brand-gold to-yellow-700 px-6 py-5 text-white">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
@@ -161,44 +162,44 @@ export default function MembershipPage() {
 
             <div className="p-5 space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500 font-medium uppercase tracking-wide">Progression</span>
-                <span className="text-xs font-bold text-brand-black">{daysLeft > 0 ? daysLeft : 0} jour{daysLeft > 1 ? "s" : ""} restant{daysLeft > 1 ? "s" : ""}</span>
+                <span className="text-xs text-gray-400 font-medium uppercase tracking-wide">Progression</span>
+                <span className="text-xs font-bold text-white">{daysLeft > 0 ? daysLeft : 0} jour{daysLeft > 1 ? "s" : ""} restant{daysLeft > 1 ? "s" : ""}</span>
               </div>
-              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div className="h-2 bg-white/5 rounded-full overflow-hidden">
                 <div
                   className={`h-full rounded-full transition-all ${
                     daysLeft <= 7
                       ? "bg-red-500"
                       : daysLeft <= 15
                       ? "bg-amber-500"
-                      : "bg-brand-red"
+                      : "bg-brand-gold"
                   }`}
                   style={{ width: `${100 - elapsedPercent}%` }}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4 pt-2">
-                <div className="bg-gray-50 rounded-xl p-3">
-                  <p className="text-[10px] text-gray-500 uppercase tracking-wide">Début</p>
-                  <p className="text-sm font-bold text-brand-black mt-0.5">
+                <div className="bg-white/5 rounded-xl p-3">
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wide">Début</p>
+                  <p className="text-sm font-bold text-white mt-0.5">
                     {new Date(activeMembership.startDate).toLocaleDateString("fr-FR")}
                   </p>
                 </div>
-                <div className="bg-gray-50 rounded-xl p-3">
-                  <p className="text-[10px] text-gray-500 uppercase tracking-wide">Fin</p>
-                  <p className="text-sm font-bold text-brand-black mt-0.5">
+                <div className="bg-white/5 rounded-xl p-3">
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wide">Fin</p>
+                  <p className="text-sm font-bold text-white mt-0.5">
                     {new Date(activeMembership.endDate).toLocaleDateString("fr-FR")}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between text-sm border-t border-gray-100 pt-4">
-                <span className="text-gray-500 flex items-center gap-1.5">
+              <div className="flex items-center justify-between text-sm border-t border-white/10 pt-4">
+                <span className="text-gray-400 flex items-center gap-1.5">
                   <RefreshCw className="w-3.5 h-3.5" />
                   Renouvellement auto
                 </span>
                 <span className={`flex items-center gap-1.5 font-bold text-xs ${
-                  activeMembership.autoRenew ? "text-green-600" : "text-gray-400"
+                  activeMembership.autoRenew ? "text-green-400" : "text-gray-500"
                 }`}>
                   {activeMembership.autoRenew ? (
                     <><ShieldCheck className="w-3.5 h-3.5" /> Activé</>
@@ -207,12 +208,12 @@ export default function MembershipPage() {
               </div>
 
               {activeMembership.sessionsTotal && (
-                <div className="flex items-center justify-between text-sm border-t border-gray-100 pt-4">
-                  <span className="text-gray-500 flex items-center gap-1.5">
+                <div className="flex items-center justify-between text-sm border-t border-white/10 pt-4">
+                  <span className="text-gray-400 flex items-center gap-1.5">
                     <TrendingUp className="w-3.5 h-3.5" />
                     Séances
                   </span>
-                  <span className="font-bold text-brand-black text-xs">
+                  <span className="font-bold text-white text-xs">
                     {activeMembership.sessionsUsed} / {activeMembership.sessionsTotal}
                   </span>
                 </div>
@@ -220,9 +221,9 @@ export default function MembershipPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl border shadow-lg shadow-black/5 overflow-hidden">
+          <div className="glass-strong rounded-2xl border border-white/10 shadow-lg overflow-hidden">
             <div className="px-5 pt-4 pb-2 flex items-center justify-between">
-              <h3 className="text-sm font-bold text-brand-black flex items-center gap-2">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <Clock className="w-4 h-4" />
                 Historique des renouvellements
               </h3>
@@ -230,11 +231,11 @@ export default function MembershipPage() {
             </div>
             {history.length === 0 ? (
               <div className="text-center py-8">
-                <RefreshCw className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                <p className="text-sm text-gray-500">Aucun historique</p>
+                <RefreshCw className="w-8 h-8 text-gray-600 mx-auto mb-2" />
+                <p className="text-sm text-gray-400">Aucun historique</p>
               </div>
             ) : (
-              <div className="divide-y divide-gray-50">
+              <div className="divide-y divide-white/5">
                 {history.map((m, i) => {
                   const mDays = Math.ceil((new Date(m.endDate).getTime() - new Date(m.startDate).getTime()) / (1000 * 60 * 60 * 24))
                   return (
@@ -242,23 +243,23 @@ export default function MembershipPage() {
                       <div className="flex items-center gap-3">
                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
                           m.status === "active"
-                            ? "bg-green-50 text-green-600"
-                            : "bg-gray-100 text-gray-400"
+                            ? "bg-green-500/10 text-green-400"
+                            : "bg-white/5 text-gray-500"
                         }`}>
                           {m.status === "active" ? <CheckCircle className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-brand-black">{m.planName}</p>
-                          <p className="text-[10px] text-gray-500">
+                          <p className="text-sm font-medium text-white">{m.planName}</p>
+                          <p className="text-[10px] text-gray-400">
                             {new Date(m.startDate).toLocaleDateString("fr-FR")} — {new Date(m.endDate).toLocaleDateString("fr-FR")}
                             {" · "}{mDays} jours
                           </p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-bold text-brand-black">{m.amount.toLocaleString()} DZD</p>
+                        <p className="text-sm font-bold text-white">{m.amount.toLocaleString()} DZD</p>
                         <p className={`text-[10px] font-medium ${
-                          m.status === "active" ? "text-green-600" : "text-gray-400"
+                          m.status === "active" ? "text-green-400" : "text-gray-500"
                         }`}>
                           {m.status === "active" ? "En cours" : m.status === "expired" ? "Expiré" : m.status}
                         </p>
@@ -270,36 +271,36 @@ export default function MembershipPage() {
             )}
           </div>
 
-          <div className="bg-white rounded-2xl border shadow-lg shadow-black/5 overflow-hidden">
+          <div className="glass-strong rounded-2xl border border-white/10 shadow-lg overflow-hidden">
             <div className="px-5 pt-4 pb-2">
-              <h3 className="text-sm font-bold text-brand-black flex items-center gap-2">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <CreditCard className="w-4 h-4" />
                 Paiements récents
               </h3>
             </div>
             {payments.length === 0 ? (
               <div className="text-center py-8">
-                <CreditCard className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                <p className="text-sm text-gray-500">Aucun paiement enregistré</p>
+                <CreditCard className="w-8 h-8 text-gray-600 mx-auto mb-2" />
+                <p className="text-sm text-gray-400">Aucun paiement enregistré</p>
               </div>
             ) : (
-              <div className="divide-y divide-gray-50">
+              <div className="divide-y divide-white/5">
                 {payments.map((p, i) => (
                   <div key={i} className="flex items-center justify-between px-5 py-3.5">
                     <div className="flex items-center gap-3">
                       <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
                         p.status === "completed"
-                          ? "bg-green-50 text-green-600"
-                          : "bg-amber-50 text-amber-600"
+                          ? "bg-green-500/10 text-green-400"
+                          : "bg-amber-500/10 text-amber-400"
                       }`}>
                         {p.status === "completed" ? <CheckCircle className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-brand-black capitalize">{p.method?.replace("_", " ") || "Paiement"}</p>
-                        <p className="text-[10px] text-gray-500">{new Date(p.paidAt).toLocaleDateString("fr-FR")}</p>
+                        <p className="text-sm font-medium text-white capitalize">{p.method?.replace("_", " ") || "Paiement"}</p>
+                        <p className="text-[10px] text-gray-400">{new Date(p.paidAt).toLocaleDateString("fr-FR")}</p>
                       </div>
                     </div>
-                    <p className="text-sm font-bold text-brand-black">{p.amount.toLocaleString()} DZD</p>
+                    <p className="text-sm font-bold text-white">{p.amount.toLocaleString()} DZD</p>
                   </div>
                 ))}
               </div>

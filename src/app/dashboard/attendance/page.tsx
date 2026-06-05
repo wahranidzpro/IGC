@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useMemo } from "react"
+import { logger } from "@/lib/logger"
 import { useAuth } from "@/lib/auth/context"
 import { createClient } from "@/lib/supabase/client"
 import { mapRow, mapRows } from "@/lib/utils/transform"
@@ -74,7 +75,7 @@ export default function AttendancePage() {
           .order("timestamp", { ascending: false })
         if (a) setAllAttendance(mapRows<Attendance>(a))
       } catch {
-        console.error("Erreur chargement présences")
+        logger.error('Erreur chargement présences')
       } finally {
         setLoading(false)
       }
@@ -109,11 +110,11 @@ export default function AttendancePage() {
   if (loading) {
     return (
       <div className="p-4 md:p-6 lg:p-8 space-y-4">
-        <div className="h-8 w-48 bg-gray-200 rounded-lg animate-pulse" />
+        <div className="h-8 w-48 rounded-lg shimmer" />
         <div className="grid grid-cols-3 gap-3">
-          {[...Array(3)].map((_, i) => <div key={i} className="h-20 bg-gray-200 rounded-xl animate-pulse" />)}
+          {[...Array(3)].map((_, i) => <div key={i} className="h-20 rounded-xl shimmer" />)}
         </div>
-        <div className="h-64 bg-gray-200 rounded-2xl animate-pulse" />
+        <div className="h-64 rounded-2xl shimmer" />
       </div>
     )
   }
@@ -122,8 +123,8 @@ export default function AttendancePage() {
     <div className="p-4 md:p-6 lg:p-8 space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl lg:text-2xl font-bold text-brand-black">Mes présences</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Suivez votre assiduité à la salle</p>
+          <h1 className="text-xl lg:text-2xl font-bold text-white">Mes présences</h1>
+          <p className="text-sm text-gray-400 mt-0.5">Suivez votre assiduité à la salle</p>
         </div>
         <div className="hidden sm:flex items-center gap-1.5 bg-brand-red/10 text-brand-red px-3 py-1.5 rounded-full text-xs font-bold">
           <TrendingUp className="w-3.5 h-3.5" />
@@ -134,28 +135,28 @@ export default function AttendancePage() {
       <div className="grid grid-cols-3 gap-3">
         {[
           { label: "Visites", value: entries.length, icon: DoorOpen, color: "bg-brand-red/10 text-brand-red" },
-          { label: "Moy./mois", value: monthlyAvg, icon: BarChart3, color: "bg-blue-50 text-blue-600" },
-          { label: "Meilleur mois", value: Math.max(...Array.from(monthlyData.values()), 0), icon: TrendingUp, color: "bg-green-50 text-green-600" },
+          { label: "Moy./mois", value: monthlyAvg, icon: BarChart3, color: "bg-brand-blue/10 text-brand-blue" },
+          { label: "Meilleur mois", value: Math.max(...Array.from(monthlyData.values()), 0), icon: TrendingUp, color: "bg-green-500/10 text-green-400" },
         ].map((s, i) => (
-          <div key={i} className="bg-white rounded-xl border p-3 shadow-sm">
+          <div key={i} className="glass rounded-xl border border-white/10 p-3">
             <div className={`w-8 h-8 rounded-lg ${s.color} flex items-center justify-center mb-2`}>
               <s.icon className="w-4 h-4" />
             </div>
-            <p className="text-lg font-bold text-brand-black">{s.value}</p>
-            <p className="text-[10px] text-gray-500 mt-0.5">{s.label}</p>
+            <p className="text-lg font-bold text-white">{s.value}</p>
+            <p className="text-[10px] text-gray-400 mt-0.5">{s.label}</p>
           </div>
         ))}
       </div>
 
-      <div className="flex gap-1.5 bg-gray-100 rounded-xl p-1">
+      <div className="flex gap-1.5 bg-white/5 rounded-xl p-1">
         {filters.map((f) => (
           <button
             key={f.key}
             onClick={() => setActiveFilter(f.key)}
             className={`flex-1 px-3 py-2 rounded-lg text-xs font-bold transition-all ${
               activeFilter === f.key
-                ? "bg-white text-brand-black shadow-sm"
-                : "text-gray-500 hover:text-brand-black"
+                ? "glass text-white shadow-sm"
+                : "text-gray-400 hover:text-white"
             }`}
           >
             {f.label}
@@ -163,22 +164,22 @@ export default function AttendancePage() {
         ))}
       </div>
 
-      <div className="bg-white rounded-2xl border shadow-lg shadow-black/5 overflow-hidden">
+      <div className="glass-strong rounded-2xl border border-white/10 shadow-lg overflow-hidden">
         <div className="flex items-center justify-between px-5 pt-4 pb-2">
-          <h3 className="text-sm font-bold text-brand-black">
+          <h3 className="text-sm font-bold text-white">
             Historique
             <span className="text-xs font-normal text-gray-400 ml-2">({filtered.length} entrée{filtered.length > 1 ? "s" : ""})</span>
           </h3>
-          <Filter className="w-4 h-4 text-gray-400" />
+          <Filter className="w-4 h-4 text-gray-500" />
         </div>
 
         {filtered.length === 0 ? (
           <div className="text-center py-10">
-            <DoorOpen className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-            <p className="text-sm text-gray-500">Aucune présence</p>
+            <DoorOpen className="w-10 h-10 text-gray-600 mx-auto mb-3" />
+            <p className="text-sm text-gray-400">Aucune présence</p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-50">
+          <div className="divide-y divide-white/5">
             {filtered.map((a, i) => {
               const d = new Date(a.timestamp)
               const today = new Date()
@@ -192,29 +193,29 @@ export default function AttendancePage() {
               else if (isYesterday) dayLabel = "Hier"
 
               return (
-                <div key={a.id || i} className="flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition-colors">
+                <div key={a.id || i} className="flex items-center justify-between px-5 py-3.5 hover:bg-white/5 transition-colors">
                   <div className="flex items-center gap-3">
                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
                       a.type === "entry"
-                        ? "bg-green-50 text-green-600"
-                        : "bg-orange-50 text-orange-600"
+                        ? "bg-green-500/10 text-green-400"
+                        : "bg-orange-500/10 text-orange-400"
                     }`}>
                       <DoorOpen className="w-4 h-4" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium text-brand-black">
+                        <p className="text-sm font-medium text-white">
                           {a.type === "entry" ? "Entrée" : "Sortie"}
                         </p>
                         <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
                           a.type === "entry"
-                            ? "bg-green-50 text-green-600"
-                            : "bg-orange-50 text-orange-600"
+                            ? "bg-green-500/10 text-green-400"
+                            : "bg-orange-500/10 text-orange-400"
                         }`}>
                           {a.method}
                         </span>
                       </div>
-                      <p className="text-xs text-gray-500 flex items-center gap-2 mt-0.5">
+                      <p className="text-xs text-gray-400 flex items-center gap-2 mt-0.5">
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
                           {dayLabel}
@@ -232,7 +233,7 @@ export default function AttendancePage() {
                       </p>
                     </div>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-gray-300 shrink-0" />
+                  <ChevronRight className="w-4 h-4 text-white/20 shrink-0" />
                 </div>
               )
             })}

@@ -113,6 +113,7 @@ function AccentBar() {
 }
 
 export default function HomePage() {
+  // no video found — all content uses images and cards
   const { theme } = useTheme()
   const isDark = theme === "dark"
 
@@ -125,16 +126,6 @@ export default function HomePage() {
         secondaryCta={{ label: "Visiter la salle", href: "/galerie-media" }}
         image="/images/hero-home.jpg"
       >
-        <div className="mt-8 flex flex-wrap gap-6 text-sm">
-          <span className="flex items-center gap-2 text-white/50">
-            <span className="w-1.5 h-1.5 bg-brand-red rounded-full" />
-            Ouvert 6h - 23h
-          </span>
-          <span className="flex items-center gap-2 text-white/50">
-            <span className="w-1.5 h-1.5 bg-brand-red rounded-full" />
-            7J/7
-          </span>
-        </div>
       </Hero>
 
       <RevealSection>

@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowRight, Salad, Apple, Book, Calculator, Sparkles } from "lucide-react"
+import { ArrowRight, Apple, Book, Calculator, Sparkles } from "lucide-react"
 import AlgerianRecipes from "@/components/nutrition/AlgerianRecipes"
 
 export default function NutritionPage() {
@@ -28,8 +28,8 @@ export default function NutritionPage() {
               plans alimentaires personnalisés et suivi par nos coachs.
             </p>
             <div className="flex flex-wrap gap-4">
-              <Link href="/signup" className="group inline-flex items-center gap-2 bg-gradient-to-r from-brand-emerald to-emerald-700 text-white px-8 py-4 rounded-xl font-bold hover:brightness-110 transition-all active:scale-95 shadow-xl shadow-brand-emerald/30">
-                Accéder aux conseils <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              <Link href="/abonnements" className="group inline-flex items-center gap-2 bg-gradient-to-r from-brand-emerald to-emerald-700 text-white px-8 py-4 rounded-xl font-bold hover:brightness-110 transition-all active:scale-95 shadow-xl shadow-brand-emerald/30">
+                Voir les abonnements <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link href="/abonnements" className="group inline-flex items-center gap-2 border border-zinc-600 text-white px-8 py-4 rounded-xl font-semibold hover:bg-zinc-800 transition-all">
                 Voir les abonnements
@@ -71,8 +71,8 @@ export default function NutritionPage() {
                 })}
               </div>
             </div>
-            <div className="aspect-square rounded-2xl bg-gradient-to-br from-zinc-800 to-zinc-900 border border-zinc-700 overflow-hidden shadow-2xl flex items-center justify-center">
-              <Salad className="w-32 h-32 text-zinc-700 opacity-50" />
+            <div className="aspect-square rounded-2xl bg-gradient-to-br from-zinc-800 to-zinc-900 border border-zinc-700 overflow-hidden shadow-2xl">
+              <img src="https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800&h=800&fit=crop" alt="Nutrition sportive" className="w-full h-full object-cover opacity-70 hover:opacity-100 transition-opacity" />
             </div>
           </div>
         </div>
@@ -109,8 +109,8 @@ export default function NutritionPage() {
             Coaching nutrition inclus dans nos formules Premium dès <span className="text-white font-bold">6 500 DA/mois</span>.
             Atteins tes objectifs plus vite avec un suivi personnalisé.
           </p>
-          <Link href="/signup" className="group inline-flex items-center gap-2 bg-gradient-to-r from-brand-emerald to-emerald-700 text-white px-10 py-4 rounded-xl font-bold text-lg hover:brightness-110 transition-all active:scale-95 shadow-2xl shadow-brand-emerald/30">
-            Je m'abonne dès 6 500 DA <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+          <Link href="/abonnements" className="group inline-flex items-center gap-2 bg-gradient-to-r from-brand-emerald to-emerald-700 text-white px-10 py-4 rounded-xl font-bold text-lg hover:brightness-110 transition-all active:scale-95 shadow-2xl shadow-brand-emerald/30">
+            Voir les abonnements <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
       </section>

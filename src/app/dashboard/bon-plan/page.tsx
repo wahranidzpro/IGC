@@ -43,7 +43,7 @@ const deals = [
 
 export default function BonPlanPage() {
   return (
-    <div className="min-h-screen bg-[#f8f9fc]">
+    <div className="min-h-screen">
       <div className="bg-gradient-to-br from-brand-red via-red-700 to-brand-black px-5 pt-6 pb-16 text-white">
         <h1 className="text-xl font-bold">Bons plans</h1>
         <p className="text-sm text-white/70 mt-1">Avantages & réductions exclusifs</p>
@@ -51,7 +51,7 @@ export default function BonPlanPage() {
 
       <div className="px-4 -mt-10 relative z-10 space-y-3 pb-28">
         {deals.map((deal, i) => (
-          <div key={i} className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl hover:border-brand-red/20 transition-all group">
+          <div key={i} className="glass-strong rounded-2xl border border-white/10 overflow-hidden hover:shadow-xl hover:border-brand-red/30 transition-all group">
             <div className={`bg-gradient-to-r ${deal.color} px-4 py-3 text-white flex items-center justify-between`}>
               <div className="flex items-center gap-2">
                 <deal.icon className="w-4 h-4" />
@@ -60,10 +60,10 @@ export default function BonPlanPage() {
               <span className="text-[10px] font-medium bg-white/20 px-2 py-0.5 rounded-full">{deal.code}</span>
             </div>
             <div className="p-4">
-              <h3 className="text-sm font-bold text-brand-black">{deal.title}</h3>
-              <p className="text-xs text-gray-500 mt-0.5">{deal.desc}</p>
+              <h3 className="text-sm font-bold text-white">{deal.title}</h3>
+              <p className="text-xs text-gray-400 mt-0.5">{deal.desc}</p>
               <div className="flex items-center justify-between mt-3">
-                <span className="text-xs text-gray-400 flex items-center gap-1">
+                <span className="text-xs text-gray-500 flex items-center gap-1">
                   <Clock className="w-3 h-3" />
                   Expire le {deal.expires}
                 </span>

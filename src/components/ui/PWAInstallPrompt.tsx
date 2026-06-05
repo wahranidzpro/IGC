@@ -70,6 +70,11 @@ export default function PWAInstallPrompt() {
     };
   }, [dismissed]);
 
+  useEffect(() => {
+    const cleanup = triggerShow(8000);
+    return cleanup;
+  }, [triggerShow]);
+
   const dismiss = () => {
     setShow(false);
     setDismissed(true);

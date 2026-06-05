@@ -3,6 +3,7 @@
 import { useEffect, useCallback, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { X, AlertCircle } from "lucide-react"
+import VideoPlayer from "@/components/ui/VideoPlayer"
 
 interface VideoModalProps {
   src: string
@@ -84,15 +85,7 @@ export default function VideoModal({ src, title, isOpen, onClose }: VideoModalPr
                 title={title}
               />
             ) : (
-              <video
-                className="w-full h-full object-cover"
-                controls
-                autoPlay
-                playsInline
-                onError={() => setError(true)}
-              >
-                <source src={src} type="video/mp4" />
-              </video>
+              <VideoPlayer src={src} title={title} />
             )}
           </motion.div>
         </motion.div>

@@ -236,7 +236,7 @@ export function PinPad({ onForgotPassword }: PinPadProps) {
                     className="w-full py-3 text-white/60 hover:text-orange-400 text-sm font-medium transition-colors flex items-center justify-center gap-2"
                   >
                     <KeyRound className="w-4 h-4" />
-                    Mot de passe oublie?
+                    Mot de passe oublié ?
                   </button>
                 )}
               </form>

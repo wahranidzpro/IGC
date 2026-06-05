@@ -3,7 +3,6 @@
 import { useEffect, useRef, Fragment } from "react"
 import Link from "next/link"
 import { ArrowRight, Play } from "lucide-react"
-import Image from "next/image"
 
 interface HeroProps {
   title: string
@@ -46,6 +45,18 @@ export default function Hero({
   }
 
   return (
+    <>
+      <style>{`
+        @keyframes coinRotate {
+          from { transform: rotateY(0deg); }
+          to   { transform: rotateY(360deg); }
+        }
+        .coin-rotate {
+          animation: coinRotate 25s linear infinite;
+          transform-style: preserve-3d;
+          backface-visibility: hidden;
+        }
+      `}</style>
     <section
       ref={sectionRef}
       className={`relative ${heights[height]} flex items-center bg-black overflow-hidden`}
@@ -63,10 +74,7 @@ export default function Hero({
           <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/70 to-black/40" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
-          {/* Logo Watermark */}
-          <div className="logo-watermark hidden lg:flex">
-            <img src="/logo-transparent.png" alt="" className="w-1/2 h-1/2 object-contain opacity-[0.04]" />
-          </div>
+          {/* Logo Watermark removed — visible logo on the right */}
         </>
       )}
 
@@ -89,78 +97,133 @@ export default function Hero({
       </div>
 
       <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <div className="max-w-3xl">
-          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/10 rounded-full px-4 py-1.5 mb-6 animate-fade-in">
-            <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-            <span className="text-xs font-medium text-white/80">Ouvert 7J/7 — 6h à 23h</span>
-          </div>
-
-          <h1 className="text-5xl sm:text-6xl lg:text-8xl font-black text-white leading-none tracking-tight">
-            {title.split(" ").map((word, i) => (
-              <Fragment key={i}>
-                {i > 0 && <span className="inline-block w-[0.35em]" />}
-                <span className="inline-block animate-slide-up" style={{ animationDelay: `${i * 0.1}s` }}>
-                  {i === 1 && image ? (
-                    <span className="text-brand-red">{word}</span>
-                  ) : (
-                    word
-                  )}
-                </span>
-              </Fragment>
-            ))}
-          </h1>
-
-          {subtitle && (
-            <p className="mt-6 text-lg sm:text-xl text-white/70 max-w-xl leading-relaxed animate-fade-in" style={{ animationDelay: "0.5s" }}>
-              {subtitle}
-            </p>
-          )}
-
-          {(cta || secondaryCta) && (
-            <div className="mt-10 flex flex-wrap gap-4 animate-fade-in" style={{ animationDelay: "0.7s" }}>
-              {cta && (
-                <Link
-                  href={cta.href}
-                  className="group inline-flex items-center gap-2 bg-gradient-to-r from-brand-red via-brand-accent to-brand-red bg-[length:200%_100%] hover:bg-right-top text-white px-7 py-3.5 rounded-xl font-bold text-sm hover:brightness-110 transition-all duration-300 active:scale-95 shadow-xl shadow-brand-red/30 animate-gradient"
-                >
-                  {cta.label}
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-                </Link>
-              )}
-              {secondaryCta && (
-                <Link
-                  href={secondaryCta.href}
-                  className="group inline-flex items-center gap-2 border border-white/20 text-white px-7 py-3.5 rounded-xl font-semibold text-sm hover:bg-white/10 transition-all duration-300 backdrop-blur-sm"
-                >
-                  <Play className="w-4 h-4" />
-                  {secondaryCta.label}
-                </Link>
-              )}
+        <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
+          {/* Left: Text content */}
+          <div className="flex-1 max-w-3xl">
+            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/10 rounded-full px-4 py-1.5 mb-6 animate-fade-in w-fit">
+              <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+              <span className="text-xs font-medium text-white/80">Ouvert 7J/7 — 6h à 23h</span>
             </div>
-          )}
 
-          {children}
-
-          <div className="mt-12 flex items-center gap-8 text-sm animate-fade-in" style={{ animationDelay: "1s" }}>
-            <div className="flex -space-x-2">
-              {[1, 2, 3, 4].map((i) => (
-                <div
-                  key={i}
-                  className="w-8 h-8 rounded-full border-2 border-black bg-gray-700 flex items-center justify-center text-[10px] font-bold text-white"
-                >
-                  {String.fromCharCode(64 + i)}
-                </div>
+            <h1 className="text-5xl sm:text-6xl lg:text-8xl font-black text-white leading-none tracking-tight">
+              {title.split(" ").map((word, i) => (
+                <Fragment key={i}>
+                  {i > 0 && <span className="inline-block w-[0.35em]" />}
+                  <span className="inline-block animate-slide-up" style={{ animationDelay: `${i * 0.1}s` }}>
+                    {i === 1 && image ? (
+                      <span className="text-brand-red">{word}</span>
+                    ) : (
+                      word
+                    )}
+                  </span>
+                </Fragment>
               ))}
-              <div className="w-8 h-8 rounded-full border-2 border-black bg-brand-red flex items-center justify-center text-[10px] font-bold text-white">
-                +
+            </h1>
+
+            {subtitle && (
+              <p className="mt-6 text-lg sm:text-xl text-white/70 max-w-xl leading-relaxed animate-fade-in" style={{ animationDelay: "0.5s" }}>
+                {subtitle}
+              </p>
+            )}
+
+            {(cta || secondaryCta) && (
+              <div className="mt-10 flex flex-wrap gap-4 animate-fade-in" style={{ animationDelay: "0.7s" }}>
+                {cta && (
+                  <Link
+                    href={cta.href}
+                    className="group inline-flex items-center gap-2 bg-gradient-to-r from-brand-red via-brand-accent to-brand-red bg-[length:200%_100%] hover:bg-right-top text-white px-7 py-3.5 rounded-xl font-bold text-sm hover:brightness-110 transition-all duration-300 active:scale-95 shadow-xl shadow-brand-red/30 animate-gradient"
+                  >
+                    {cta.label}
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                  </Link>
+                )}
+                {secondaryCta && (
+                  <Link
+                    href={secondaryCta.href}
+                    className="group inline-flex items-center gap-2 border border-white/20 text-white px-7 py-3.5 rounded-xl font-semibold text-sm hover:bg-white/10 transition-all duration-300 backdrop-blur-sm"
+                  >
+                    <Play className="w-4 h-4" />
+                    {secondaryCta.label}
+                  </Link>
+                )}
               </div>
+            )}
+
+            {children}
+
+            <div className="mt-12 flex items-center gap-8 text-sm animate-fade-in" style={{ animationDelay: "1s" }}>
+              <div className="flex -space-x-2">
+                {[1, 2, 3, 4].map((i) => (
+                  <div
+                    key={i}
+                    className="w-8 h-8 rounded-full border-2 border-black bg-gray-700 flex items-center justify-center text-[10px] font-bold text-white"
+                  >
+                    {String.fromCharCode(64 + i)}
+                  </div>
+                ))}
+                <div className="w-8 h-8 rounded-full border-2 border-black bg-brand-red flex items-center justify-center text-[10px] font-bold text-white">
+                  +
+                </div>
+              </div>
+              <span className="text-white/50">
+                <strong className="text-white">1000+</strong> membres actifs
+              </span>
             </div>
-            <span className="text-white/50">
-              <strong className="text-white">1000+</strong> membres actifs
-            </span>
           </div>
-        </div>
+
+          {/* Right: Thick gold coin 3D */}
+          <div className="flex-shrink-0 hidden lg:flex items-center justify-center w-[300px] xl:w-[400px]" style={{ perspective: "1400px" }}>
+            <div
+              className="coin-rotate"
+              style={{
+                width: "100%",
+                maxWidth: "320px",
+                aspectRatio: "1/1",
+                position: "relative",
+                transformStyle: "preserve-3d",
+              }}
+            >
+              {[-20, -15, -10, -5, 0, 5, 10, 15, 20].map(z => {
+                const isFront = z === 20
+                const isBack = z === -20
+                const isFace = isFront || isBack
+                const t = isBack ? `rotateY(180deg) translateZ(${Math.abs(z)}px)` : `translateZ(${z}px)`
+                return (
+                  <div key={z}
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      backfaceVisibility: isFace ? "hidden" : "visible",
+                      transform: t,
+                      borderRadius: "50%",
+                      border: "8px solid rgba(200,160,60,0.5)",
+                      boxShadow: isFace
+                        ? "0 0 50px rgba(200,160,60,0.3), inset 0 0 20px rgba(200,160,60,0.08)"
+                        : "inset 0 0 10px rgba(200,160,60,0.05)",
+                      overflow: "hidden",
+                      background: isFace ? "#0a0a0a" : "#1a1508",
+                    }}
+                  >
+                    {isFace ? (
+                      <img src="/logo-transparent.png" alt="Infinity Gym Center" className="w-full h-full object-contain" style={{ transform: "scale(1.15)" }} />
+                    ) : null}
+                  </div>
+                )
+              })}
+              <div
+                style={{
+                  position: "absolute",
+                  inset: "-8px",
+                  borderRadius: "50%",
+                  transform: "translateZ(0)",
+                  background: "conic-gradient(from 0deg, rgba(200,160,60,0.15) 0deg, transparent 3deg, transparent 7deg, rgba(200,160,60,0.15) 10deg, transparent 13deg, transparent 17deg, rgba(200,160,60,0.15) 20deg, transparent 23deg, transparent 27deg, rgba(200,160,60,0.15) 30deg, transparent 33deg, transparent 37deg, rgba(200,160,60,0.15) 40deg, transparent 43deg)",
+                }}
+              />
+            </div>
+          </div>
+          </div>
       </div>
     </section>
+    </>
   )
 }

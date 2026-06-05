@@ -12,7 +12,7 @@ function hasRoleAccess(role: string, pathname: string): boolean {
   if (role === 'admin' || role === 'staff') return true;
   if (role === 'reception') return receptionAllowedPaths.some(p => pathname.startsWith(p));
   if (role === 'coach') return coachAllowedPaths.some(p => pathname.startsWith(p));
-  if (role === 'adherent') return adherentAllowedPaths.some(p => pathname.startsWith(p));
+  if (role === 'adherent') return adherentAllowedPaths.some(p => pathname === p || pathname.startsWith(p + '/'));
   return false;
 }
 

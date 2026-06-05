@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Wifi, WifiOff, X } from 'lucide-react';
 
 export default function ConnectionBanner() {
@@ -8,13 +8,17 @@ export default function ConnectionBanner() {
   const [visible, setVisible] = useState(false);
   const [message, setMessage] = useState('');
   const [blink, setBlink] = useState(false);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  const clearTimers = () => { timersRef.current.forEach(clearTimeout); timersRef.current = []; };
 
   const show = useCallback((msg: string) => {
+    clearTimers();
     setMessage(msg);
     setVisible(true);
     setBlink(true);
-    setTimeout(() => setBlink(false), 3000);
-    setTimeout(() => setVisible(false), 5000);
+    timersRef.current.push(setTimeout(() => setBlink(false), 3000));
+    timersRef.current.push(setTimeout(() => setVisible(false), 5000));
   }, []);
 
   useEffect(() => {
@@ -27,7 +31,7 @@ export default function ConnectionBanner() {
     const goOffline = () => { setOnline(false); show('Déconnecté — mode hors ligne'); };
     window.addEventListener('online', goOnline);
     window.addEventListener('offline', goOffline);
-    return () => { window.removeEventListener('online', goOnline); window.removeEventListener('offline', goOffline); };
+    return () => { window.removeEventListener('online', goOnline); window.removeEventListener('offline', goOffline); clearTimers(); };
   }, [show]);
 
   if (!visible) return null;

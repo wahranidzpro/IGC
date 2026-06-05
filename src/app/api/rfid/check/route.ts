@@ -1,4 +1,4 @@
-import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 const recentScans = new Map<string, number>();
 const ANTIPASSBACK_WINDOW = 5000;
@@ -17,9 +17,7 @@ export async function POST(request: Request) {
       return Response.json({ success: false, reason: 'UNAUTHORIZED', openDoor: false }, { status: 401 });
     }
 
-    if (!isSupabaseConfigured || !supabase) {
-      return Response.json({ success: false, reason: 'SUPABASE_NOT_CONFIGURED', openDoor: false }, { status: 503 });
-    }
+    const supabase = await createServerSupabaseClient();
 
     const body = await request.json();
     const { rfid, uid, cardno, device_id, method, timestamp } = body;
@@ -32,7 +30,7 @@ export async function POST(request: Request) {
     const now = Date.now();
     const lastScan = recentScans.get(rfidUid);
     if (lastScan && now - lastScan < ANTIPASSBACK_WINDOW) {
-      return Response.json({ success: false, reason: 'ANTIPASSBACK', openDoor: false });
+      return Response.json({ success: false, reason: 'ANTIPASSBACK', openDoor: false }, { status: 429 });
     }
     recentScans.set(rfidUid, now);
 
@@ -50,7 +48,7 @@ export async function POST(request: Request) {
       .then((r: any) => r.data);
 
     if (blockedCard) {
-      return Response.json({ success: false, reason: 'CARD_BLOCKED', openDoor: false });
+      return Response.json({ success: false, reason: 'CARD_BLOCKED', openDoor: false }, { status: 403 });
     }
 
     const turnstileMember = await (supabase.from('turnstile_members') as any)
@@ -61,7 +59,7 @@ export async function POST(request: Request) {
       .then((r: any) => r.data);
 
     if (!turnstileMember) {
-      return Response.json({ success: false, reason: 'CARD_NOT_FOUND', openDoor: false });
+      return Response.json({ success: false, reason: 'CARD_NOT_FOUND', openDoor: false }, { status: 404 });
     }
 
     const memberLocalId = turnstileMember.member_local_id;
@@ -73,11 +71,11 @@ export async function POST(request: Request) {
       .then((r: any) => r.data);
 
     if (!syncedMember) {
-      return Response.json({ success: false, reason: 'MEMBER_NOT_FOUND', openDoor: false });
+      return Response.json({ success: false, reason: 'MEMBER_NOT_FOUND', openDoor: false }, { status: 404 });
     }
 
     if (syncedMember.is_blocked || syncedMember.status === 'blocked') {
-      return Response.json({ success: false, reason: 'MEMBER_BLOCKED', openDoor: false });
+      return Response.json({ success: false, reason: 'MEMBER_BLOCKED', openDoor: false }, { status: 403 });
     }
 
     const restrictions = await (supabase.from('access_restrictions') as any)
@@ -92,7 +90,7 @@ export async function POST(request: Request) {
         const startHour = restrictions.hour_start ?? 0;
         const endHour = restrictions.hour_end ?? 24;
         if (currentHour < startHour || currentHour >= endHour) {
-          return Response.json({ success: false, reason: 'ACCESS_RESTRICTED', openDoor: false });
+          return Response.json({ success: false, reason: 'ACCESS_RESTRICTED', openDoor: false }, { status: 403 });
         }
       }
     }
@@ -105,10 +103,10 @@ export async function POST(request: Request) {
       .then((r: any) => r.data);
 
     if (activeSession) {
-      return Response.json({ success: false, reason: 'ALREADY_INSIDE', openDoor: false });
+      return Response.json({ success: false, reason: 'ALREADY_INSIDE', openDoor: false }, { status: 409 });
     }
 
-    const turnstileId = device_id ? parseInt(device_id, 10) : null;
+    const turnstileId = device_id ? (Number.isNaN(parseInt(device_id, 10)) ? null : parseInt(device_id, 10)) : null;
     const eventMethod = method || 'rfid';
 
     await (supabase.from('access_logs') as any).insert({

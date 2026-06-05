@@ -4,12 +4,14 @@ import { useEffect, useState } from "react"
 import { useAuth } from "@/lib/auth/context"
 import { createClient } from "@/lib/supabase/client"
 import { mapRow, mapRows } from "@/lib/utils/transform"
+import { cn } from "@/lib/utils"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import {
-  Users, Search, Filter, X, ChevronRight, AlertCircle, RefreshCw,
-  Phone, Calendar, Dumbbell, Apple, TrendingUp, Activity,
-  Mail, Target, Ruler, Weight, Heart, Clock, CreditCard,
+  Users, Search, Eye, MessageCircle, Plus, ChevronRight,
+  AlertCircle, RefreshCw, Phone, Calendar, Dumbbell, Apple,
+  TrendingUp, Activity, Mail, Target, Ruler, Weight, Heart,
+  Clock, CreditCard, Filter,
 } from "lucide-react"
 import type { Member, Profile, Membership, Attendance, Payment, ProgressLog } from "@/types"
 import {
@@ -28,7 +30,8 @@ export default function MembersPage() {
   const [error, setError] = useState<string | null>(null)
   const [members, setMembers] = useState<MemberWithProfile[]>([])
   const [search, setSearch] = useState("")
-  const [filter, setFilter] = useState<"all" | "active" | "expired">("all")
+  const [filter, setFilter] = useState<"all" | "active" | "expired" | "new">("all")
+  const [sort, setSort] = useState<"name" | "date" | "progress">("name")
   const [selectedMember, setSelectedMember] = useState<MemberWithProfile | null>(null)
   const [memberAttendance, setMemberAttendance] = useState<Attendance[]>([])
   const [memberPayments, setMemberPayments] = useState<Payment[]>([])
@@ -125,9 +128,25 @@ export default function MembersPage() {
     const matchesFilter =
       filter === "all" ? true :
       filter === "active" ? m.status === "active" :
+      filter === "new" ? new Date(m.createdAt).getTime() > Date.now() - 30 * 24 * 60 * 60 * 1000 :
       m.status === "expired" || m.status === "inactive"
     return matchesSearch && matchesFilter
   })
+
+  const sorted = [...filtered].sort((a, b) => {
+    if (sort === "name") {
+      return `${a.profile.firstName} ${a.profile.lastName}`.localeCompare(`${b.profile.firstName} ${b.profile.lastName}`)
+    }
+    if (sort === "date") {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    }
+    return 0
+  })
+
+  const calcProgress = (m: MemberWithProfile) => {
+    if (!m.activeMembership || !m.activeMembership.sessionsTotal) return 0
+    return Math.min(100, Math.round((m.activeMembership.sessionsUsed / m.activeMembership.sessionsTotal) * 100))
+  }
 
   const bmi = (weight: number | null, height: number | null) => {
     if (!weight || !height) return null
@@ -135,13 +154,28 @@ export default function MembersPage() {
     return (weight / (h * h)).toFixed(1)
   }
 
+  const statusConfig: Record<string, { label: string; color: string; dot: string }> = {
+    active: { label: "Actif", color: "text-green-400 bg-green-500/10 border-green-500/20", dot: "bg-green-400" },
+    expired: { label: "Expiré", color: "text-red-400 bg-red-500/10 border-red-500/20", dot: "bg-red-400" },
+    inactive: { label: "Inactif", color: "text-yellow-400 bg-yellow-500/10 border-yellow-500/20", dot: "bg-yellow-400" },
+    new: { label: "Nouveau", color: "text-blue-400 bg-blue-500/10 border-blue-500/20", dot: "bg-blue-400" },
+  }
+
+  const getStatus = (m: MemberWithProfile) => {
+    const isNew = new Date(m.createdAt).getTime() > Date.now() - 30 * 24 * 60 * 60 * 1000
+    if (isNew) return statusConfig.new
+    return statusConfig[m.status] || statusConfig.inactive
+  }
+
   if (loading) {
     return (
       <div className="p-4 md:p-6 lg:p-8 space-y-4">
-        <div className="h-8 w-48 bg-gray-200 rounded-lg animate-pulse" />
-        <div className="h-10 bg-gray-200 rounded-xl animate-pulse" />
-        <div className="flex gap-2">{[...Array(3)].map((_, i) => <div key={i} className="h-9 w-20 bg-gray-200 rounded-xl animate-pulse" />)}</div>
-        {[...Array(5)].map((_, i) => <div key={i} className="h-20 bg-gray-200 rounded-2xl animate-pulse" />)}
+        <div className="h-8 w-48 bg-white/5 rounded-lg animate-pulse backdrop-blur-xl" />
+        <div className="h-12 bg-white/5 rounded-xl animate-pulse backdrop-blur-xl" />
+        <div className="flex gap-2">{[...Array(4)].map((_, i) => <div key={i} className="h-9 w-20 bg-white/5 rounded-xl animate-pulse backdrop-blur-xl" />)}</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {[...Array(6)].map((_, i) => <div key={i} className="h-56 bg-white/5 rounded-2xl animate-pulse backdrop-blur-xl border border-white/10" />)}
+        </div>
       </div>
     )
   }
@@ -150,12 +184,12 @@ export default function MembersPage() {
     return (
       <div className="p-4 md:p-6 lg:p-8">
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
-            <AlertCircle className="w-8 h-8 text-red-500" />
+          <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4 backdrop-blur-xl border border-red-500/20">
+            <AlertCircle className="w-8 h-8 text-red-400" />
           </div>
-          <p className="text-base font-bold text-brand-black mb-1">Erreur</p>
-          <p className="text-sm text-gray-500 mb-4">{error}</p>
-          <button onClick={() => window.location.reload()} className="text-sm font-bold text-white bg-brand-red px-6 py-2.5 rounded-xl hover:bg-red-700 transition-colors flex items-center gap-2">
+          <p className="text-base font-bold text-white mb-1">Erreur</p>
+          <p className="text-sm text-white/50 mb-4">{error}</p>
+          <button onClick={() => window.location.reload()} className="text-sm font-bold text-white bg-gradient-to-r from-[#C89B3C] to-[#D4AF37] px-6 py-2.5 rounded-xl hover:opacity-90 transition-all flex items-center gap-2 shadow-lg shadow-[#C89B3C]/20">
             <RefreshCw className="w-4 h-4" /> Réessayer
           </button>
         </div>
@@ -169,27 +203,25 @@ export default function MembersPage() {
     const imc = bmi(latestProgress?.weight ?? selectedMember.weight, selectedMember.height)
 
     return (
-      <div className="p-4 md:p-6 lg:p-8 space-y-5">
-        <button onClick={() => setSelectedMember(null)} className="flex items-center gap-1 text-sm text-gray-500 hover:text-brand-black mb-2">
+      <div className="p-4 md:p-6 lg:p-8 space-y-5 max-w-4xl mx-auto">
+        <button onClick={() => setSelectedMember(null)} className="flex items-center gap-1 text-sm text-white/50 hover:text-[#C89B3C] transition-colors mb-2">
           <ChevronRight className="w-4 h-4 rotate-180" /> Retour à la liste
         </button>
 
-        <div className="bg-gradient-to-r from-brand-red to-red-700 rounded-2xl p-5 text-white shadow-lg shadow-brand-red/20">
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-lg">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center text-2xl font-bold shrink-0">
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#C89B3C] to-[#D4AF37] flex items-center justify-center text-xl font-bold text-black shrink-0">
               {p.avatarUrl ? <Image src={p.avatarUrl} alt="" width={64} height={64} className="w-full h-full rounded-full object-cover" /> : p.firstName.charAt(0)}
             </div>
             <div className="flex-1">
-              <h2 className="text-xl font-bold">{p.firstName} {p.lastName}</h2>
-              <div className="flex items-center gap-3 mt-1 text-sm text-white/70">
+              <h2 className="text-xl font-bold text-white">{p.firstName} {p.lastName}</h2>
+              <div className="flex items-center gap-3 mt-1 text-sm text-white/50">
                 <span className="flex items-center gap-1"><Mail className="w-3.5 h-3.5" /> {p.email}</span>
                 {p.phone && <span className="flex items-center gap-1"><Phone className="w-3.5 h-3.5" /> {p.phone}</span>}
               </div>
             </div>
-            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-              selectedMember.status === "active" ? "bg-green-400 text-green-900" : "bg-white/20 text-white"
-            }`}>
-              {selectedMember.status === "active" ? "Actif" : "Inactif"}
+            <span className={cn("px-3 py-1 rounded-full text-xs font-bold border", getStatus(selectedMember).color)}>
+              {getStatus(selectedMember).label}
             </span>
           </div>
         </div>
@@ -201,87 +233,87 @@ export default function MembersPage() {
             { label: "IMC", value: imc || "—", icon: Heart },
             { label: "Masse musculaire", value: latestProgress?.muscleMass ? `${latestProgress.muscleMass} kg` : "—", icon: Activity },
           ].map((s, i) => (
-            <div key={i} className="bg-white rounded-2xl border shadow-sm p-4">
+            <div key={i} className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-brand-red/10 flex items-center justify-center"><s.icon className="w-4 h-4 text-brand-red" /></div>
+                <div className="w-8 h-8 rounded-lg bg-[#C89B3C]/10 flex items-center justify-center"><s.icon className="w-4 h-4 text-[#C89B3C]" /></div>
               </div>
-              <p className="text-lg font-bold text-brand-black">{s.value}</p>
-              <p className="text-xs text-gray-500">{s.label}</p>
+              <p className="text-lg font-bold text-white">{s.value}</p>
+              <p className="text-xs text-white/40">{s.label}</p>
             </div>
           ))}
         </div>
 
         {selectedMember.fitnessGoal && (
-          <div className="bg-white rounded-2xl border shadow-sm p-4 flex items-center gap-3">
-            <Target className="w-5 h-5 text-brand-red" />
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 flex items-center gap-3">
+            <Target className="w-5 h-5 text-[#C89B3C]" />
             <div>
-              <p className="text-xs text-gray-500">Objectif fitness</p>
-              <p className="text-sm font-bold text-brand-black">{selectedMember.fitnessGoal}</p>
+              <p className="text-xs text-white/40">Objectif fitness</p>
+              <p className="text-sm font-bold text-white">{selectedMember.fitnessGoal}</p>
             </div>
           </div>
         )}
 
-        <div className="bg-white rounded-2xl border shadow-sm p-5">
-          <h3 className="text-sm font-bold text-brand-black mb-4 flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-brand-red" /> Progression
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-5">
+          <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-[#C89B3C]" /> Progression
           </h3>
           {memberProgress.length < 2 ? (
-            <div className="text-center py-6 text-sm text-gray-500">Pas assez de données pour afficher la progression</div>
+            <div className="text-center py-6 text-sm text-white/40">Pas assez de données pour afficher la progression</div>
           ) : (
             <ResponsiveContainer width="100%" height={200}>
               <AreaChart data={[...memberProgress].reverse()}>
                 <defs>
                   <linearGradient id="weightGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#E10600" stopOpacity={0.2} />
-                    <stop offset="100%" stopColor="#E10600" stopOpacity={0} />
+                    <stop offset="0%" stopColor="#C89B3C" stopOpacity={0.2} />
+                    <stop offset="100%" stopColor="#C89B3C" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="loggedAt" tick={{ fontSize: 10, fill: "#9ca3af" }} axisLine={false} tickLine={false} tickFormatter={(v) => new Date(v).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })} />
-                <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
-                <Tooltip />
-                <Area type="monotone" dataKey="weight" stroke="#E10600" strokeWidth={2} fill="url(#weightGrad)" name="Poids (kg)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
+                <XAxis dataKey="loggedAt" tick={{ fontSize: 10, fill: "#ffffff40" }} axisLine={false} tickLine={false} tickFormatter={(v) => new Date(v).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })} />
+                <YAxis tick={{ fontSize: 10, fill: "#ffffff40" }} axisLine={false} tickLine={false} />
+                <Tooltip contentStyle={{ background: "rgba(0,0,0,0.8)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", backdropFilter: "blur(12px)" }} />
+                <Area type="monotone" dataKey="weight" stroke="#C89B3C" strokeWidth={2} fill="url(#weightGrad)" name="Poids (kg)" />
               </AreaChart>
             </ResponsiveContainer>
           )}
         </div>
 
         <div className="grid lg:grid-cols-2 gap-4">
-          <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
-            <div className="px-5 pt-4 pb-2 border-b border-gray-50">
-              <h3 className="text-sm font-bold text-brand-black flex items-center gap-2"><Clock className="w-4 h-4 text-brand-red" /> Dernières présences</h3>
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden">
+            <div className="px-5 pt-4 pb-2 border-b border-white/10">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2"><Clock className="w-4 h-4 text-[#C89B3C]" /> Dernières présences</h3>
             </div>
             {memberAttendance.length === 0 ? (
-              <div className="text-center py-6 text-sm text-gray-500">Aucune présence enregistrée</div>
+              <div className="text-center py-6 text-sm text-white/40">Aucune présence enregistrée</div>
             ) : (
-              <div className="divide-y divide-gray-50">
+              <div className="divide-y divide-white/10">
                 {memberAttendance.slice(0, 8).map((a) => (
                   <div key={a.id} className="flex items-center justify-between px-5 py-3">
-                    <span className="text-sm text-gray-700">{new Date(a.timestamp).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" })}</span>
-                    <span className="text-xs text-gray-400">{new Date(a.timestamp).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</span>
+                    <span className="text-sm text-white/70">{new Date(a.timestamp).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" })}</span>
+                    <span className="text-xs text-white/40">{new Date(a.timestamp).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</span>
                   </div>
                 ))}
               </div>
             )}
           </div>
 
-          <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
-            <div className="px-5 pt-4 pb-2 border-b border-gray-50">
-              <h3 className="text-sm font-bold text-brand-black flex items-center gap-2"><CreditCard className="w-4 h-4 text-brand-red" /> Derniers paiements</h3>
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden">
+            <div className="px-5 pt-4 pb-2 border-b border-white/10">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2"><CreditCard className="w-4 h-4 text-[#C89B3C]" /> Derniers paiements</h3>
             </div>
             {memberPayments.length === 0 ? (
-              <div className="text-center py-6 text-sm text-gray-500">Aucun paiement enregistré</div>
+              <div className="text-center py-6 text-sm text-white/40">Aucun paiement enregistré</div>
             ) : (
-              <div className="divide-y divide-gray-50">
+              <div className="divide-y divide-white/10">
                 {memberPayments.slice(0, 5).map((p) => (
                   <div key={p.id} className="flex items-center justify-between px-5 py-3">
                     <div>
-                      <p className="text-sm text-gray-700">{p.amount.toLocaleString()} DZD</p>
-                      <p className="text-[10px] text-gray-400">{new Date(p.paidAt).toLocaleDateString("fr-FR")}</p>
+                      <p className="text-sm text-white/70">{p.amount.toLocaleString()} DZD</p>
+                      <p className="text-[10px] text-white/40">{new Date(p.paidAt).toLocaleDateString("fr-FR")}</p>
                     </div>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      p.status === "completed" ? "bg-green-50 text-green-600" : "bg-amber-50 text-amber-600"
-                    }`}>{p.status}</span>
+                    <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full border",
+                      p.status === "completed" ? "text-green-400 bg-green-500/10 border-green-500/20" : "text-amber-400 bg-amber-500/10 border-amber-500/20"
+                    )}>{p.status}</span>
                   </div>
                 ))}
               </div>
@@ -290,10 +322,10 @@ export default function MembersPage() {
         </div>
 
         <div className="flex gap-2">
-          <button onClick={() => router.push("/coach/programs")} className="flex-1 flex items-center justify-center gap-2 bg-brand-red text-white py-3 rounded-xl text-sm font-bold hover:bg-red-700 transition-colors">
+          <button onClick={() => router.push("/coach/programs")} className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-[#C89B3C] to-[#D4AF37] text-black py-3 rounded-xl text-sm font-bold hover:opacity-90 transition-all shadow-lg shadow-[#C89B3C]/20">
             <Dumbbell className="w-4 h-4" /> Créer programme
           </button>
-          <button onClick={() => router.push("/coach/nutrition")} className="flex-1 flex items-center justify-center gap-2 bg-white border-2 border-brand-red text-brand-red py-3 rounded-xl text-sm font-bold hover:bg-red-50 transition-colors">
+          <button onClick={() => router.push("/coach/nutrition")} className="flex-1 flex items-center justify-center gap-2 bg-white/5 border border-white/10 text-white py-3 rounded-xl text-sm font-bold hover:bg-white/10 transition-all">
             <Apple className="w-4 h-4" /> Plan nutrition
           </button>
         </div>
@@ -302,98 +334,181 @@ export default function MembersPage() {
   }
 
   return (
-    <div className="p-4 md:p-6 lg:p-8 space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="p-4 md:p-6 lg:p-8 space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-xl lg:text-2xl font-bold text-brand-black">Mes adhérents</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{members.length} adhérent{members.length > 1 ? "s" : ""} suivi{members.length > 1 ? "s" : ""}</p>
+          <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-[#C89B3C] to-[#D4AF37] bg-clip-text text-transparent">
+            Mes Clients
+          </h1>
+          <p className="text-sm text-white/50 mt-1">Gérez vos adhérents et suivez leur progression</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 px-4 py-2 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl">
+            <Users className="w-4 h-4 text-[#C89B3C]" />
+            <span className="text-sm font-bold text-white">{members.length}</span>
+          </div>
+          <button className="flex items-center gap-2 bg-gradient-to-r from-[#C89B3C] to-[#D4AF37] text-black px-5 py-2.5 rounded-xl text-sm font-bold hover:opacity-90 transition-all shadow-lg shadow-[#C89B3C]/20">
+            <Plus className="w-4 h-4" /> Ajouter
+          </button>
         </div>
       </div>
 
-      <div className="relative">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Rechercher par nom ou téléphone..."
-          className="w-full pl-10 pr-4 py-2.5 bg-white border rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-red/20"
-        />
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Rechercher par nom ou téléphone..."
+            className="w-full pl-11 pr-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl text-sm text-white placeholder:text-white/30 outline-none focus:border-[#C89B3C]/50 focus:ring-1 focus:ring-[#C89B3C]/30 transition-all"
+          />
+        </div>
+        <div className="relative">
+          <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 pointer-events-none" />
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value as "name" | "date" | "progress")}
+            className="appearance-none pl-11 pr-10 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl text-sm text-white outline-none focus:border-[#C89B3C]/50 focus:ring-1 focus:ring-[#C89B3C]/30 transition-all min-w-[140px] cursor-pointer"
+          >
+            <option value="name" className="bg-gray-900 text-white">Nom</option>
+            <option value="date" className="bg-gray-900 text-white">Date d&apos;ajout</option>
+            <option value="progress" className="bg-gray-900 text-white">Progression</option>
+          </select>
+        </div>
       </div>
 
-      <div className="flex gap-1.5">
+      <div className="flex gap-2 flex-wrap">
         {[
           { key: "all" as const, label: "Tous", count: members.length },
           { key: "active" as const, label: "Actifs", count: members.filter((m) => m.status === "active").length },
-          { key: "expired" as const, label: "Expirés", count: members.filter((m) => m.status === "expired" || m.status === "inactive").length },
+          { key: "expired" as const, label: "En attente", count: members.filter((m) => m.status === "expired" || m.status === "inactive").length },
+          { key: "new" as const, label: "Nouveaux", count: members.filter((m) => new Date(m.createdAt).getTime() > Date.now() - 30 * 24 * 60 * 60 * 1000).length },
         ].map((f) => (
           <button
             key={f.key}
             onClick={() => setFilter(f.key)}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
-              filter === f.key ? "bg-brand-red text-white shadow-md shadow-brand-red/20" : "bg-white border border-gray-200 text-gray-600 hover:border-brand-red/30"
-            }`}
+            className={cn(
+              "px-4 py-2 rounded-xl text-xs font-bold transition-all border",
+              filter === f.key
+                ? "bg-gradient-to-r from-[#C89B3C] to-[#D4AF37] text-black border-transparent shadow-lg shadow-[#C89B3C]/20"
+                : "bg-white/5 backdrop-blur-xl border-white/10 text-white/60 hover:text-white hover:border-[#C89B3C]/30"
+            )}
           >
             {f.label} ({f.count})
           </button>
         ))}
       </div>
 
-      {filtered.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
-            <Users className="w-7 h-7 text-gray-400" />
+      {sorted.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="w-24 h-24 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 flex items-center justify-center mx-auto mb-5">
+            <Users className="w-10 h-10 text-white/20" />
           </div>
-          <p className="text-sm font-bold text-brand-black mb-1">Aucun adhérent trouvé</p>
-          <p className="text-xs text-gray-500">{search ? "Essayez un autre terme de recherche" : "Aucun adhérent ne vous est assigné"}</p>
+          <p className="text-lg font-bold text-white mb-1">Aucun client pour le moment</p>
+          <p className="text-sm text-white/40">
+            {search || filter !== "all"
+              ? "Essayez de modifier vos filtres de recherche"
+              : "Les clients qui vous seront assignés apparaîtront ici"}
+          </p>
         </div>
       ) : (
-        <div className="space-y-1.5">
-          {filtered.map((m) => {
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {sorted.map((m) => {
             const name = `${m.profile.firstName} ${m.profile.lastName}`
+            const progress = calcProgress(m)
+            const status = getStatus(m)
             const expDate = m.activeMembership?.endDate
             const isExpiring = expDate && new Date(expDate).getTime() - Date.now() < 15 * 24 * 60 * 60 * 1000
+
             return (
-              <button
+              <div
                 key={m.id}
+                className="group relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden hover:bg-white/[0.07] transition-all cursor-pointer"
                 onClick={() => loadMemberDetail(m)}
-                className="w-full flex items-center gap-3 p-3.5 bg-white rounded-2xl border shadow-sm hover:shadow-md transition-all text-left"
               >
-                <div className="w-12 h-12 rounded-full bg-brand-red/10 flex items-center justify-center text-brand-red font-bold shrink-0">
-                  {m.profile.avatarUrl ? (
-                    <Image src={m.profile.avatarUrl} alt="" width={48} height={48} className="w-full h-full rounded-full object-cover" />
-                  ) : name.charAt(0).toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-bold text-brand-black truncate">{name}</p>
-                    {m.status === "active" ? (
-                      <span className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
-                    ) : (
-                      <span className="w-2 h-2 rounded-full bg-gray-300 shrink-0" />
-                    )}
+                <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#C89B3C] to-[#D4AF37] opacity-60" />
+                <div className="p-5 space-y-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#C89B3C] to-[#D4AF37] flex items-center justify-center text-sm font-bold text-black shrink-0">
+                      {m.profile.avatarUrl ? (
+                        <Image src={m.profile.avatarUrl} alt="" width={48} height={48} className="w-full h-full rounded-full object-cover" />
+                      ) : name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-white truncate">{name}</p>
+                      {m.profile.phone && (
+                        <p className="text-xs text-white/40 flex items-center gap-1 mt-0.5">
+                          <Phone className="w-3 h-3" />{m.profile.phone}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); loadMemberDetail(m) }}
+                        className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-[#C89B3C] hover:border-[#C89B3C]/30 transition-all"
+                        title="Voir les détails"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-[#C89B3C] hover:border-[#C89B3C]/30 transition-all"
+                        title="Envoyer un message"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    {m.profile.phone && <span className="text-xs text-gray-400 flex items-center gap-1"><Phone className="w-3 h-3" />{m.profile.phone}</span>}
+
+                  <div className="flex items-center gap-2 flex-wrap">
                     {m.activeMembership && (
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${isExpiring ? "bg-amber-50 text-amber-600" : "bg-green-50 text-green-600"}`}>
+                      <span className={cn(
+                        "text-[10px] font-bold px-2 py-0.5 rounded-full border",
+                        isExpiring
+                          ? "text-amber-400 bg-amber-500/10 border-amber-500/20"
+                          : "text-green-400 bg-green-500/10 border-green-500/20"
+                      )}>
                         {m.activeMembership.planName}
                       </span>
                     )}
+                    <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full border", status.color)}>
+                      {status.label}
+                    </span>
                   </div>
-                  {expDate && (
-                    <p className={`text-[10px] mt-0.5 ${isExpiring ? "text-amber-600 font-medium" : "text-gray-400"}`}>
-                      Expire le {new Date(expDate).toLocaleDateString("fr-FR")}
-                    </p>
+
+                  {m.fitnessGoal && (
+                    <div className="flex items-center gap-2">
+                      <Target className="w-3.5 h-3.5 text-[#C89B3C] shrink-0" />
+                      <p className="text-xs text-white/60 truncate">{m.fitnessGoal}</p>
+                    </div>
                   )}
+
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-white/40">Progression</span>
+                      <span className="text-white/60 font-medium">{progress}%</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-[#C89B3C] to-[#D4AF37] transition-all duration-500"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1 border-t border-white/10">
+                    <span className="text-[10px] text-white/30 flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      {expDate
+                        ? `Jusqu'au ${new Date(expDate).toLocaleDateString("fr-FR")}`
+                        : "N/A"
+                      }
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-white/20 group-hover:text-[#C89B3C] transition-colors" />
+                  </div>
                 </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  {m.experienceLevel && (
-                    <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-full">{m.experienceLevel}</span>
-                  )}
-                  <ChevronRight className="w-4 h-4 text-gray-300" />
-                </div>
-              </button>
+              </div>
             )
           })}
         </div>

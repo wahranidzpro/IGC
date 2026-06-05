@@ -4,7 +4,13 @@ import { cookies } from "next/headers"
 import crypto from "crypto"
 
 export async function POST(request: Request) {
-  const { profileId } = await request.json()
+  let body;
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ success: false, error: "Données invalides" }, { status: 400 })
+  }
+  const { profileId } = body
 
   if (!profileId) {
     return NextResponse.json({ success: false, error: "Données manquantes" }, { status: 400 })
@@ -30,7 +36,7 @@ export async function POST(request: Request) {
     .from("profiles")
     .select("email")
     .eq("id", profileId)
-    .single()
+    .maybeSingle()
 
   if (!profile) {
     return NextResponse.json({ success: false, error: "Profil introuvable" }, { status: 404 })

@@ -11,6 +11,7 @@ import { logger } from '@/lib/logger';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/auth/context';
 import type { Html5Qrcode } from 'html5-qrcode';
+import ScreenSaver from "@/components/ui/ScreenSaver";
 
 type AccessMode = 'qr' | 'birthdate' | 'rfid' | 'phone';
 
@@ -391,7 +392,7 @@ export default function CheckinPage() {
   }, [kioskMode]);
 
   const members = useLiveQuery(() => {
-    if (role === 'coach' && coachId) return db.members.where('coachId').equals(coachId).toArray();
+    if (role === 'coach' && coachId) return db.members.where('coachId').equals(Number(coachId)).toArray();
     return db.members.toArray();
   }, [coachId, role]);
   const todayCheckins = useLiveQuery(() => {
@@ -496,7 +497,7 @@ export default function CheckinPage() {
       if (member.blockedUntil && new Date(member.blockedUntil).getTime() <= Date.now()) return 'active';
       return 'blocked';
     }
-    if (member.status !== 'active') return 'inactive';
+    if (member.status === 'expired') return 'expired';
     if (member.subscriptionType === 'subscription' && member.subscriptionDuration) {
       const durationMap: Record<string, number> = { '1_mois': 30, '2_mois': 60, '3_mois': 90, '6_mois': 180, '12_mois': 365 };
       const days = durationMap[member.subscriptionDuration] || 30;
@@ -506,6 +507,7 @@ export default function CheckinPage() {
       if (now > expiry) return 'expired';
     }
     if (member.subscriptionType === 'free_session' && (member.sessionsLeft || 0) <= 0) return 'expired';
+    if (member.status !== 'active') return 'inactive';
     return 'active';
   };
 
@@ -1207,9 +1209,24 @@ const renderBlocked = () => {
               {(() => {
                 const checkinTimes = todayCheckins?.filter(c => c.type === 'checkin').map(c => new Date(c.timestamp).getHours()) || [];
                 const peakHour = checkinTimes.length > 0 ? checkinTimes.sort((a,b) => checkinTimes.filter(v => v===a).length - checkinTimes.filter(v => v===b).length).pop() : null;
-                const checkoutTimes = todayCheckins?.filter(c => c.type === 'checkout').map(c => new Date(c.timestamp).getTime()) || [];
-                const checkinTimesMs = todayCheckins?.filter(c => c.type === 'checkin').map(c => new Date(c.timestamp).getTime()) || [];
-                const avgStayMinutes = checkoutTimes.length > 0 && checkinTimesMs.length > 0 ? Math.round(checkoutTimes.reduce((s, t, i) => s + (t - (checkinTimesMs[i] || t)), 0) / checkoutTimes.length / 60000) : 0;
+                const memberStayDurations: number[] = [];
+                const memberStayMap = new Map<number, { ci: number; co: number }[]>();
+                todayCheckins?.forEach(c => {
+                  const ts = new Date(c.timestamp).getTime();
+                  if (!memberStayMap.has(c.memberId)) memberStayMap.set(c.memberId, []);
+                  const sessions = memberStayMap.get(c.memberId)!;
+                  if (c.type === 'checkin') sessions.push({ ci: ts, co: 0 });
+                  if (c.type === 'checkout') {
+                    const open = sessions.find(s => s.co === 0);
+                    if (open) open.co = ts;
+                  }
+                });
+                memberStayMap.forEach(sessions => {
+                  sessions.forEach(s => { if (s.ci && s.co) memberStayDurations.push(s.co - s.ci); });
+                });
+                const avgStayMinutes = memberStayDurations.length > 0
+                  ? Math.round(memberStayDurations.reduce((s, t) => s + t, 0) / memberStayDurations.length / 60000)
+                  : 0;
                 return (
                   <>
                     <div className="bg-gray-800/50 rounded-lg p-2 text-center">
@@ -1505,6 +1522,7 @@ const renderBlocked = () => {
         onExit={() => { setKioskMode(false); if (document.fullscreenElement) document.exitFullscreen(); }}
       />
     )}
-  </>
+      <ScreenSaver />
+    </>
   );
 }

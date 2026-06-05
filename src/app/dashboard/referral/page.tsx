@@ -15,7 +15,7 @@ export default function ReferralPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f9fc]">
+    <div className="min-h-screen">
       <div className="bg-gradient-to-br from-brand-red via-red-700 to-brand-black px-5 pt-6 pb-20 text-white overflow-hidden relative">
         <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-white/5 rounded-full blur-2xl" />
         <div className="relative z-10">
@@ -33,10 +33,10 @@ export default function ReferralPage() {
       </div>
 
       <div className="px-4 -mt-14 relative z-10 space-y-4 pb-28">
-        <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-lg shadow-black/5">
-          <h2 className="text-sm font-bold text-brand-black mb-3">Votre code de parrainage</h2>
-          <div className="flex items-center gap-2 bg-gray-50 rounded-xl p-1">
-            <div className="flex-1 px-3 py-2.5 font-mono text-sm font-bold text-brand-black tracking-wider">
+        <div className="glass-strong rounded-2xl border border-white/10 p-5 shadow-lg">
+          <h2 className="text-sm font-bold text-white mb-3">Votre code de parrainage</h2>
+          <div className="flex items-center gap-2 bg-white/5 rounded-xl p-1">
+            <div className="flex-1 px-3 py-2.5 font-mono text-sm font-bold text-white tracking-wider">
               {referralCode}
             </div>
             <button
@@ -48,10 +48,10 @@ export default function ReferralPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-lg shadow-black/5">
-          <h2 className="text-sm font-bold text-brand-black mb-3">Lien de parrainage</h2>
-          <div className="flex items-center gap-2 bg-gray-50 rounded-xl p-1">
-            <div className="flex-1 px-3 py-2.5 text-xs text-gray-600 truncate">
+        <div className="glass-strong rounded-2xl border border-white/10 p-5 shadow-lg">
+          <h2 className="text-sm font-bold text-white mb-3">Lien de parrainage</h2>
+          <div className="flex items-center gap-2 bg-white/5 rounded-xl p-1">
+            <div className="flex-1 px-3 py-2.5 text-xs text-gray-400 truncate">
               {referralLink}
             </div>
             <button
@@ -63,13 +63,13 @@ export default function ReferralPage() {
           </div>
         </div>
 
-        <button className="w-full flex items-center justify-center gap-2 bg-brand-black text-white rounded-2xl py-4 text-sm font-bold hover:bg-gray-900 transition-colors active:scale-[0.98]">
+        <button className="w-full flex items-center justify-center gap-2 glass text-white rounded-2xl py-4 text-sm font-bold border border-white/10 hover:bg-white/5 transition-colors active:scale-[0.98]">
           <Share2 className="w-4 h-4" />
           Partager mon code
         </button>
 
-        <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-lg shadow-black/5">
-          <h2 className="text-sm font-bold text-brand-black mb-3">Comment ça marche ?</h2>
+        <div className="glass-strong rounded-2xl border border-white/10 p-5 shadow-lg">
+          <h2 className="text-sm font-bold text-white mb-3">Comment ça marche ?</h2>
           <div className="space-y-3">
             {[
               { step: "1", title: "Partagez votre code", desc: "Invitez vos amis via votre code unique" },
@@ -81,8 +81,8 @@ export default function ReferralPage() {
                   {item.step}
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-brand-black">{item.title}</p>
-                  <p className="text-xs text-gray-500">{item.desc}</p>
+                  <p className="text-sm font-medium text-white">{item.title}</p>
+                  <p className="text-xs text-gray-400">{item.desc}</p>
                 </div>
               </div>
             ))}

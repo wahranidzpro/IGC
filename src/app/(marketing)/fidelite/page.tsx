@@ -67,8 +67,8 @@ export default function FidelitePage() {
               Le programme LEVEL UP récompense ta régularité. Cumule des points à chaque séance, 
               monte en grade et débloque des récompenses exclusives.
             </p>
-            <Link href="/signup" className="group inline-flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-brand-orange text-white px-8 py-4 rounded-xl font-bold hover:brightness-110 transition-all active:scale-95 shadow-xl shadow-yellow-500/30">
-              Rejoindre — dès 4 500 DA/mois <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            <Link href="/abonnements" className="group inline-flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-brand-orange text-white px-8 py-4 rounded-xl font-bold hover:brightness-110 transition-all active:scale-95 shadow-xl shadow-yellow-500/30">
+              Voir les abonnements <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
         </div>
@@ -154,8 +154,8 @@ export default function FidelitePage() {
             Le programme LEVEL UP est inclus dans <span className="text-white font-bold">tous nos abonnements</span>.
             Rejoins Infinity Gym dès 4 500 DA/mois et commence à cumuler des points.
           </p>
-          <Link href="/signup" className="group inline-flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-brand-orange text-white px-10 py-4 rounded-xl font-bold text-lg hover:brightness-110 transition-all active:scale-95 shadow-2xl shadow-yellow-500/30">
-            Je m'abonne dès 4 500 DA <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+          <Link href="/abonnements" className="group inline-flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-brand-orange text-white px-10 py-4 rounded-xl font-bold text-lg hover:brightness-110 transition-all active:scale-95 shadow-2xl shadow-yellow-500/30">
+            Voir les abonnements <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
       </section>

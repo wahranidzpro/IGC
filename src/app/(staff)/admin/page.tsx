@@ -3,15 +3,18 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useAuth } from '@/lib/auth/context';
-import { db } from '@/lib/db/dexie-db';
+import { db, PinUser } from '@/lib/db/dexie-db';
+import bcrypt from 'bcryptjs';
 import { useRouter } from 'next/navigation';
 import {
-  Shield, Users, CreditCard, Activity, UserPlus, Settings, Database,
-  Search, FileText, BarChart3, Gift, Clock, DollarSign, RefreshCw,
-  CheckCircle, XCircle, AlertTriangle, ChevronDown, ChevronRight,
+  Shield, Users, Activity, DollarSign, BarChart3,
+  Search, FileText, Database, Gift, Package, Dumbbell,
+  RefreshCw, CheckCircle, AlertTriangle, ChevronDown, ChevronRight,
   MoreVertical, Edit, Trash2, Lock, Unlock, User, Phone, Key,
-  Plus, X, Building2, Package, Dumbbell, Calendar
+  Plus, X, Building2, CreditCard, UserCheck, TrendingUp,
+  Clock, DoorOpen,
 } from 'lucide-react';
+import AdminStatsCard from '@/components/admin/AdminStatsCard';
 
 interface GymUser {
   id: string;
@@ -33,10 +36,10 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const ROLE_COLORS: Record<string, string> = {
-  admin: 'text-red-400 bg-red-500/10 border-red-500/30',
-  reception: 'text-blue-400 bg-blue-500/10 border-blue-500/30',
-  coach: 'text-green-400 bg-green-500/10 border-green-500/30',
-  adherent: 'text-gray-400 bg-gray-500/10 border-gray-500/30',
+  admin: 'text-[#0A84FF] bg-[#0A84FF]/10 border-[#0A84FF]/30',
+  reception: 'text-[#00D4FF] bg-[#00D4FF]/10 border-[#00D4FF]/30',
+  coach: 'text-[#10B981] bg-[#10B981]/10 border-[#10B981]/30',
+  adherent: 'text-[#A8B2C7] bg-[#A8B2C7]/10 border-[#A8B2C7]/30',
 };
 
 export default function AdminDashboardPage() {
@@ -109,6 +112,11 @@ export default function AdminDashboardPage() {
     return checkedIn.size;
   }, [checkins]);
 
+  const occupancyRate = useMemo(() =>
+    members?.length ? Math.round((presentCheckins / members.length) * 100) : 0,
+    [members, presentCheckins]
+  );
+
   const filteredUsers = useMemo(() => {
     let list = gymUsers;
     if (userSearch) {
@@ -136,6 +144,18 @@ export default function AdminDashboardPage() {
         notify('success', `Utilisateur ${data.username} créé avec succès`);
         setShowCreateModal(false);
         fetchUsers();
+        const passwordHash = await bcrypt.hash(data.password, 10);
+        const pinHash = await bcrypt.hash(data.pin, 10);
+        await db.pinUsers.add({
+          username: data.username,
+          password: passwordHash,
+          pin: pinHash,
+          role: data.role as PinUser['role'],
+          name: data.name,
+          phone: data.phone || undefined,
+          isLocked: false,
+          createdAt: new Date(),
+        }).catch(() => {});
       } else {
         notify('error', result.error || 'Erreur création utilisateur');
       }
@@ -196,159 +216,285 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const monthlyRevenue = useMemo(() => {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    return payments?.filter(p => new Date(p.date) >= monthStart).reduce((s, p) => s + p.amount, 0) || 0;
+  }, [payments]);
+
+  const bestDay = useMemo(() => {
+    if (!todayCheckins || todayCheckins === 0) return '-';
+    return `${todayCheckins} check-ins`;
+  }, [todayCheckins]);
+
   if (role !== 'admin') {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center text-gray-400">
-          <Shield className="w-16 h-16 mx-auto mb-4 text-red-400" />
+        <div className="text-center">
+          <div className="w-20 h-20 rounded-2xl bg-[rgba(255,77,77,0.1)] border border-[rgba(255,77,77,0.2)] flex items-center justify-center mx-auto mb-6">
+            <Shield className="w-10 h-10 text-[#FF4D4D]" />
+          </div>
           <h2 className="text-2xl font-bold text-white mb-2">Accès réservé</h2>
-          <p>Seuls les administrateurs peuvent accéder à cette page.</p>
-          <button onClick={() => router.push('/')} className="mt-4 px-4 py-2 bg-orange-600 text-white rounded-lg cursor-pointer">Retour</button>
+          <p className="text-[#A8B2C7] mb-6">Seuls les administrateurs peuvent accéder à cette page.</p>
+          <button onClick={() => router.push('/')} className="px-6 py-3 rounded-xl bg-gradient-to-r from-[#0A84FF] to-[#00D4FF] text-white font-semibold shadow-lg shadow-[#0A84FF]/20 hover:shadow-xl transition-all">
+            Retour
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-            <Shield className="w-7 h-7 text-orange-400" />
-            Administration
-          </h2>
-          <p className="text-gray-400 mt-1">Gestion des utilisateurs et vue d'ensemble du système</p>
+          <div className="flex items-center gap-3 mb-1">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0A84FF] to-[#00D4FF] flex items-center justify-center shadow-lg shadow-[#0A84FF]/30">
+              <Shield className="w-5 h-5 text-white" />
+            </div>
+            <h1 className="text-2xl lg:text-3xl font-black text-white tracking-tight">
+              TABLEAU DE BORD
+            </h1>
+          </div>
+          <p className="text-[#A8B2C7] text-sm ml-[52px]">Vue d&apos;ensemble du centre</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#0A84FF] to-[#00D4FF] text-white text-sm font-semibold shadow-lg shadow-[#0A84FF]/20 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-2">
+            <Plus className="w-4 h-4" />
+            Nouvel utilisateur
+          </button>
+          <button className="px-5 py-2.5 rounded-xl glass-light text-[#A8B2C7] hover:text-white hover:bg-[rgba(255,255,255,0.08)] text-sm font-semibold transition-all duration-200 flex items-center gap-2 border border-[rgba(255,255,255,0.06)]">
+            <RefreshCw className="w-4 h-4" />
+            Actualiser
+          </button>
         </div>
       </div>
 
+      {/* Notification */}
       {notification && (
-        <div className={`px-4 py-3 rounded-xl text-sm flex items-center gap-2 ${
+        <div className={`px-5 py-4 rounded-2xl text-sm flex items-center gap-3 transition-all duration-300 animate-slide-up ${
           notification.type === 'success'
-            ? 'bg-green-500/10 border border-green-500/30 text-green-300'
-            : 'bg-red-500/10 border border-red-500/30 text-red-300'
+            ? 'glass border border-[#10B981]/30 shadow-[0_0_20px_rgba(16,185,129,0.1)]'
+            : 'glass border border-[#FF4D4D]/30 shadow-[0_0_20px_rgba(255,77,77,0.1)]'
         }`}>
-          {notification.type === 'success' ? <CheckCircle className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
-          {notification.message}
+          {notification.type === 'success'
+            ? <CheckCircle className="w-5 h-5 text-[#10B981]" />
+            : <AlertTriangle className="w-5 h-5 text-[#FF4D4D]" />}
+          <span className={notification.type === 'success' ? 'text-[#10B981]' : 'text-[#FF4D4D]'}>{notification.message}</span>
         </div>
       )}
 
-      {/* Stats cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard icon={<Users className="w-5 h-5" />} label="Membres total" value={members?.length || 0} color="text-blue-400" bg="bg-blue-500/10 border-blue-500/30" />
-        <StatCard icon={<CheckCircle className="w-5 h-5" />} label="Abonnements actifs" value={activeMembers} color="text-green-400" bg="bg-green-500/10 border-green-500/30" />
-        <StatCard icon={<Activity className="w-5 h-5" />} label="En salle" value={presentCheckins} color="text-orange-400" bg="bg-orange-500/10 border-orange-500/30" />
-        <StatCard icon={<DollarSign className="w-5 h-5" />} label="Revenu aujourd'hui" value={`${todayRevenue.toLocaleString('fr-DZ')} DA`} color="text-emerald-400" bg="bg-emerald-500/10 border-emerald-500/30" />
-        <StatCard icon={<Users className="w-5 h-5" />} label="Utilisateurs système" value={gymUsers.length} color="text-purple-400" bg="bg-purple-500/10 border-purple-500/30" />
-        <StatCard icon={<BarChart3 className="w-5 h-5" />} label="Check-ins aujourd'hui" value={todayCheckins} color="text-cyan-400" bg="bg-cyan-500/10 border-cyan-500/30" />
-        <StatCard icon={<Package className="w-5 h-5" />} label="Produits" value={products?.length || 0} color="text-yellow-400" bg="bg-yellow-500/10 border-yellow-500/30" />
-        <StatCard icon={<Dumbbell className="w-5 h-5" />} label="Coachs" value={coaches?.length || 0} color="text-pink-400" bg="bg-pink-500/10 border-pink-500/30" />
-        <StatCard icon={<Users className="w-5 h-5" />} label="Employés" value={`${employees?.length || 0} · ${employees?.filter(e => e.isActive).length || 0} actifs`} color="text-indigo-400" bg="bg-indigo-500/10 border-indigo-500/30" />
+      {/* KPI Cards - Premium Design */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <AdminStatsCard
+          label="Adhérents Actifs"
+          value={activeMembers}
+          icon={Users}
+          color="blue"
+          sub={`${members?.length || 0} total`}
+        />
+        <AdminStatsCard
+          label="Check-ins Aujourd'hui"
+          value={todayCheckins}
+          icon={DoorOpen}
+          color="green"
+        />
+        <AdminStatsCard
+          label="Présents en Salle"
+          value={presentCheckins}
+          icon={Activity}
+          color="turquoise"
+        />
+        <AdminStatsCard
+          label="Revenus Aujourd'hui"
+          value={`${todayRevenue.toLocaleString('fr-DZ')} DA`}
+          icon={DollarSign}
+          color="gold"
+        />
+        <AdminStatsCard
+          label="Taux d'Occupation"
+          value={`${occupancyRate}%`}
+          icon={BarChart3}
+          color="green"
+        />
+        <AdminStatsCard
+          label="Revenus du Mois"
+          value={`${monthlyRevenue.toLocaleString('fr-DZ')} DA`}
+          icon={TrendingUp}
+          color="orange"
+        />
+        <AdminStatsCard
+          label="Bénéfices"
+          value="-"
+          icon={DollarSign}
+          color="violet"
+          sub="Calcul en cours"
+        />
+        <AdminStatsCard
+          label="Meilleur Jour"
+          value={bestDay}
+          icon={Clock}
+          color="yellow"
+        />
       </div>
 
-      {/* Quick links */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <QuickLink icon={<Database className="w-5 h-5" />} label="Base de données" href="/admin/database" />
-        <QuickLink icon={<FileText className="w-5 h-5" />} label="Journal Audit" href="/admin/audit" />
-        <QuickLink icon={<Activity className="w-5 h-5" />} label="Monitoring" href="/admin/monitoring" />
-        <QuickLink icon={<Users className="w-5 h-5" />} label="Personnel" href="/personnel" />
-        <QuickLink icon={<Gift className="w-5 h-5" />} label="Fidélité" href="/admin/loyalty" />
+      {/* Secondary stats row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <AdminStatsCard label="Utilisateurs Système" value={gymUsers.length} icon={Shield} color="violet" />
+        <AdminStatsCard label="Produits" value={products?.length || 0} icon={Package} color="gold" />
+        <AdminStatsCard label="Coachs" value={coaches?.length || 0} icon={UserCheck} color="turquoise" />
+        <AdminStatsCard label="Employés" value={`${employees?.length || 0}`} icon={Users} color="blue" sub={`${employees?.filter(e => e.isActive).length || 0} actifs`} />
+      </div>
+
+      {/* Quick Links */}
+      <div>
+        <h2 className="text-sm font-bold uppercase tracking-[0.15em] text-[#A8B2C7] mb-4">Accès Rapide</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+          {[
+            { icon: <Database className="w-5 h-5" />, label: 'Base de données', href: '/admin/database', color: 'from-[#0A84FF] to-[#00D4FF]' },
+            { icon: <FileText className="w-5 h-5" />, label: 'Journal Audit', href: '/admin/audit', color: 'from-[#7C3AED] to-[#A855F7]' },
+            { icon: <Activity className="w-5 h-5" />, label: 'Monitoring', href: '/admin/monitoring', color: 'from-[#10B981] to-[#34D399]' },
+            { icon: <Users className="w-5 h-5" />, label: 'Personnel', href: '/personnel', color: 'from-[#00D4FF] to-[#0A84FF]' },
+            { icon: <Gift className="w-5 h-5" />, label: 'Fidélité', href: '/admin/loyalty', color: 'from-[#C89B3C] to-[#E0B85D]' },
+          ].map((link) => (
+            <button
+              key={link.href}
+              onClick={() => router.push(link.href)}
+              className="glass rounded-2xl p-4 flex items-center gap-3 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl border border-[rgba(255,255,255,0.06)] group"
+            >
+              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${link.color} flex items-center justify-center shadow-lg transition-transform duration-300 group-hover:scale-110`}>
+                {link.icon}
+              </div>
+              <span className="text-sm font-semibold text-white">{link.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* User Management */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl">
-        <div className="p-6 border-b border-gray-800">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-3">
-              <Users className="w-6 h-6 text-orange-400" />
-              <h3 className="text-lg font-semibold text-white">Gestion des utilisateurs</h3>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={fetchUsers}
-                className="flex items-center gap-2 px-3 py-2 bg-gray-800 text-gray-300 rounded-xl text-sm hover:bg-gray-700 transition-all cursor-pointer"
-              >
-                <RefreshCw className="w-4 h-4" />
-                Actualiser
-              </button>
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-xl text-sm hover:bg-orange-700 transition-all cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                Nouvel utilisateur
-              </button>
-            </div>
-          </div>
-
-          {/* Filters */}
-          <div className="flex flex-wrap items-center gap-3 mt-4">
-            <div className="relative flex-1 min-w-[200px] max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-bold uppercase tracking-[0.15em] text-[#A8B2C7]">Gestion des Utilisateurs</h2>
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A8B2C7]" />
               <input
                 type="text"
-                placeholder="Rechercher par nom, identifiant, téléphone..."
                 value={userSearch}
-                onChange={e => setUserSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none focus:border-orange-500"
+                onChange={(e) => setUserSearch(e.target.value)}
+                placeholder="Rechercher..."
+                className="w-48 lg:w-64 h-10 pl-10 pr-4 rounded-xl glass-light text-white text-sm border border-[rgba(255,255,255,0.06)] placeholder-[#A8B2C7] focus:outline-none focus:border-[#0A84FF]/50 focus:shadow-[0_0_15px_rgba(10,132,255,0.1)] transition-all"
               />
             </div>
             <select
               value={userRoleFilter}
-              onChange={e => setUserRoleFilter(e.target.value)}
-              className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-sm text-white focus:outline-none focus:border-orange-500"
+              onChange={(e) => setUserRoleFilter(e.target.value)}
+              className="h-10 px-3 rounded-xl glass-light text-white text-sm border border-[rgba(255,255,255,0.06)] focus:outline-none focus:border-[#0A84FF]/50 transition-all"
             >
               <option value="all">Tous les rôles</option>
-              {ROLES.map(r => (
-                <option key={r} value={r}>{ROLE_LABELS[r]}</option>
-              ))}
+              {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
             </select>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="h-10 px-4 rounded-xl bg-gradient-to-r from-[#0A84FF] to-[#00D4FF] text-white text-sm font-semibold shadow-lg shadow-[#0A84FF]/20 hover:shadow-xl transition-all flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" /> Nouveau
+            </button>
           </div>
         </div>
 
-        {/* Users table */}
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="text-left text-xs text-gray-500 uppercase tracking-wider border-b border-gray-800">
-                <th className="px-6 py-3 font-medium">Identifiant</th>
-                <th className="px-6 py-3 font-medium">Nom</th>
-                <th className="px-6 py-3 font-medium">Rôle</th>
-                <th className="px-6 py-3 font-medium">Téléphone</th>
-                <th className="px-6 py-3 font-medium">Statut</th>
-                <th className="px-6 py-3 font-medium">Créé le</th>
-                <th className="px-6 py-3 font-medium text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-800">
-              {usersLoading ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
-                    <div className="flex items-center justify-center gap-2">
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                      Chargement...
-                    </div>
-                  </td>
-                </tr>
-              ) : filteredUsers.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
-                    Aucun utilisateur trouvé
-                  </td>
-                </tr>
-              ) : filteredUsers.map(user => (
-                <UserRow
-                  key={user.id}
-                  user={user}
-                  isExpanded={expandedUserId === user.id}
-                  onToggle={() => setExpandedUserId(expandedUserId === user.id ? null : user.id)}
-                  onEdit={() => setShowEditModal(user)}
-                  onDelete={() => handleDeleteUser(user.username)}
-                  onToggleLock={() => handleToggleLock(user)}
-                />
+        <div className="glass rounded-2xl border border-[rgba(255,255,255,0.06)] overflow-hidden">
+          {usersLoading ? (
+            <div className="p-8 space-y-4">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-14 rounded-xl shimmer" />
               ))}
-            </tbody>
-          </table>
+            </div>
+          ) : filteredUsers.length === 0 ? (
+            <div className="p-12 text-center">
+              <Users className="w-12 h-12 text-[#A8B2C7]/30 mx-auto mb-3" />
+              <p className="text-[#A8B2C7]">Aucun utilisateur trouvé</p>
+            </div>
+          ) : (
+            <div>
+              {/* Table header */}
+              <div className="hidden lg:grid grid-cols-12 gap-4 px-6 py-4 text-xs font-bold uppercase tracking-wider text-[#A8B2C7] border-b border-[rgba(255,255,255,0.06)]">
+                <div className="col-span-3">Utilisateur</div>
+                <div className="col-span-2">Rôle</div>
+                <div className="col-span-2">Contact</div>
+                <div className="col-span-2">Statut</div>
+                <div className="col-span-1 text-center">PIN</div>
+                <div className="col-span-2 text-right">Actions</div>
+              </div>
+
+              {filteredUsers.map((u) => (
+                <div key={u.id} className="border-b border-[rgba(255,255,255,0.04)] last:border-0">
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 px-6 py-4 items-center hover:bg-[rgba(255,255,255,0.02)] transition-colors">
+                    <div className="col-span-3 flex items-center gap-3">
+                      <div className={`w-9 h-9 rounded-lg ${ROLE_COLORS[u.role] || 'bg-[rgba(168,178,199,0.1)]'} flex items-center justify-center`}>
+                        <User className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-white">{u.name || u.username}</p>
+                        <p className="text-xs text-[#A8B2C7]">@{u.username}</p>
+                      </div>
+                    </div>
+                    <div className="col-span-2">
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-semibold uppercase tracking-wider ${ROLE_COLORS[u.role] || 'text-[#A8B2C7] bg-[rgba(168,178,199,0.1)]'}`}>
+                        {ROLE_LABELS[u.role] || u.role}
+                      </span>
+                    </div>
+                    <div className="col-span-2 text-sm text-[#A8B2C7]">
+                      {u.phone || '—'}
+                    </div>
+                    <div className="col-span-2">
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold ${
+                        u.is_locked
+                          ? 'bg-[rgba(255,77,77,0.1)] text-[#FF4D4D] border border-[rgba(255,77,77,0.2)]'
+                          : 'bg-[rgba(16,185,129,0.1)] text-[#10B981] border border-[rgba(16,185,129,0.2)]'
+                      }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${u.is_locked ? 'bg-[#FF4D4D]' : 'bg-[#10B981]'}`} />
+                        {u.is_locked ? 'Verrouillé' : 'Actif'}
+                      </span>
+                    </div>
+                    <div className="col-span-1 text-center text-sm text-[#A8B2C7]">
+                      {u.is_locked ? '—' : '••••'}
+                    </div>
+                    <div className="col-span-2 flex items-center justify-end gap-2">
+                      <button onClick={() => setShowEditModal(u)}
+                        className="p-2 rounded-lg text-[#A8B2C7] hover:text-white hover:bg-[rgba(255,255,255,0.06)] transition-all">
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => handleToggleLock(u)}
+                        className="p-2 rounded-lg text-[#A8B2C7] hover:text-[#C89B3C] hover:bg-[rgba(200,155,60,0.1)] transition-all">
+                        {u.is_locked ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+                      </button>
+                      <button onClick={() => handleDeleteUser(u.username)}
+                        className="p-2 rounded-lg text-[#A8B2C7] hover:text-[#FF4D4D] hover:bg-[rgba(255,77,77,0.1)] transition-all">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => setExpandedUserId(expandedUserId === u.id ? null : u.id)}
+                        className="p-2 rounded-lg text-[#A8B2C7] hover:text-white hover:bg-[rgba(255,255,255,0.06)] transition-all lg:hidden">
+                        {expandedUserId === u.id ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  {/* Expanded mobile details */}
+                  {expandedUserId === u.id && (
+                    <div className="lg:hidden px-6 pb-4 space-y-2 animate-slide-up">
+                      <div className="flex items-center gap-2 text-xs text-[#A8B2C7]">
+                        <Phone className="w-3 h-3" /> {u.phone || '—'}
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-[#A8B2C7]">
+                        <Key className="w-3 h-3" /> PIN: {u.is_locked ? '—' : '••••'}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -376,12 +522,14 @@ export default function AdminDashboardPage() {
 
 function StatCard({ icon, label, value, color, bg }: { icon: React.ReactNode; label: string; value: string | number; color: string; bg: string }) {
   return (
-    <div className={`rounded-xl p-4 border ${bg}`}>
+    <div className="glass rounded-2xl p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl border border-[rgba(255,255,255,0.06)]">
       <div className="flex items-center justify-between mb-2">
-        <span className={`text-xs font-medium ${color}`}>{label}</span>
-        <span className={color}>{icon}</span>
+        <span className="text-xs font-semibold uppercase tracking-wider text-[#A8B2C7]">{label}</span>
+        <div className={`w-9 h-9 rounded-xl ${bg} flex items-center justify-center`}>
+          {icon}
+        </div>
       </div>
-      <p className="text-2xl font-bold text-white">{value}</p>
+      <p className={`text-2xl font-black ${color}`}>{value}</p>
     </div>
   );
 }
@@ -389,209 +537,104 @@ function StatCard({ icon, label, value, color, bg }: { icon: React.ReactNode; la
 function QuickLink({ icon, label, href }: { icon: React.ReactNode; label: string; href: string }) {
   const router = useRouter();
   return (
-    <button
-      onClick={() => router.push(href)}
-      className="flex items-center gap-3 px-4 py-3 bg-gray-900 border border-gray-800 rounded-xl text-gray-300 hover:bg-gray-800 hover:text-white transition-all cursor-pointer"
-    >
-      <span className="text-orange-400">{icon}</span>
-      <span className="text-sm font-medium">{label}</span>
+    <button onClick={() => router.push(href)}
+      className="glass rounded-2xl p-4 flex items-center gap-3 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl border border-[rgba(255,255,255,0.06)] group">
+      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0A84FF] to-[#00D4FF] flex items-center justify-center shadow-lg transition-transform duration-300 group-hover:scale-110">
+        {icon}
+      </div>
+      <span className="text-sm font-semibold text-white">{label}</span>
     </button>
   );
 }
 
-function UserRow({ user, isExpanded, onToggle, onEdit, onDelete, onToggleLock }: {
-  user: GymUser; isExpanded: boolean; onToggle: () => void;
-  onEdit: () => void; onDelete: () => void; onToggleLock: () => void;
-}) {
-  const createdDate = new Date(user.created_at).toLocaleDateString('fr-FR');
-  const roleColor = ROLE_COLORS[user.role] || ROLE_COLORS.adherent;
-
-  return (
-    <>
-      <tr className="hover:bg-white/5 transition-colors cursor-pointer" onClick={onToggle}>
-        <td className="px-6 py-4">
-          <div className="flex items-center gap-2">
-            <User className="w-4 h-4 text-gray-500" />
-            <span className="text-white text-sm font-mono">{user.username}</span>
-          </div>
-        </td>
-        <td className="px-6 py-4">
-          <span className="text-gray-300 text-sm">{user.name || '-'}</span>
-        </td>
-        <td className="px-6 py-4">
-          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${roleColor}`}>
-            {ROLE_LABELS[user.role] || user.role}
-          </span>
-        </td>
-        <td className="px-6 py-4">
-          <span className="text-gray-400 text-sm">{user.phone || '-'}</span>
-        </td>
-        <td className="px-6 py-4">
-          {user.is_locked ? (
-            <span className="inline-flex items-center gap-1 text-xs text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full">
-              <Lock className="w-3 h-3" /> Verrouillé
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 text-xs text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full">
-              <Unlock className="w-3 h-3" /> Actif
-            </span>
-          )}
-        </td>
-        <td className="px-6 py-4">
-          <span className="text-gray-500 text-sm">{createdDate}</span>
-        </td>
-        <td className="px-6 py-4 text-right">
-          <div className="flex items-center justify-end gap-1">
-            <button onClick={(e) => { e.stopPropagation(); onToggleLock(); }} className="p-2 text-gray-500 hover:text-yellow-400 hover:bg-gray-800 rounded-lg transition-all cursor-pointer" title={user.is_locked ? 'Déverrouiller' : 'Verrouiller'}>
-              {user.is_locked ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-            </button>
-            <button onClick={(e) => { e.stopPropagation(); onEdit(); }} className="p-2 text-gray-500 hover:text-blue-400 hover:bg-gray-800 rounded-lg transition-all cursor-pointer" title="Modifier">
-              <Edit className="w-4 h-4" />
-            </button>
-            <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className="p-2 text-gray-500 hover:text-red-400 hover:bg-gray-800 rounded-lg transition-all cursor-pointer" title="Supprimer">
-              <Trash2 className="w-4 h-4" />
-            </button>
-            <button onClick={(e) => { e.stopPropagation(); onToggle(); }} className="p-2 text-gray-500 hover:text-white hover:bg-gray-800 rounded-lg transition-all cursor-pointer">
-              {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-            </button>
-          </div>
-        </td>
-      </tr>
-      {isExpanded && (
-        <tr className="bg-gray-800/30">
-          <td colSpan={7} className="px-6 py-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <div>
-                <span className="text-gray-500 text-xs">ID interne</span>
-                <p className="text-gray-300 font-mono text-xs mt-1">{user.id}</p>
-              </div>
-              <div>
-                <span className="text-gray-500 text-xs">Email</span>
-                <p className="text-gray-300 mt-1">{user.username}@infinitygym.local</p>
-              </div>
-              <div>
-                <span className="text-gray-500 text-xs">Rôle</span>
-                <p className="text-gray-300 mt-1 capitalize">{ROLE_LABELS[user.role] || user.role}</p>
-              </div>
-              <div>
-                <span className="text-gray-500 text-xs">Statut</span>
-                <p className="text-gray-300 mt-1">{user.is_locked ? 'Verrouillé' : 'Actif'}</p>
-              </div>
-            </div>
-          </td>
-        </tr>
-      )}
-    </>
-  );
-}
-
 function UserFormModal({ title, user, onClose, onSubmit }: {
-  title: string; user?: GymUser; onClose: () => void;
-  onSubmit: (data: { username: string; password?: string; pin?: string; role: string; name: string; phone?: string }) => void;
+  title: string;
+  user?: GymUser;
+  onClose: () => void;
+  onSubmit: (data: { username: string; password?: string; pin?: string; role: string; name: string; phone?: string }) => Promise<void>;
 }) {
-  const [username, setUsername] = useState(user?.username || '');
-  const [password, setPassword] = useState('');
-  const [pin, setPin] = useState('');
-  const [role, setRole] = useState(user?.role || 'reception');
-  const [name, setName] = useState(user?.name || '');
-  const [phone, setPhone] = useState(user?.phone || '');
+  const [formData, setFormData] = useState({
+    username: user?.username || '',
+    password: '',
+    pin: '',
+    role: user?.role || 'reception',
+    name: user?.name || '',
+    phone: user?.phone || '',
+  });
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-
-    if (!name.trim()) { setError('Le nom est requis'); return; }
-    if (!user && !password.trim()) { setError('Le mot de passe est requis'); return; }
-    if (!user && !pin.trim()) { setError('Le code PIN est requis'); return; }
-
     setSubmitting(true);
-    try {
-      await onSubmit({
-        username: username.trim() || name.trim().toLowerCase().replace(/\s+/g, '.'),
-        ...(password ? { password } : {}),
-        ...(pin ? { pin } : {}),
-        role,
-        name: name.trim(),
-        phone: phone.trim() || undefined,
-      });
-    } catch (err: any) {
-      setError(err.message || 'Erreur lors de la soumission');
-    }
+    await onSubmit(formData);
     setSubmitting(false);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-md glass-strong rounded-3xl p-8 border border-[rgba(255,255,255,0.1)] shadow-2xl animate-scale-in">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-white">{title}</h3>
-          <button onClick={onClose} className="p-2 text-gray-500 hover:text-white hover:bg-gray-800 rounded-lg transition-all cursor-pointer">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0A84FF] to-[#00D4FF] flex items-center justify-center">
+              {user ? <Edit className="w-5 h-5 text-white" /> : <Plus className="w-5 h-5 text-white" />}
+            </div>
+            <h3 className="text-lg font-bold text-white">{title}</h3>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-lg text-[#A8B2C7] hover:text-white hover:bg-[rgba(255,255,255,0.06)] transition-all">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <div className="px-3 py-2 bg-red-500/10 border border-red-500/30 rounded-xl text-sm text-red-300">
-              {error}
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-[#A8B2C7] mb-1.5">Nom d&apos;utilisateur</label>
+            <input type="text" value={formData.username} onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+              className="w-full h-11 px-4 rounded-xl glass-light text-white text-sm border border-[rgba(255,255,255,0.06)] placeholder-[#A8B2C7] focus:outline-none focus:border-[#0A84FF]/50 transition-all"
+              disabled={!!user} required />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-[#A8B2C7] mb-1.5">Nom complet</label>
+            <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="w-full h-11 px-4 rounded-xl glass-light text-white text-sm border border-[rgba(255,255,255,0.06)] placeholder-[#A8B2C7] focus:outline-none focus:border-[#0A84FF]/50 transition-all" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[#A8B2C7] mb-1.5">
+                {user ? 'Nouveau mot de passe' : 'Mot de passe'}
+              </label>
+              <input type="password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                className="w-full h-11 px-4 rounded-xl glass-light text-white text-sm border border-[rgba(255,255,255,0.06)] placeholder-[#A8B2C7] focus:outline-none focus:border-[#0A84FF]/50 transition-all"
+                {...(!user && { required: true })} />
             </div>
-          )}
-
-          <div>
-            <label className="block text-sm text-gray-400 mb-1">Nom complet *</label>
-            <input type="text" value={name} onChange={e => setName(e.target.value)}
-              className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-orange-500"
-              placeholder="Nom de l'utilisateur" />
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[#A8B2C7] mb-1.5">Code PIN</label>
+              <input type="password" value={formData.pin} onChange={(e) => setFormData({ ...formData, pin: e.target.value })}
+                className="w-full h-11 px-4 rounded-xl glass-light text-white text-sm border border-[rgba(255,255,255,0.06)] placeholder-[#A8B2C7] focus:outline-none focus:border-[#0A84FF]/50 transition-all"
+                {...(!user && { required: true })} maxLength={4} />
+            </div>
           </div>
-
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Identifiant (username)</label>
-            <input type="text" value={username} onChange={e => setUsername(e.target.value)}
-              className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-orange-500"
-              placeholder="Laissé vide = généré depuis le nom" />
-          </div>
-
-          <div>
-            <label className="block text-sm text-gray-400 mb-1">{user ? 'Nouveau mot de passe (optionnel)' : 'Mot de passe *'}</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)}
-              className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-orange-500"
-              placeholder={user ? 'Laisser vide pour garder' : 'Mot de passe'} />
-          </div>
-
-          <div>
-            <label className="block text-sm text-gray-400 mb-1">{user ? 'Nouveau code PIN (optionnel)' : 'Code PIN *'}</label>
-            <input type="text" value={pin} onChange={e => setPin(e.target.value)} maxLength={6}
-              className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-orange-500"
-              placeholder={user ? 'Laisser vide pour garder' : 'PIN (ex: 1234)'} />
-          </div>
-
-          <div>
-            <label className="block text-sm text-gray-400 mb-1">Rôle *</label>
-            <select value={role} onChange={e => setRole(e.target.value)}
-              className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-orange-500">
-              {ROLES.map(r => (
-                <option key={r} value={r}>{ROLE_LABELS[r]}</option>
-              ))}
+            <label className="block text-xs font-semibold uppercase tracking-wider text-[#A8B2C7] mb-1.5">Rôle</label>
+            <select value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+              className="w-full h-11 px-4 rounded-xl glass-light text-white text-sm border border-[rgba(255,255,255,0.06)] focus:outline-none focus:border-[#0A84FF]/50 transition-all">
+              {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
             </select>
           </div>
-
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Téléphone</label>
-            <input type="text" value={phone} onChange={e => setPhone(e.target.value)}
-              className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-orange-500"
-              placeholder="Ex: 0555000011" />
+            <label className="block text-xs font-semibold uppercase tracking-wider text-[#A8B2C7] mb-1.5">Téléphone</label>
+            <input type="tel" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              className="w-full h-11 px-4 rounded-xl glass-light text-white text-sm border border-[rgba(255,255,255,0.06)] placeholder-[#A8B2C7] focus:outline-none focus:border-[#0A84FF]/50 transition-all" />
           </div>
-
-          <div className="flex gap-3 pt-2">
+          <div className="flex items-center gap-3 pt-2">
             <button type="button" onClick={onClose}
-              className="flex-1 px-4 py-2.5 bg-gray-800 text-gray-300 rounded-xl text-sm hover:bg-gray-700 transition-all cursor-pointer">
+              className="flex-1 h-11 rounded-xl glass-light text-[#A8B2C7] hover:text-white text-sm font-semibold border border-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.06)] transition-all">
               Annuler
             </button>
             <button type="submit" disabled={submitting}
-              className="flex-1 px-4 py-2.5 bg-orange-600 text-white rounded-xl text-sm hover:bg-orange-700 disabled:opacity-50 transition-all cursor-pointer">
-              {submitting ? 'Enregistrement...' : 'Enregistrer'}
+              className="flex-1 h-11 rounded-xl bg-gradient-to-r from-[#0A84FF] to-[#00D4FF] text-white text-sm font-semibold shadow-lg shadow-[#0A84FF]/20 hover:shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+              {submitting ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : null}
+              {user ? 'Mettre à jour' : 'Créer'}
             </button>
           </div>
         </form>

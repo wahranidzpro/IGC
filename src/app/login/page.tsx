@@ -26,9 +26,6 @@ function LoginContent() {
       setMounted(true);
 
       const recovery = await db.settings.where('key').equals('admin_recovery_code').first();
-      if (recovery) {
-        await db.settings.where('key').equals('admin_recovery_code').modify({ value: 'HUDY-HDRZ-2SNE-PZUA' });
-      }
 
       const cardShown = await db.settings.where('key').equals('recovery_card_shown').first();
       if (!cardShown) {
@@ -44,7 +41,7 @@ function LoginContent() {
               username: adminUser.username,
               password: isPwHashed ? '(deja change)' : adminUser.password,
               pin: isPinHashed ? '(deja change)' : adminUser.pin,
-              recoveryCode: 'HUDY-HDRZ-2SNE-PZUA',
+              recoveryCode: recovery.value || 'HUDY-HDRZ-2SNE-PZUA',
             });
           } else {
             await db.settings.add({ key: 'recovery_card_shown', value: 'true' });

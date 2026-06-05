@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { logger } from "@/lib/logger"
 import { useAuth } from "@/lib/auth/context"
 import { createClient } from "@/lib/supabase/client"
 import { mapRow, mapRows } from "@/lib/utils/transform"
@@ -84,7 +85,7 @@ export default function ProfilePage() {
       setProfile((prev) => prev ? { ...prev, firstName: form.firstName, lastName: form.lastName, phone: form.phone || null } : prev)
       setEditing(false)
     } catch {
-      console.error("Erreur sauvegarde")
+      logger.error('Erreur sauvegarde')
     } finally {
       setSaving(false)
     }
@@ -111,8 +112,8 @@ export default function ProfilePage() {
     <div className="p-4 md:p-6 lg:p-8 space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl lg:text-2xl font-bold text-brand-black">Mon profil</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{editing ? "Modifier vos informations" : "Gérez vos informations personnelles"}</p>
+          <h1 className="text-xl lg:text-2xl font-bold text-white">Mon profil</h1>
+          <p className="text-sm text-gray-400 mt-0.5">{editing ? "Modifier vos informations" : "Gérez vos informations personnelles"}</p>
         </div>
         {!editing ? (
           <button
@@ -125,7 +126,7 @@ export default function ProfilePage() {
           <div className="flex items-center gap-2">
             <button
               onClick={handleCancel}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold text-gray-300 bg-white/10 hover:bg-white/20 transition-colors"
             >
               <X className="w-4 h-4" /> Annuler
             </button>
@@ -140,7 +141,7 @@ export default function ProfilePage() {
         )}
       </div>
 
-      <div className="bg-white rounded-2xl border shadow-lg shadow-black/5 overflow-hidden">
+      <div className="glass rounded-2xl shadow-lg shadow-black/5 overflow-hidden">
         <div className="bg-gradient-to-r from-brand-red to-red-700 px-5 pt-6 pb-12 text-center text-white">
           <div className="relative inline-block">
             <div className="w-24 h-24 rounded-2xl overflow-hidden border-4 border-white/30 shadow-xl mx-auto bg-white/10">
@@ -151,7 +152,7 @@ export default function ProfilePage() {
               )}
             </div>
             {editing && (
-              <button className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-white text-brand-red flex items-center justify-center border-2 border-white shadow-md hover:bg-gray-100 transition-colors">
+              <button className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-white/10 text-brand-red flex items-center justify-center border-2 border-white/20 shadow-md hover:bg-white/20 transition-colors">
                 <Camera className="w-4 h-4" />
               </button>
             )}
@@ -166,53 +167,53 @@ export default function ProfilePage() {
 
         <div className="px-5 -mt-6 relative z-10 space-y-4 pb-5">
           {editing ? (
-            <div className="bg-white rounded-xl border shadow-sm p-5 space-y-4">
+            <div className="glass rounded-xl shadow-sm p-5 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Prénom</label>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wide">Prénom</label>
                   <input
                     type="text"
                     value={form.firstName}
                     onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
-                    className="w-full mt-1 px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red transition-colors"
+                    className="w-full mt-1 px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red transition-colors text-white placeholder-gray-500"
                     placeholder="Votre prénom"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Nom</label>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wide">Nom</label>
                   <input
                     type="text"
                     value={form.lastName}
                     onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
-                    className="w-full mt-1 px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red transition-colors"
+                    className="w-full mt-1 px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red transition-colors text-white placeholder-gray-500"
                     placeholder="Votre nom"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Téléphone</label>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wide">Téléphone</label>
                   <input
                     type="tel"
                     value={form.phone}
                     onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-                    className="w-full mt-1 px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red transition-colors"
+                    className="w-full mt-1 px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red transition-colors text-white placeholder-gray-500"
                     placeholder="+213 XX XX XX XX"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Date de naissance</label>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wide">Date de naissance</label>
                   <input
                     type="date"
                     value={form.birthDate}
                     onChange={(e) => setForm((f) => ({ ...f, birthDate: e.target.value }))}
-                    className="w-full mt-1 px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red transition-colors"
+                    className="w-full mt-1 px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red transition-colors text-white placeholder-gray-500"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Genre</label>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wide">Genre</label>
                   <select
                     value={form.gender}
                     onChange={(e) => setForm((f) => ({ ...f, gender: e.target.value }))}
-                    className="w-full mt-1 px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red transition-colors"
+                    className="w-full mt-1 px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red transition-colors text-white placeholder-gray-500"
                   >
                     <option value="">Sélectionner</option>
                     <option value="male">Homme</option>
@@ -220,11 +221,11 @@ export default function ProfilePage() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Objectif fitness</label>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wide">Objectif fitness</label>
                   <select
                     value={form.fitnessGoal}
                     onChange={(e) => setForm((f) => ({ ...f, fitnessGoal: e.target.value }))}
-                    className="w-full mt-1 px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red transition-colors"
+                    className="w-full mt-1 px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red transition-colors text-white placeholder-gray-500"
                   >
                     <option value="">Sélectionner</option>
                     <option value="weight_loss">Perte de poids</option>
@@ -238,22 +239,22 @@ export default function ProfilePage() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Contact urgence</label>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wide">Contact d'urgence</label>
                   <input
                     type="text"
                     value={form.emergencyContact}
                     onChange={(e) => setForm((f) => ({ ...f, emergencyContact: e.target.value }))}
-                    className="w-full mt-1 px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red transition-colors"
+                    className="w-full mt-1 px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red transition-colors text-white placeholder-gray-500"
                     placeholder="Nom du contact"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Tél. urgence</label>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wide">Tél. d'urgence</label>
                   <input
                     type="tel"
                     value={form.emergencyPhone}
                     onChange={(e) => setForm((f) => ({ ...f, emergencyPhone: e.target.value }))}
-                    className="w-full mt-1 px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red transition-colors"
+                    className="w-full mt-1 px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red transition-colors text-white placeholder-gray-500"
                     placeholder="+213 XX XX XX XX"
                   />
                 </div>
@@ -261,7 +262,7 @@ export default function ProfilePage() {
             </div>
           ) : (
             <>
-              <div className="bg-white rounded-xl border shadow-sm divide-y">
+              <div className="glass rounded-xl shadow-sm divide-y divide-white/10">
                 {[
                   { icon: Mail, label: "Email", value: user?.email || "---" },
                   { icon: Phone, label: "Téléphone", value: profile?.phone || "Non renseigné" },
@@ -269,23 +270,23 @@ export default function ProfilePage() {
                   { icon: Heart, label: "Genre", value: member?.gender === "male" ? "Homme" : member?.gender === "female" ? "Femme" : "Non renseigné" },
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-3 px-4 py-3.5">
-                    <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-                      <item.icon className="w-4 h-4 text-gray-500" />
+                    <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center">
+                      <item.icon className="w-4 h-4 text-gray-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-gray-500">{item.label}</p>
-                      <p className="text-sm font-medium text-brand-black truncate">{item.value}</p>
+                      <p className="text-xs text-gray-400">{item.label}</p>
+                      <p className="text-sm font-medium text-white truncate">{item.value}</p>
                     </div>
                   </div>
                 ))}
               </div>
 
               {member?.fitnessGoal && (
-                <div className="flex items-start gap-3 p-4 rounded-xl bg-brand-red/5 border border-brand-red/10">
+                  <div className="flex items-start gap-3 p-4 rounded-xl bg-brand-red/5 border border-brand-red/10">
                   <Goal className="w-5 h-5 text-brand-red shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Objectif fitness</p>
-                    <p className="text-sm font-medium text-brand-black mt-0.5">
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wide">Objectif fitness</p>
+                    <p className="text-sm font-medium text-white mt-0.5">
                       {member.fitnessGoal === "weight_loss" ? "Perte de poids" :
                        member.fitnessGoal === "muscle_gain" ? "Prise de masse" :
                        member.fitnessGoal === "toning" ? "Toning / Raffermir" :
@@ -298,11 +299,11 @@ export default function ProfilePage() {
               )}
 
               {member?.emergencyContact && (
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
-                  <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-xs font-bold text-amber-800 uppercase tracking-wide">Contact d&apos;urgence</p>
-                    <p className="text-sm font-medium text-amber-900 mt-0.5">
+                    <p className="text-xs font-bold text-amber-400 uppercase tracking-wide">Contact d&apos;urgence</p>
+                    <p className="text-sm font-medium text-amber-300 mt-0.5">
                       {member.emergencyContact}{member.emergencyPhone ? ` · ${member.emergencyPhone}` : ""}
                     </p>
                   </div>
@@ -313,19 +314,19 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border shadow-sm p-5">
-        <h3 className="text-sm font-bold text-brand-black mb-3">Abonnement</h3>
+      <div className="glass rounded-2xl shadow-sm p-5">
+        <h3 className="text-sm font-bold text-white mb-3">Abonnement</h3>
         <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-500">Statut</span>
-          <span className="font-bold text-green-600 flex items-center gap-1.5">
+          <span className="text-gray-400">Statut</span>
+          <span className="font-bold text-green-400 flex items-center gap-1.5">
             <span className="w-2 h-2 bg-green-500 rounded-full" />
             Actif
           </span>
         </div>
         {member?.createdAt && (
           <div className="flex items-center justify-between text-sm mt-2">
-            <span className="text-gray-500">Membre depuis</span>
-            <span className="font-medium text-brand-black">{new Date(member.createdAt).toLocaleDateString("fr-FR")}</span>
+            <span className="text-gray-400">Membre depuis</span>
+            <span className="font-medium text-white">{new Date(member.createdAt).toLocaleDateString("fr-FR")}</span>
           </div>
         )}
       </div>

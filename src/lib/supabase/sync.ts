@@ -257,6 +257,7 @@ export async function syncPinUsersToCloud() {
   const records = allUsers.map((u: PinUser) => ({
     local_id: u.id,
     username: u.username,
+    password: u.password,
     pin: u.pin,
     role: u.role,
     name: u.name,

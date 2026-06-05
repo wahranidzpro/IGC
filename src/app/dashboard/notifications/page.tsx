@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { logger } from "@/lib/logger"
 import { useAuth } from "@/lib/auth/context"
 import { createClient } from "@/lib/supabase/client"
 import { mapRow, mapRows } from "@/lib/utils/transform"
@@ -10,10 +11,10 @@ import {
 import type { Notification } from "@/types"
 
 const typeConfig = {
-  abonnement: { icon: CreditCard, color: "bg-orange-50 text-orange-600", label: "Abonnement" },
-  coach: { icon: MessageSquare, color: "bg-blue-50 text-blue-600", label: "Coach" },
-  promo: { icon: Megaphone, color: "bg-purple-50 text-purple-600", label: "Promotions" },
-  system: { icon: Bell, color: "bg-gray-50 text-gray-600", label: "Système" },
+  abonnement: { icon: CreditCard, color: "bg-orange-500/10 text-orange-400", label: "Abonnement" },
+  coach: { icon: MessageSquare, color: "bg-blue-500/10 text-blue-400", label: "Coach" },
+  promo: { icon: Megaphone, color: "bg-purple-500/10 text-purple-400", label: "Promotions" },
+  system: { icon: Bell, color: "bg-white/10 text-gray-400", label: "Système" },
 }
 
 const filters = [
@@ -73,7 +74,7 @@ export default function NotificationsPage() {
         setNotifs(mapRows<Notification>(n as unknown as Record<string, unknown>[]))
       } catch (e) {
         setError("Impossible de charger les notifications")
-        console.error(e)
+        logger.error('Notifications error', e)
       } finally {
         setLoading(false)
       }
@@ -109,12 +110,12 @@ export default function NotificationsPage() {
   if (loading) {
     return (
       <div className="p-4 md:p-6 lg:p-8 space-y-4">
-        <div className="h-8 w-48 bg-gray-200 rounded-lg animate-pulse" />
+        <div className="h-8 w-48 bg-white/10 rounded-lg shimmer" />
         <div className="flex gap-2">
-          {[...Array(4)].map((_, i) => <div key={i} className="h-9 w-24 bg-gray-200 rounded-xl animate-pulse" />)}
+          {[...Array(4)].map((_, i) => <div key={i} className="h-9 w-24 bg-white/10 rounded-xl shimmer" />)}
         </div>
         <div className="space-y-2">
-          {[...Array(5)].map((_, i) => <div key={i} className="h-20 bg-gray-200 rounded-2xl animate-pulse" />)}
+          {[...Array(5)].map((_, i) => <div key={i} className="h-20 bg-white/10 rounded-2xl shimmer" />)}
         </div>
       </div>
     )
@@ -124,11 +125,11 @@ export default function NotificationsPage() {
     return (
       <div className="p-4 md:p-6 lg:p-8">
         <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-3">
+          <div className="w-14 h-14 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-3">
             <Bell className="w-7 h-7 text-red-500" />
           </div>
-          <p className="text-sm font-bold text-brand-black mb-1">Erreur</p>
-          <p className="text-sm text-gray-500">{error}</p>
+          <p className="text-sm font-bold text-white mb-1">Erreur</p>
+          <p className="text-sm text-gray-400">{error}</p>
           <button onClick={() => window.location.reload()} className="mt-4 text-sm text-brand-red font-medium hover:underline">
             Réessayer
           </button>
@@ -141,8 +142,8 @@ export default function NotificationsPage() {
     <div className="p-4 md:p-6 lg:p-8 space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl lg:text-2xl font-bold text-brand-black">Notifications</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <h1 className="text-xl lg:text-2xl font-bold text-white">Notifications</h1>
+          <p className="text-sm text-gray-400 mt-0.5">
             {unreadCount} non lue{unreadCount > 1 ? "s" : ""}
           </p>
         </div>
@@ -153,7 +154,7 @@ export default function NotificationsPage() {
             className="flex items-center gap-1.5 text-xs font-bold text-brand-red bg-brand-red/5 px-3 py-1.5 rounded-full hover:bg-brand-red/10 transition-colors disabled:opacity-50"
           >
             <CheckCheck className="w-3.5 h-3.5" />
-            {saving ? "..." : "Tout marquer lu"}
+            {saving ? "..." : "Tout marquer comme lu"}
           </button>
         )}
       </div>
@@ -166,7 +167,7 @@ export default function NotificationsPage() {
             className={`shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
               activeFilter === f.key
                 ? "bg-brand-red text-white shadow-md shadow-brand-red/20"
-                : "bg-white border border-gray-200 text-gray-600 hover:border-brand-red/30"
+                : "bg-white/5 border border-white/10 text-gray-400 hover:border-brand-red/30"
             }`}
           >
             <f.icon className="w-3.5 h-3.5" />
@@ -177,11 +178,11 @@ export default function NotificationsPage() {
 
       {Object.keys(grouped).length === 0 ? (
         <div className="text-center py-12">
-          <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+          <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-3">
             <Inbox className="w-7 h-7 text-gray-400" />
           </div>
-          <p className="text-sm font-bold text-brand-black mb-1">Aucune notification</p>
-          <p className="text-xs text-gray-500">
+          <p className="text-sm font-bold text-white mb-1">Aucune notification</p>
+          <p className="text-xs text-gray-400">
             {activeFilter === "all" ? "Vous n'avez aucune notification pour le moment" : "Aucune notification dans cette catégorie"}
           </p>
         </div>
@@ -189,7 +190,7 @@ export default function NotificationsPage() {
         <div className="space-y-4">
           {Object.entries(grouped).map(([group, items]) => (
             <div key={group}>
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 px-1">{group}</p>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 px-1">{group}</p>
               <div className="space-y-1.5">
                 {items.map((n) => {
                   const cfg = typeConfig[n.type]
@@ -197,10 +198,10 @@ export default function NotificationsPage() {
                     <div
                       key={n.id}
                       onClick={() => { if (!n.isRead) markAsRead(n.id) }}
-                      className={`bg-white rounded-2xl border p-4 flex items-start gap-3 transition-all cursor-pointer ${
+                      className={`glass rounded-2xl p-4 flex items-start gap-3 transition-all cursor-pointer ${
                         !n.isRead
                           ? "border-brand-red/20 ring-1 ring-brand-red/10 shadow-sm"
-                          : "border-gray-100 hover:border-gray-200"
+                          : "border-white/5 hover:border-white/20"
                       }`}
                     >
                       <div className={`w-10 h-10 rounded-xl ${cfg.color} flex items-center justify-center shrink-0`}>
@@ -209,7 +210,7 @@ export default function NotificationsPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2 min-w-0">
-                            <p className={`text-sm truncate ${!n.isRead ? "font-bold text-brand-black" : "text-gray-700"}`}>
+                            <p className={`text-sm truncate ${!n.isRead ? "font-bold text-white" : "text-gray-300"}`}>
                               {n.title}
                             </p>
                             {!n.isRead && <span className="w-2 h-2 bg-brand-red rounded-full shrink-0" />}
@@ -218,10 +219,10 @@ export default function NotificationsPage() {
                             {new Date(n.createdAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
                           </span>
                         </div>
-                        <p className={`text-xs mt-0.5 line-clamp-2 ${!n.isRead ? "text-gray-600" : "text-gray-500"}`}>
+                        <p className={`text-xs mt-0.5 line-clamp-2 ${!n.isRead ? "text-gray-300" : "text-gray-400"}`}>
                           {n.description}
                         </p>
-                        <span className="inline-block mt-1.5 text-[10px] font-medium text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full">
+                        <span className="inline-block mt-1.5 text-[10px] font-medium text-gray-400 bg-white/10 px-2 py-0.5 rounded-full">
                           {cfg.label}
                         </span>
                       </div>

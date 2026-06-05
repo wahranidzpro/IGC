@@ -124,7 +124,7 @@ export default function MemberProfilePage() {
             className="flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/30 text-red-400 font-medium rounded-xl hover:bg-red-500/20 transition-all"
           >
             <LogOut className="w-4 h-4" />
-            Deconnexion
+            Déconnexion
           </button>
         </div>
       </div>

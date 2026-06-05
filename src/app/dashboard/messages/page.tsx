@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { logger } from "@/lib/logger"
 import { MessageSquare, Search, Send, ChevronRight, AlertCircle, RefreshCw } from "lucide-react"
 import Image from "next/image"
 
@@ -65,6 +66,7 @@ export default function MessagesPage() {
   const [conversations, setConversations] = useState<Conversation[] | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [sending, setSending] = useState(false)
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -80,12 +82,33 @@ export default function MessagesPage() {
     return () => clearTimeout(timer)
   }, [])
 
+  const handleSend = async () => {
+    if (!message.trim() || sending) return
+    setSending(true)
+    try {
+      const res = await fetch("/api/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          conversationId: selectedChat,
+          content: message.trim(),
+        }),
+      })
+      if (!res.ok) throw new Error("Erreur envoi")
+      setMessage("")
+    } catch {
+      logger.error('Erreur envoi message')
+    } finally {
+      setSending(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="p-4 md:p-6 lg:p-8 space-y-4">
-        <div className="h-8 w-48 bg-gray-200 rounded-lg animate-pulse" />
-        <div className="h-10 bg-gray-200 rounded-xl animate-pulse" />
-        {[...Array(4)].map((_, i) => <div key={i} className="h-16 bg-gray-200 rounded-xl animate-pulse" />)}
+        <div className="h-8 w-48 bg-white/10 rounded-lg shimmer" />
+        <div className="h-10 bg-white/10 rounded-xl shimmer" />
+        {[...Array(4)].map((_, i) => <div key={i} className="h-16 bg-white/10 rounded-xl shimmer" />)}
       </div>
     )
   }
@@ -94,11 +117,11 @@ export default function MessagesPage() {
     return (
       <div className="p-4 md:p-6 lg:p-8">
         <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-3">
+          <div className="w-14 h-14 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-3">
             <AlertCircle className="w-7 h-7 text-red-500" />
           </div>
-          <p className="text-sm font-bold text-brand-black mb-1">Erreur de chargement</p>
-          <p className="text-sm text-gray-500">{error}</p>
+          <p className="text-sm font-bold text-white mb-1">Erreur de chargement</p>
+          <p className="text-sm text-gray-400">{error}</p>
           <button onClick={() => window.location.reload()} className="mt-4 text-sm text-brand-red font-medium hover:underline flex items-center gap-1">
             <RefreshCw className="w-3.5 h-3.5" /> Réessayer
           </button>
@@ -116,37 +139,42 @@ export default function MessagesPage() {
   if (selectedConv) {
     return (
       <div className="flex flex-col h-[calc(100vh-8rem)]">
-        <div className="p-4 border-b flex items-center gap-3">
-          <button onClick={() => setSelectedChat(null)} className="text-gray-500 hover:text-brand-black">
+        <div className="p-4 border-b border-white/10 flex items-center gap-3">
+          <button onClick={() => setSelectedChat(null)} className="text-gray-400 hover:text-white">
             <ChevronRight className="w-5 h-5 rotate-180" />
           </button>
-          <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-100">
+          <div className="w-9 h-9 rounded-full overflow-hidden bg-white/10">
             <Image src={selectedConv.avatar} alt="" width={36} height={36} className="w-full h-full object-cover" />
           </div>
           <div>
-            <p className="text-sm font-bold text-brand-black">{selectedConv.name}</p>
-            <p className="text-[10px] text-green-600">{selectedConv.online ? "En ligne" : "Hors ligne"}</p>
+            <p className="text-sm font-bold text-white">{selectedConv.name}</p>
+            <p className="text-[10px] text-green-400">{selectedConv.online ? "En ligne" : "Hors ligne"}</p>
           </div>
         </div>
         <div className="flex-1 p-4 space-y-3 overflow-y-auto">
           <div className="flex justify-start">
-            <div className="bg-gray-100 rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
-              <p className="text-sm text-gray-700">{selectedConv.last}</p>
+            <div className="glass rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
+              <p className="text-sm text-gray-200">{selectedConv.last}</p>
               <p className="text-[10px] text-gray-400 mt-1">{selectedConv.time}</p>
             </div>
           </div>
         </div>
-        <div className="p-4 border-t">
+        <div className="p-4 border-t border-white/10">
           <div className="flex items-center gap-2">
             <input
               type="text"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") handleSend() }}
               placeholder="Écrivez votre message..."
-              className="flex-1 px-4 py-2.5 bg-gray-100 rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-red/20"
+              className="flex-1 px-4 py-2.5 bg-white/5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-red/20 text-white placeholder-gray-500"
             />
-            <button className="w-10 h-10 rounded-xl bg-brand-red text-white flex items-center justify-center hover:bg-red-700 transition-colors">
-              <Send className="w-4 h-4" />
+            <button
+              onClick={handleSend}
+              disabled={sending}
+              className="w-10 h-10 rounded-xl bg-brand-red text-white flex items-center justify-center hover:bg-red-700 transition-colors disabled:opacity-50"
+            >
+              {sending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             </button>
           </div>
         </div>
@@ -158,11 +186,11 @@ export default function MessagesPage() {
     return (
       <div className="p-4 md:p-6 lg:p-8">
         <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+          <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-3">
             <MessageSquare className="w-7 h-7 text-gray-400" />
           </div>
-          <p className="text-sm font-bold text-brand-black mb-1">Aucune conversation</p>
-          <p className="text-sm text-gray-500">Vous n&apos;avez pas encore de messages.</p>
+          <p className="text-sm font-bold text-white mb-1">Aucune conversation</p>
+          <p className="text-sm text-gray-400">Vous n&apos;avez pas encore de messages.</p>
         </div>
       </div>
     )
@@ -171,8 +199,8 @@ export default function MessagesPage() {
   return (
     <div className="p-4 md:p-6 lg:p-8 space-y-4">
       <div>
-        <h1 className="text-xl lg:text-2xl font-bold text-brand-black">Messages</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Discutez avec votre coach et le support</p>
+        <h1 className="text-xl lg:text-2xl font-bold text-white">Messages</h1>
+        <p className="text-sm text-gray-400 mt-0.5">Discutez avec votre coach et le support</p>
       </div>
 
       <div className="relative">
@@ -182,7 +210,7 @@ export default function MessagesPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Rechercher..."
-          className="w-full pl-10 pr-4 py-2.5 bg-white border rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-red/20"
+          className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-red/20 text-white placeholder-gray-500"
         />
       </div>
 
@@ -191,20 +219,20 @@ export default function MessagesPage() {
           <button
             key={conv.id}
             onClick={() => setSelectedChat(conv.id)}
-            className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors text-left"
+            className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-colors text-left"
           >
             <div className="relative shrink-0">
-              <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100">
+              <div className="w-12 h-12 rounded-full overflow-hidden bg-white/10">
                 <Image src={conv.avatar} alt="" width={48} height={48} className="w-full h-full object-cover" />
               </div>
               {conv.online && <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />}
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-bold text-brand-black">{conv.name}</p>
+                <p className="text-sm font-bold text-white">{conv.name}</p>
                 <p className="text-[10px] text-gray-400">{conv.time}</p>
               </div>
-              <p className="text-xs text-gray-500 truncate">{conv.last}</p>
+              <p className="text-xs text-gray-400 truncate">{conv.last}</p>
             </div>
             {conv.unread > 0 && (
               <span className="bg-brand-red text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
@@ -215,8 +243,8 @@ export default function MessagesPage() {
         ))}
         {filtered.length === 0 && (
           <div className="text-center py-10">
-            <MessageSquare className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-            <p className="text-sm text-gray-500">Aucune conversation trouvée</p>
+            <MessageSquare className="w-10 h-10 text-gray-500 mx-auto mb-3" />
+            <p className="text-sm text-gray-400">Aucune conversation trouvée</p>
           </div>
         )}
       </div>

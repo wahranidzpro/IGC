@@ -4,7 +4,9 @@ import { AuthProvider } from "@/lib/auth/context";
 import { ThemeProvider } from "@/lib/context/theme-context";
 import { LanguageProvider } from "@/lib/context/language-context";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
-import SpinningLogo from "@/components/ui/SpinningLogo";
+import RealtimeProvider from "@/components/providers/RealtimeProvider";
+import ConnectionBanner from "@/components/ui/ConnectionBanner";
+import PWAInstallPrompt from "@/components/ui/PWAInstallPrompt";
 
 export const metadata: Metadata = {
   title: "Infinity Gym Center",
@@ -44,8 +46,11 @@ export default function RootLayout({
           <AuthProvider>
             <ThemeProvider>
               <LanguageProvider>
-                <SpinningLogo />
+                <RealtimeProvider>
+                <ConnectionBanner />
+                <PWAInstallPrompt />
                 {children}
+                </RealtimeProvider>
               </LanguageProvider>
             </ThemeProvider>
           </AuthProvider>

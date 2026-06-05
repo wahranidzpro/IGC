@@ -3,10 +3,16 @@ import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 
 export async function POST(request: Request) {
-  const { profileId, email, fingerprint } = await request.json()
+  let body;
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ allowed: false, reason: "DONNEES_INVALIDES" }, { status: 400 })
+  }
+  const { profileId, email, fingerprint } = body
 
   if ((!profileId && !email) || !fingerprint) {
-    return NextResponse.json({ allowed: false, reason: "DONNEES_MANQUANTES" })
+    return NextResponse.json({ allowed: false, reason: "DONNEES_MANQUANTES" }, { status: 400 })
   }
 
   const cookieStore = await cookies()
@@ -29,10 +35,10 @@ export async function POST(request: Request) {
   if (profileId) query.eq("id", profileId)
   else query.eq("email", email)
 
-  const { data: profile } = await query.single()
+  const { data: profile } = await query.maybeSingle()
 
   if (!profile) {
-    return NextResponse.json({ allowed: false, reason: "PROFIL_INTROUVABLE" })
+    return NextResponse.json({ allowed: false, reason: "PROFIL_INTROUVABLE" }, { status: 404 })
   }
 
   if (!profile.deviceFingerprint) {

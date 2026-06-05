@@ -12,18 +12,29 @@ function getSupabase() {
 }
 
 export async function POST(request: NextRequest) {
+  console.log('[LOGIN] POST request received');
   const supabase = getSupabase();
   if (!supabase) {
+    console.error('[LOGIN] Supabase not configured');
     return NextResponse.json({ error: 'Supabase not configured' }, { status: 503 });
   }
 
-  const body = await request.json();
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    console.error('[LOGIN] Invalid JSON body');
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
   const { username, password } = body;
+  console.log('[LOGIN] Attempt for username:', username);
 
   if (!username || !password) {
+    console.log('[LOGIN] Missing username or password');
     return NextResponse.json({ error: 'Username and password required' }, { status: 400 });
   }
 
+  console.log('[LOGIN] Querying gym_users for:', username);
   const { data: user, error } = await supabase
     .from('gym_users')
     .select('*')
@@ -31,37 +42,62 @@ export async function POST(request: NextRequest) {
     .maybeSingle();
 
   if (error) {
+    console.error('[LOGIN] DB query error:', error.message);
     return NextResponse.json({ error: 'Database error' }, { status: 500 });
   }
 
   if (!user) {
+    console.log('[LOGIN] User not found:', username);
     return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
   }
+  console.log('[LOGIN] User found:', user.id, 'role:', user.role, 'auth_user_id:', user.auth_user_id);
 
   if (user.is_locked) {
+    console.log('[LOGIN] Account locked:', username);
     return NextResponse.json({ error: 'Account locked' }, { status: 403 });
   }
 
   let passwordMatch = false;
-  let pinMatch = false;
 
   if (user.password_hash) {
     const isHashed = user.password_hash.startsWith('$2a$') || user.password_hash.startsWith('$2b$') || user.password_hash.startsWith('$2$');
+    console.log('[LOGIN] password_hash exists, isHashed:', isHashed, 'hash starts with:', user.password_hash.substring(0, 10));
     passwordMatch = isHashed ? await bcrypt.compare(password, user.password_hash) : password === user.password_hash;
+    console.log('[LOGIN] passwordMatch:', passwordMatch);
+  } else {
+    console.log('[LOGIN] NO password_hash in DB');
   }
 
-  if (!passwordMatch && user.pin) {
-    const isHashed = user.pin.startsWith('$2a$') || user.pin.startsWith('$2b$') || user.pin.startsWith('$2$');
-    pinMatch = isHashed ? await bcrypt.compare(password, user.pin) : password === user.pin;
-  }
-
-  if (!passwordMatch && !pinMatch) {
+  if (!passwordMatch) {
+    console.log('[LOGIN] Password mismatch for:', username);
     return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
   }
 
-  const supabaseUserId = user.auth_user_id || user.id;
+  let supabaseUserId = user.auth_user_id;
 
-  // Auto-ensure subscription + membership_control exist for this user
+  // Auto-create Supabase Auth user if missing (legacy migration)
+  if (!supabaseUserId) {
+    console.log('[LOGIN] No auth_user_id — creating Supabase Auth user for', user.username);
+    const email = `${user.username}@infinitygym.local`;
+    const { data: authData, error: authCreateError } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { username: user.username, role: user.role, name: user.name },
+    });
+    if (authCreateError) {
+      console.error('[LOGIN] Failed to create Supabase Auth user:', authCreateError.message);
+    } else if (authData?.user) {
+      supabaseUserId = authData.user.id;
+      const { error: linkError } = await supabase
+        .from('gym_users')
+        .update({ auth_user_id: authData.user.id, updated_at: new Date().toISOString() })
+        .eq('id', user.id);
+      if (linkError) console.error('[LOGIN] Failed to link auth_user_id:', linkError.message);
+      else console.log('[LOGIN] Linked auth_user_id', authData.user.id, 'to gym_user', user.id);
+    }
+  }
+
   if (supabaseUserId) {
     await supabase.from('subscriptions').insert({
       user_id: supabaseUserId, status: 'active', plan_name: 'Standard',

@@ -63,14 +63,13 @@ export const categories: CategoryItem[] = [
 ]
 
 export const videos: VideoItem[] = [
-  { id: "v1", title: "Séance Complète Musculation", category: "musculation", thumbnail: "https://images.pexels.com/photos/1552242/pexels-photo-1552242.jpeg", src: "https://www.youtube.com/embed/UDATUfvf9cI", duration: "12:30", views: "2.4k" },
-  { id: "v2", title: "HIIT Cardio Brûle-Graisse", category: "cardio", thumbnail: "https://images.pexels.com/photos/841130/pexels-photo-841130.jpeg", src: "https://www.youtube.com/embed/UDATUfvf9cI", duration: "8:45", views: "3.1k" },
-  { id: "v3", title: "Yoga pour Débutants", category: "yoga", thumbnail: "https://images.pexels.com/photos/2604461/pexels-photo-2604461.jpeg", src: "https://www.youtube.com/embed/UDATUfvf9cI", duration: "15:00", views: "1.8k" },
-  { id: "v4", title: "Entraînement CrossFit Intense", category: "crossfit", thumbnail: "https://images.pexels.com/photos/17820056/pexels-photo-17820056.jpeg", src: "https://www.youtube.com/embed/UDATUfvf9cI", duration: "20:15", views: "4.2k" },
-  { id: "v5", title: "Course à Pied : Guide Complet", category: "running", thumbnail: "https://images.pexels.com/photos/439538/pexels-photo-439538.jpeg", src: "https://www.youtube.com/embed/UDATUfvf9cI", duration: "10:00", views: "1.5k" },
-  { id: "v6", title: "Préparation des Repas Fitness", category: "nutrition", thumbnail: "https://images.pexels.com/photos/1640770/pexels-photo-1640770.jpeg", src: "https://www.youtube.com/embed/UDATUfvf9cI", duration: "6:20", views: "5.7k" },
-  { id: "v7", title: "Développé Couché Technique", category: "musculation", thumbnail: "https://images.pexels.com/photos/1229356/pexels-photo-1229356.jpeg", src: "https://www.youtube.com/embed/UDATUfvf9cI", duration: "7:30", views: "3.8k" },
-  { id: "v8", title: "Zumba Cardio Party", category: "cardio", thumbnail: "https://images.pexels.com/photos/3758142/pexels-photo-3758142.jpeg", src: "https://www.youtube.com/embed/UDATUfvf9cI", duration: "25:00", views: "6.2k" },
+  { id: "v1", title: "Séance Complète Musculation", category: "musculation", thumbnail: "https://images.pexels.com/photos/1552242/pexels-photo-1552242.jpeg", src: "https://www.youtube.com/embed/B12MXF0bSFo", duration: "12:30", views: "2.4k" },
+  { id: "v2", title: "HIIT Cardio Brûle-Graisse", category: "cardio", thumbnail: "https://images.pexels.com/photos/841130/pexels-photo-841130.jpeg", src: "https://www.youtube.com/embed/hLVTgnk7mLI", duration: "8:45", views: "3.1k" },
+  { id: "v3", title: "Yoga pour Débutants", category: "yoga", thumbnail: "https://images.pexels.com/photos/2604461/pexels-photo-2604461.jpeg", src: "https://www.youtube.com/embed/VMEUpYmRgC0", duration: "15:00", views: "1.8k" },
+  { id: "v4", title: "Entraînement CrossFit Intense", category: "crossfit", thumbnail: "https://images.pexels.com/photos/17820056/pexels-photo-17820056.jpeg", src: "https://www.youtube.com/embed/JJEYoOXBo2s", duration: "20:15", views: "4.2k" },
+  { id: "v5", title: "Course à Pied : Guide Complet", category: "running", thumbnail: "https://images.pexels.com/photos/439538/pexels-photo-439538.jpeg", src: "https://www.youtube.com/embed/v47bsvGDCfo", duration: "10:00", views: "1.5k" },
+  { id: "v6", title: "Préparation des Repas Fitness", category: "nutrition", thumbnail: "https://images.pexels.com/photos/1640770/pexels-photo-1640770.jpeg", src: "https://www.youtube.com/embed/n0HyJeiB-qo", duration: "6:20", views: "5.7k" },
+  { id: "v7", title: "Développé Couché Technique", category: "musculation", thumbnail: "https://images.pexels.com/photos/1229356/pexels-photo-1229356.jpeg", src: "https://www.youtube.com/embed/A1n8SPMn8TY", duration: "7:30", views: "3.8k" },
 ]
 
 export const photos: PhotoItem[] = [
@@ -78,7 +77,7 @@ export const photos: PhotoItem[] = [
   { id: "p2", src: "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800&h=600&fit=crop", alt: "Femme stretching", category: "yoga", photographer: "Andrea Piacquadio", width: 800, height: 1200 },
   { id: "p3", src: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800&h=600&fit=crop", alt: "Homme musculation", category: "musculation", photographer: "Caleb Frith", width: 800, height: 534 },
   { id: "p4", src: "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=800&h=600&fit=crop", alt: "Coureur sur route", category: "running", photographer: "Pixabay", width: 800, height: 533 },
-  { id: "p5", src: "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800&h=600&fit=crop", alt: "CrossFit box", category: "crossfit", photographer: "RODNAE Productions", width: 800, height: 533 },
+  { id: "p5", src: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&h=600&fit=crop", alt: "Battle ropes crossfit", category: "crossfit", photographer: "Bruce Mars", width: 800, height: 534 },
   { id: "p6", src: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800&h=600&fit=crop", alt: "Repas sains", category: "nutrition", photographer: "Pixabay", width: 800, height: 533 },
   { id: "p7", src: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&h=600&fit=crop", alt: "Yoga en extérieur", category: "yoga", photographer: "Matthias Zomer", width: 800, height: 534 },
   { id: "p8", src: "https://images.unsplash.com/photo-1540497077202-7c8a3999166f?w=800&h=600&fit=crop", alt: "Cours collectif", category: "cardio", photographer: "Ketut Subiyanto", width: 800, height: 533 },
@@ -103,11 +102,7 @@ export const exercises: ExerciseItem[] = [
   { id: "e8", name: "Préparation Repas", image: "https://images.pexels.com/photos/1640770/pexels-photo-1640770.jpeg", category: "nutrition", difficulty: "Facile", duration: "60 min", calories: "-" },
 ]
 
-export const transformations: TransformationItem[] = [
-  { id: "t1", name: "Sarah M.", before: "https://images.pexels.com/photos/3758142/pexels-photo-3758142.jpeg", after: "https://images.pexels.com/photos/3837783/pexels-photo-3837783.jpeg", quote: "J'ai perdu 15 kg en 6 mois grâce aux programmes sur mesure et au coaching personnalisé.", duration: "6 mois", result: "-15 kg" },
-  { id: "t2", name: "Karim H.", before: "https://images.pexels.com/photos/1229356/pexels-photo-1229356.jpeg", after: "https://images.pexels.com/photos/1552242/pexels-photo-1552242.jpeg", quote: "J'ai transformé mon corps et gagné en confiance. Le crossfit a changé ma vie.", duration: "8 mois", result: "+12 kg muscle" },
-  { id: "t3", name: "Amina B.", before: "https://images.pexels.com/photos/2604472/pexels-photo-2604472.jpeg", after: "https://images.pexels.com/photos/841130/pexels-photo-841130.jpeg", quote: "Le yoga et la nutrition m'ont aidée à retrouver mon équilibre intérieur.", duration: "4 mois", result: "-8 kg" },
-]
+export const transformations: TransformationItem[] = []
 
 export const socialPosts: SocialPost[] = [
   { id: "s1", image: "https://images.pexels.com/photos/1552242/pexels-photo-1552242.jpeg", likes: "1 234", platform: "Instagram", username: "@infinitygym" },

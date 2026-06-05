@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Dumbbell, Plus, Clock, Check, Play, ChevronRight, Flag, Zap, AlertCircle, RefreshCw } from "lucide-react"
 
 interface Exercise {
@@ -71,21 +71,22 @@ const sampleWorkouts: WorkoutDay[] = [
 export default function WorkoutPage() {
   const [activeDay, setActiveDay] = useState(0)
   const [workouts, setWorkouts] = useState<WorkoutDay[] | null>(null)
-  const [loading] = useState(false)
+  const [loading, setLoading] = useState(false)
   const [error] = useState<string | null>(null)
 
-  if (!workouts && !loading && !error) {
-    setTimeout(() => setWorkouts(sampleWorkouts), 300)
-  }
+  useEffect(() => {
+    const timer = setTimeout(() => setWorkouts(sampleWorkouts), 300)
+    return () => clearTimeout(timer)
+  }, [])
 
   if (loading) {
     return (
       <div className="p-4 md:p-6 lg:p-8 space-y-4">
-        <div className="h-8 w-48 bg-gray-200 rounded-lg animate-pulse" />
+        <div className="h-8 w-48 rounded-lg shimmer" />
         <div className="flex gap-2">
-          {[...Array(4)].map((_, i) => <div key={i} className="h-9 w-24 bg-gray-200 rounded-xl animate-pulse" />)}
+          {[...Array(4)].map((_, i) => <div key={i} className="h-9 w-24 rounded-xl shimmer" />)}
         </div>
-        <div className="h-72 bg-gray-200 rounded-2xl animate-pulse" />
+        <div className="h-72 rounded-2xl shimmer" />
       </div>
     )
   }
@@ -94,11 +95,11 @@ export default function WorkoutPage() {
     return (
       <div className="p-4 md:p-6 lg:p-8">
         <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-3">
-            <AlertCircle className="w-7 h-7 text-red-500" />
+          <div className="w-14 h-14 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-3">
+            <AlertCircle className="w-7 h-7 text-red-400" />
           </div>
-          <p className="text-sm font-bold text-brand-black mb-1">Erreur de chargement</p>
-          <p className="text-sm text-gray-500">{error}</p>
+          <p className="text-sm font-bold text-white mb-1">Erreur de chargement</p>
+          <p className="text-sm text-gray-400">{error}</p>
           <button onClick={() => window.location.reload()} className="mt-4 text-sm text-brand-red font-medium hover:underline flex items-center gap-1">
             <RefreshCw className="w-3.5 h-3.5" /> Réessayer
           </button>
@@ -111,11 +112,11 @@ export default function WorkoutPage() {
     return (
       <div className="p-4 md:p-6 lg:p-8">
         <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
-            <Dumbbell className="w-7 h-7 text-gray-400" />
+          <div className="w-14 h-14 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-3">
+            <Dumbbell className="w-7 h-7 text-gray-500" />
           </div>
-          <p className="text-sm font-bold text-brand-black mb-1">Aucun programme</p>
-          <p className="text-sm text-gray-500">Votre programme sportif sera disponible ici.</p>
+          <p className="text-sm font-bold text-white mb-1">Aucun programme</p>
+          <p className="text-sm text-gray-400">Votre programme sportif sera disponible ici.</p>
         </div>
       </div>
     )
@@ -139,8 +140,8 @@ export default function WorkoutPage() {
     <div className="p-4 md:p-6 lg:p-8 space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl lg:text-2xl font-bold text-brand-black">Programme sportif</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Plan d&apos;entraînement personnalisé</p>
+          <h1 className="text-xl lg:text-2xl font-bold text-white">Programme sportif</h1>
+          <p className="text-sm text-gray-400 mt-0.5">Plan d&apos;entraînement personnalisé</p>
         </div>
         <button className="flex items-center gap-2 bg-brand-red text-white px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-red-700 transition-colors shadow-lg shadow-brand-red/20">
           <Plus className="w-4 h-4" /> Nouveau
@@ -155,7 +156,7 @@ export default function WorkoutPage() {
             className={`shrink-0 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${
               activeDay === i
                 ? "bg-brand-red text-white shadow-lg shadow-brand-red/20"
-                : "bg-white border border-gray-200 text-gray-600 hover:border-brand-red/30 hover:shadow-sm"
+                : "glass text-gray-300 border border-white/10 hover:border-brand-red/30"
             }`}
           >
             {w.day}
@@ -163,7 +164,7 @@ export default function WorkoutPage() {
         ))}
       </div>
 
-      <div className="bg-white rounded-2xl border shadow-lg shadow-black/5 overflow-hidden">
+      <div className="glass-strong rounded-2xl border border-white/10 shadow-lg overflow-hidden">
         <div className="bg-gradient-to-r from-brand-red to-red-700 px-5 py-4 text-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -189,32 +190,32 @@ export default function WorkoutPage() {
           </div>
         </div>
 
-        <div className="divide-y divide-gray-50">
+        <div className="divide-y divide-white/5">
           {current.exercises.map((ex, i) => (
-            <div key={i} className={`flex items-center gap-4 px-5 py-4 transition-colors ${ex.done ? "bg-green-50/50" : "hover:bg-gray-50"}`}>
+            <div key={i} className={`flex items-center gap-4 px-5 py-4 transition-colors ${ex.done ? "bg-green-500/5" : "hover:bg-white/5"}`}>
               <button
                 onClick={() => toggleExercise(i)}
                 className={`shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
                   ex.done
                     ? "bg-green-500 border-green-500 text-white scale-110 shadow-md shadow-green-500/30"
-                    : "border-gray-300 hover:border-brand-red"
+                    : "border-white/20 hover:border-brand-red"
                 }`}
               >
                 {ex.done && <Check className="w-3.5 h-3.5" />}
               </button>
               <div className="flex-1 min-w-0">
-                <p className={`text-sm font-medium ${ex.done ? "text-gray-400 line-through" : "text-brand-black"}`}>{ex.name}</p>
+                <p className={`text-sm font-medium ${ex.done ? "text-gray-500 line-through" : "text-white"}`}>{ex.name}</p>
                 <div className="flex items-center gap-3 mt-1">
-                  <span className="text-xs text-gray-500 flex items-center gap-1">
+                  <span className="text-xs text-gray-400 flex items-center gap-1">
                     <Zap className="w-3 h-3" />
                     {ex.sets} × {ex.reps}
                   </span>
                   {ex.weight !== "--" && (
-                    <span className="text-xs font-bold text-brand-red bg-brand-red/5 px-2 py-0.5 rounded-full">{ex.weight}</span>
+                    <span className="text-xs font-bold text-brand-red bg-brand-red/10 px-2 py-0.5 rounded-full">{ex.weight}</span>
                   )}
                 </div>
               </div>
-              <ChevronRight className={`w-4 h-4 shrink-0 ${ex.done ? "text-green-300" : "text-gray-200"}`} />
+              <ChevronRight className={`w-4 h-4 shrink-0 ${ex.done ? "text-green-400/50" : "text-white/20"}`} />
             </div>
           ))}
         </div>
@@ -223,16 +224,16 @@ export default function WorkoutPage() {
       <div className="grid grid-cols-3 gap-3">
         {[
           { label: "Exercices", value: `${done}/${total}`, sub: `${progress}% complété`, color: "bg-brand-red/10 text-brand-red" },
-          { label: "Temps estimé", value: current.duration, sub: "Par séance", color: "bg-blue-50 text-blue-600" },
-          { label: "Intensité", value: current.exercises.length >= 5 ? "Élevée" : "Moyenne", sub: "Cette semaine", color: "bg-orange-50 text-orange-600" },
+          { label: "Temps estimé", value: current.duration, sub: "Par séance", color: "bg-brand-blue/10 text-brand-blue" },
+          { label: "Intensité", value: current.exercises.length >= 5 ? "Élevée" : "Moyenne", sub: "Cette semaine", color: "bg-amber-500/10 text-amber-400" },
         ].map((s, i) => (
-          <div key={i} className="bg-white rounded-xl border p-3 shadow-sm">
+          <div key={i} className="glass rounded-xl border border-white/10 p-3">
             <div className={`w-8 h-8 rounded-lg ${s.color} flex items-center justify-center mb-2`}>
               <Zap className="w-4 h-4" />
             </div>
-            <p className="text-lg font-bold text-brand-black">{s.value}</p>
-            <p className="text-[10px] text-gray-500">{s.label}</p>
-            <p className="text-[10px] text-gray-400">{s.sub}</p>
+            <p className="text-lg font-bold text-white">{s.value}</p>
+            <p className="text-[10px] text-gray-400">{s.label}</p>
+            <p className="text-[10px] text-gray-500">{s.sub}</p>
           </div>
         ))}
       </div>

@@ -111,12 +111,12 @@ export default function NutritionPage() {
   if (loading) {
     return (
       <div className="p-4 md:p-6 lg:p-8 space-y-4">
-        <div className="h-8 w-48 bg-gray-200 rounded-lg animate-pulse" />
+        <div className="h-8 w-48 bg-white/5 rounded-lg animate-pulse" />
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5">
-          {[...Array(5)].map((_, i) => <div key={i} className="h-28 bg-gray-200 rounded-2xl animate-pulse" />)}
+          {[...Array(5)].map((_, i) => <div key={i} className="h-28 bg-white/5 rounded-2xl animate-pulse" />)}
         </div>
-        <div className="h-32 bg-gray-200 rounded-2xl animate-pulse" />
-        {[...Array(4)].map((_, i) => <div key={i} className="h-28 bg-gray-200 rounded-2xl animate-pulse" />)}
+        <div className="h-32 bg-white/5 rounded-2xl animate-pulse" />
+        {[...Array(4)].map((_, i) => <div key={i} className="h-28 bg-white/5 rounded-2xl animate-pulse" />)}
       </div>
     )
   }
@@ -125,10 +125,10 @@ export default function NutritionPage() {
     return (
       <div className="p-4 md:p-6 lg:p-8">
         <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-3">
+          <div className="w-14 h-14 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-3">
             <AlertCircle className="w-7 h-7 text-red-500" />
           </div>
-          <p className="text-sm font-bold text-brand-black mb-1">Erreur de chargement</p>
+          <p className="text-sm font-bold text-white mb-1">Erreur de chargement</p>
           <p className="text-sm text-gray-500">{error}</p>
           <button onClick={() => window.location.reload()} className="mt-4 text-sm text-brand-red font-medium hover:underline flex items-center gap-1">
             <RefreshCw className="w-3.5 h-3.5" /> Réessayer
@@ -142,10 +142,10 @@ export default function NutritionPage() {
     return (
       <div className="p-4 md:p-6 lg:p-8">
         <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+          <div className="w-14 h-14 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-3">
             <Apple className="w-7 h-7 text-gray-400" />
           </div>
-          <p className="text-sm font-bold text-brand-black mb-1">Aucun plan nutritionnel</p>
+          <p className="text-sm font-bold text-white mb-1">Aucun plan nutritionnel</p>
           <p className="text-sm text-gray-500">Votre plan alimentaire sera disponible ici.</p>
         </div>
       </div>
@@ -163,7 +163,7 @@ export default function NutritionPage() {
   return (
     <div className="p-4 md:p-6 lg:p-8 space-y-5">
       <div>
-        <h1 className="text-xl lg:text-2xl font-bold text-brand-black">Nutrition</h1>
+        <h1 className="text-xl lg:text-2xl font-bold text-white">Nutrition</h1>
         <p className="text-sm text-gray-500 mt-0.5">Plan alimentaire personnalisé — Coach Karim</p>
       </div>
 
@@ -171,18 +171,18 @@ export default function NutritionPage() {
         {macros.map((m) => {
           const pct = Math.min(100, Math.round((m.value / m.target) * 100))
           return (
-            <div key={m.key} className="bg-white rounded-2xl border shadow-sm p-3.5">
+            <div key={m.key} className="glass-strong rounded-2xl border border-white/10 p-3.5">
               <div className="flex items-center justify-between mb-2">
-                <div className={`w-8 h-8 rounded-lg ${m.color.replace("bg-", "bg-").replace("-500", "-50")} flex items-center justify-center`}>
+                <div className={`w-8 h-8 rounded-lg ${m.color.replace("bg-", "bg-").replace("-500", "-500/10")} flex items-center justify-center`}>
                   <m.icon className={`w-4 h-4 ${m.color.replace("bg-", "text-")}`} />
                 </div>
-                <span className={`text-xs font-bold ${pct >= 100 ? "text-green-600" : "text-gray-400"}`}>{pct}%</span>
+                <span className={`text-xs font-bold ${pct >= 100 ? "text-green-400" : "text-gray-400"}`}>{pct}%</span>
               </div>
-              <p className="text-xs text-gray-500">{m.label}</p>
-              <p className="text-lg font-bold text-brand-black leading-tight">
+              <p className="text-xs text-gray-400">{m.label}</p>
+              <p className="text-lg font-bold text-white leading-tight">
                 {m.value} <span className="text-xs font-normal text-gray-400">{m.unit}</span>
               </p>
-              <div className="mt-2 h-1 bg-gray-100 rounded-full overflow-hidden">
+              <div className="mt-2 h-1 bg-white/10 rounded-full overflow-hidden">
                 <div
                   className={`h-full rounded-full transition-all ${pct >= 100 ? "bg-green-500" : m.color}`}
                   style={{ width: `${Math.min(pct, 100)}%` }}
@@ -217,19 +217,19 @@ export default function NutritionPage() {
 
       <div className="space-y-3">
         {meals.map((meal) => (
-          <div key={meal.id} className="bg-white rounded-2xl border shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-            <div className="px-5 pt-4 pb-3 flex items-center justify-between border-b border-gray-50">
+          <div key={meal.id} className="glass-strong rounded-2xl border border-white/10 overflow-hidden hover:shadow-md transition-shadow">
+            <div className="px-5 pt-4 pb-3 flex items-center justify-between border-b border-white/5">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-brand-red/10 flex items-center justify-center">
                   <meal.icon className="w-5 h-5 text-brand-red" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-brand-black">{meal.name}</p>
+                  <p className="text-sm font-bold text-white">{meal.name}</p>
                   <p className="text-xs text-gray-400">{meal.time}</p>
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-sm font-bold text-brand-black">{meal.calories} <span className="text-xs font-normal text-gray-400">kcal</span></p>
+                <p className="text-sm font-bold text-white">{meal.calories} <span className="text-xs font-normal text-gray-400">kcal</span></p>
                 <div className="flex items-center gap-1.5 text-[10px] text-gray-500 mt-0.5">
                   <span className="text-red-500">{meal.protein}g</span>
                   <span className="text-blue-500">{meal.carbs}g</span>
@@ -241,7 +241,7 @@ export default function NutritionPage() {
               {meal.items.map((item, j) => (
                 <span
                   key={j}
-                  className="inline-flex items-center gap-1.5 text-xs bg-gray-50 text-gray-600 px-2.5 py-1.5 rounded-lg border border-gray-100"
+                  className="inline-flex items-center gap-1.5 text-xs bg-white/5 text-gray-300 px-2.5 py-1.5 rounded-lg border border-white/10"
                 >
                   {item.name}
                   <span className="text-gray-400 font-medium">{item.portion}</span>

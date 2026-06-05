@@ -130,8 +130,8 @@ export default function MemberQRPage() {
           <div className="w-16 h-16 rounded-full bg-brand-red/10 flex items-center justify-center mx-auto">
             <ShieldAlert className="w-8 h-8 text-brand-red" />
           </div>
-          <h1 className="text-xl font-bold text-brand-black">Accès réservé aux membres</h1>
-          <p className="text-sm text-gray-500">Cette page est uniquement accessible aux membres.</p>
+          <h1 className="text-xl font-bold text-white">Accès réservé aux membres</h1>
+          <p className="text-sm text-gray-400">Cette page est uniquement accessible aux membres.</p>
         </div>
       </div>
     )
@@ -152,17 +152,17 @@ export default function MemberQRPage() {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="w-full max-w-sm text-center space-y-5">
-          <div className="w-16 h-16 rounded-full bg-amber-50 flex items-center justify-center mx-auto">
-            <Smartphone className="w-8 h-8 text-amber-600" />
+          <div className="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center mx-auto">
+            <Smartphone className="w-8 h-8 text-amber-400" />
           </div>
-          <h1 className="text-xl font-bold text-brand-black">Appareil non autorisé</h1>
-          <p className="text-sm text-gray-500 leading-relaxed">
+          <h1 className="text-xl font-bold text-white">Appareil non autorisé</h1>
+          <p className="text-sm text-gray-400 leading-relaxed">
             Un autre appareil est déjà connecté à votre compte.
             Pour des raisons de sécurité, un seul appareil peut afficher le QR à la fois.
           </p>
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-left text-sm">
-            <p className="text-amber-800 font-medium mb-1">Appareil actif détecté</p>
-            <p className="text-amber-600 text-xs">{deviceBlockReason}</p>
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 text-left text-sm">
+            <p className="text-amber-400 font-medium mb-1">Appareil actif détecté</p>
+            <p className="text-amber-300 text-xs">{deviceBlockReason}</p>
           </div>
           <button
             onClick={async () => {
@@ -192,35 +192,35 @@ export default function MemberQRPage() {
           <div className="w-16 h-16 rounded-full bg-brand-red/10 flex items-center justify-center mx-auto">
             <Smartphone className="w-8 h-8 text-brand-red" />
           </div>
-          <h1 className="text-xl font-bold text-brand-black">Application mobile requise</h1>
-          <p className="text-sm text-gray-500 leading-relaxed">
+          <h1 className="text-xl font-bold text-white">Application mobile requise</h1>
+          <p className="text-sm text-gray-400 leading-relaxed">
             Le QR code d&apos;accès est uniquement disponible sur l&apos;application mobile
             Infinity Gym Center.
           </p>
-          <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 space-y-3">
+          <div className="glass rounded-xl p-5 space-y-3">
             <div className="flex items-center gap-3 text-left">
               <Monitor className="w-5 h-5 text-gray-400 shrink-0" />
               <div>
-                <p className="text-sm font-medium text-brand-black">Vous êtes sur un ordinateur</p>
-                <p className="text-xs text-gray-500">Ouvrez l&apos;app sur votre téléphone pour accéder au QR</p>
+                <p className="text-sm font-medium text-white">Vous êtes sur un ordinateur</p>
+                <p className="text-xs text-gray-400">Ouvrez l&apos;app sur votre téléphone pour accéder au QR</p>
               </div>
             </div>
             <div className="flex items-center gap-3 text-left">
               <QrCodeIcon className="w-5 h-5 text-gray-400 shrink-0" />
               <div>
-                <p className="text-sm font-medium text-brand-black">QR code dynamique</p>
-                <p className="text-xs text-gray-500">Disponible uniquement sur mobile pour votre sécurité</p>
+                <p className="text-sm font-medium text-white">QR code dynamique</p>
+                <p className="text-xs text-gray-400">Disponible uniquement sur mobile pour votre sécurité</p>
               </div>
             </div>
             <div className="flex items-center gap-3 text-left">
               <Lock className="w-5 h-5 text-gray-400 shrink-0" />
               <div>
-                <p className="text-sm font-medium text-brand-black">Sécurisé</p>
-                <p className="text-xs text-gray-500">Anti-capture d&apos;écran et rotation automatique</p>
+                <p className="text-sm font-medium text-white">Sécurisé</p>
+                <p className="text-xs text-gray-400">Anti-capture d&apos;écran et rotation automatique</p>
               </div>
             </div>
           </div>
-          <p className="text-xs text-gray-400">Téléchargez l&apos;app depuis le Play Store ou l&apos;App Store</p>
+          <p className="text-xs text-gray-500">Téléchargez l&apos;app depuis le Play Store ou l&apos;App Store</p>
         </div>
       </div>
     )
@@ -229,28 +229,28 @@ export default function MemberQRPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8 relative overflow-hidden select-none">
       <div className="w-full max-w-sm mx-auto flex flex-col items-center gap-6">
-        <div className="flex items-center justify-between w-full">
-          <div className="flex items-center gap-2 text-brand-black">
+          <div className="flex items-center justify-between w-full">
+          <div className="flex items-center gap-2 text-white">
             <Clock className="w-4 h-4" />
             <span className="text-sm font-semibold tabular-nums">{clock}</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className={`w-1.5 h-1.5 rounded-full ${membership ? "bg-green-500 animate-pulse" : "bg-gray-300"}`} />
-            <span className="text-xs text-gray-500 font-medium">
+            <span className={`w-1.5 h-1.5 rounded-full ${membership ? "bg-green-500 animate-pulse" : "bg-white/20"}`} />
+            <span className="text-xs text-gray-400 font-medium">
               {membership ? "Actif" : "Inactif"}
             </span>
           </div>
         </div>
 
         <div className="text-center">
-          <h1 className="text-lg font-bold text-brand-black">Mon QR d&apos;accès</h1>
-          <p className="text-xs text-gray-500 mt-0.5">Présentez au tourniquet</p>
+          <h1 className="text-lg font-bold text-white">Mon QR d&apos;accès</h1>
+          <p className="text-xs text-gray-400 mt-0.5">Présentez au tourniquet</p>
         </div>
 
         <div className="relative" onContextMenu={(e) => e.preventDefault()}>
-          <div className={`bg-white rounded-3xl p-6 shadow-xl border transition-all duration-400 ${
+          <div className={`glass rounded-3xl p-6 shadow-xl transition-all duration-400 ${
             isRefreshing ? "scale-95 opacity-50" : "scale-100 opacity-100"
-          } ${isHidden ? "ring-4 ring-red-300" : "border-gray-100"}`}>
+          } ${isHidden ? "ring-4 ring-red-300" : "border-white/10"}`}>
             <div className={`transition-all duration-400 ${
               isRefreshing || isHidden ? "opacity-0 scale-75 blur-sm" : "opacity-100 scale-100 blur-none"
             }`}>
@@ -265,16 +265,16 @@ export default function MemberQRPage() {
                 />
               ) : (
                 <div className="w-[236px] h-[236px] flex items-center justify-center">
-                  <RefreshCw className="w-8 h-8 text-gray-300 animate-spin" />
+                  <RefreshCw className="w-8 h-8 text-gray-500 animate-spin" />
                 </div>
               )}
             </div>
             {isHidden && (
-              <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-3xl">
+              <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-3xl backdrop-blur-sm">
                 <div className="text-center">
                   <Eye className="w-8 h-8 text-red-400 mx-auto mb-2" />
                   <p className="text-sm font-bold text-red-500">QR masqué</p>
-                  <p className="text-xs text-gray-500">Revenez sur l&apos;app pour révéler</p>
+                  <p className="text-xs text-gray-400">Revenez sur l&apos;app pour révéler</p>
                 </div>
               </div>
             )}
@@ -282,7 +282,7 @@ export default function MemberQRPage() {
         </div>
 
         <div className="w-full max-w-[236px] space-y-2">
-          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+          <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
             <div
               className="h-full bg-brand-red rounded-full transition-all duration-1000 ease-linear"
               style={{ width: `${progress}%` }}
@@ -302,8 +302,8 @@ export default function MemberQRPage() {
 
         <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium ${
           membership
-            ? "bg-green-50 text-green-700 border border-green-200"
-            : "bg-gray-50 text-gray-500 border border-gray-200"
+            ? "bg-green-500/10 text-green-400 border border-green-500/20"
+            : "bg-white/5 text-gray-400 border border-white/10"
         }`}>
           <CircleCheck className="w-3.5 h-3.5" />
           {membership
@@ -311,7 +311,7 @@ export default function MemberQRPage() {
             : "Aucun abonnement actif"}
         </div>
 
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-[10px]">
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px]">
           <Lock className="w-3 h-3" />
           Protection anti-capture activée
         </div>

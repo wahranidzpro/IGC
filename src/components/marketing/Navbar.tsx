@@ -5,7 +5,8 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { useTheme } from "@/lib/context/theme-context"
-import { Menu, X, Sun, Moon, ChevronDown, Dumbbell, Users, CreditCard, Image as ImageIcon, Phone, Sparkles } from "lucide-react"
+import { ThemeToggle } from "@/components/ui/ThemeToggle"
+import { Menu, X, ChevronDown, Dumbbell, Users, CreditCard, Image as ImageIcon, Phone, Sparkles } from "lucide-react"
 
 const megaMenuItems = [
   {
@@ -81,7 +82,7 @@ const megaLabels = new Set(["Activités", "Abonnements", "Coaches", "Home Traini
 
 export default function Navbar() {
   const pathname = usePathname()
-  const { theme, toggleTheme } = useTheme()
+  const { theme } = useTheme()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [openMega, setOpenMega] = useState<string | null>(null)
@@ -181,18 +182,7 @@ export default function Navbar() {
           </nav>
 
           <div className="hidden lg:flex items-center gap-2">
-            <button
-              onClick={toggleTheme}
-              className={cn(
-                "p-2.5 rounded-xl transition-all duration-200",
-                isDark
-                  ? "text-white/60 hover:text-white hover:bg-white/5"
-                  : "text-gray-500 hover:text-brand-black hover:bg-gray-100"
-              )}
-              aria-label="Basculer le thème"
-            >
-              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
+            <ThemeToggle />
 
             <Link
               href="/login"
@@ -209,15 +199,7 @@ export default function Navbar() {
           </div>
 
           <div className="flex lg:hidden items-center gap-2">
-            <button
-              onClick={toggleTheme}
-              className={cn(
-                "p-2 rounded-xl transition-colors",
-                isDark ? "text-white/60" : "text-gray-500"
-              )}
-            >
-              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </button>
+            <ThemeToggle />
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
               className={cn("p-2", isDark ? "text-white" : "text-brand-black")}

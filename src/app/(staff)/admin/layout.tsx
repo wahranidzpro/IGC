@@ -12,13 +12,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (!loading && !user) router.push("/login")
   }, [user, loading, router])
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#0B0B0B] via-[#150606] to-[#0B0B0B]">
-        <div className="animate-spin w-10 h-10 border-4 border-[#E10600] border-t-transparent rounded-full" />
-      </div>
-    )
-  }
   if (!user) return null
 
   if (role !== "admin") {

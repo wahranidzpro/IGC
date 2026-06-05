@@ -17,7 +17,7 @@ const plans = [
       "Application mobile",
       "Bilan de forme offert",
     ],
-    cta: { label: "Je m'abonne", href: "/signup" },
+    cta: { label: "Je m'abonne", href: "/login" },
   },
   {
     id: "trimestriel",
@@ -34,7 +34,7 @@ const plans = [
       "2 séances coaching perso offertes",
       "Accès événements exclusifs",
     ],
-    cta: { label: "Je m'abonne", href: "/signup" },
+    cta: { label: "Je m'abonne", href: "/login" },
   },
   {
     id: "annuel",
@@ -51,7 +51,7 @@ const plans = [
       "Frais d'adhésion offerts",
       "Accès à toutes les futures salles du réseau",
     ],
-    cta: { label: "Je m'abonne", href: "/signup" },
+    cta: { label: "Je m'abonne", href: "/login" },
   },
 ]
 

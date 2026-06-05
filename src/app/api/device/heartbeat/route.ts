@@ -27,8 +27,8 @@ export async function POST(request: Request) {
 
   const { error } = await supabase
     .from("profiles")
-    .update({ lastActiveAt: new Date().toISOString() })
-    .eq("deviceFingerprint", fingerprint)
+    .update({ last_active_at: new Date().toISOString() })
+    .eq("device_fingerprint", fingerprint)
 
   if (error) {
     return NextResponse.json({ ok: false }, { status: 500 })

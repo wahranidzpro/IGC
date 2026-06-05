@@ -64,8 +64,8 @@ export default function HomeTrainingPage() {
                 où que tu sois, sans aucun équipement nécessaire.
               </p>
               <div className="flex flex-wrap gap-4">
-                <Link href="/signup" className="group inline-flex items-center gap-2 bg-gradient-to-r from-brand-orange to-brand-red text-white px-8 py-4 rounded-xl font-bold hover:brightness-110 transition-all active:scale-95 shadow-xl shadow-brand-orange/30">
-                  Accéder aux programmes <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                <Link href="/abonnements" className="group inline-flex items-center gap-2 bg-gradient-to-r from-brand-orange to-brand-red text-white px-8 py-4 rounded-xl font-bold hover:brightness-110 transition-all active:scale-95 shadow-xl shadow-brand-orange/30">
+                  Découvrir les abonnements <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
                 <Link href="/abonnements" className="group inline-flex items-center gap-2 border border-zinc-600 text-white px-8 py-4 rounded-xl font-semibold hover:bg-zinc-800 transition-all">
                   Voir les abonnements
@@ -75,7 +75,7 @@ export default function HomeTrainingPage() {
             <div className="hidden lg:block">
               <div className="relative">
                 <div className="aspect-[4/3] rounded-2xl bg-gradient-to-br from-zinc-800 to-zinc-900 border border-zinc-700 overflow-hidden shadow-2xl">
-                  <img src="/images/hero-bg.jpg" alt="Home Training" className="w-full h-full object-cover opacity-60" />
+                  <img src="https://images.unsplash.com/photo-1534258936925-c58bed479fcb?w=800&h=600&fit=crop" alt="Home Training" className="w-full h-full object-cover opacity-60" />
                 </div>
                 <div className="absolute -bottom-4 -left-4 bg-zinc-900 border border-zinc-700 rounded-xl p-4 shadow-xl">
                   <div className="flex items-center gap-3">
@@ -147,7 +147,7 @@ export default function HomeTrainingPage() {
             <div>
               <div className="aspect-video rounded-xl overflow-hidden">
                 <iframe
-                  src="https://www.youtube.com/embed/UDATUfvf9cI"
+                  src="https://www.youtube.com/embed/B12MXF0bSFo"
                   className="w-full h-full"
                   allowFullScreen
                   allow="autoplay; encrypted-media"
@@ -180,8 +180,8 @@ export default function HomeTrainingPage() {
             ))}
           </div>
           <div className="text-center mt-12">
-            <Link href="/signup" className="group inline-flex items-center gap-2 bg-gradient-to-r from-brand-orange to-brand-red text-white px-8 py-4 rounded-xl font-bold hover:brightness-110 transition-all shadow-xl shadow-brand-orange/30">
-              Voir tous les programmes — dès 4 500 DA <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            <Link href="/abonnements" className="group inline-flex items-center gap-2 bg-gradient-to-r from-brand-orange to-brand-red text-white px-8 py-4 rounded-xl font-bold hover:brightness-110 transition-all shadow-xl shadow-brand-orange/30">
+              Voir nos abonnements — dès 4 500 DA <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
         </div>
@@ -222,8 +222,8 @@ export default function HomeTrainingPage() {
             Programmes Home Training inclus dans tous nos abonnements dès <span className="text-white font-bold">4 500 DA/mois</span>.
             Entraîne-toi chez toi quand tu veux, où tu veux.
           </p>
-          <Link href="/signup" className="group inline-flex items-center gap-2 bg-gradient-to-r from-brand-orange to-brand-red text-white px-10 py-4 rounded-xl font-bold text-lg hover:brightness-110 transition-all active:scale-95 shadow-2xl shadow-brand-orange/30">
-            Je m'abonne dès 4 500 DA <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+          <Link href="/abonnements" className="group inline-flex items-center gap-2 bg-gradient-to-r from-brand-orange to-brand-red text-white px-10 py-4 rounded-xl font-bold text-lg hover:brightness-110 transition-all active:scale-95 shadow-2xl shadow-brand-orange/30">
+            Voir nos abonnements <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
       </section>

@@ -69,7 +69,7 @@ export default function CoachMessagesPage() {
         const convs: ConversationMember[] = mapRows<{ id: string; profileId: string }>(mData as Record<string, unknown>[]).map((m) => {
           const p = profiles[m.profileId]
           return {
-            id: m.id,
+            id: m.profileId,
             name: p ? `${p.firstName} ${p.lastName}` : "Inconnu",
             avatar: p?.avatarUrl || null,
             lastMessage: "",

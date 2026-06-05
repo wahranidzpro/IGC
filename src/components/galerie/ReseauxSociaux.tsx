@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { Heart, ArrowRight, Camera, Globe } from "lucide-react"
+import { Heart, ArrowRight, Camera } from "lucide-react"
 import { socialPosts } from "@/lib/galerie/mockData"
 
 export default function ReseauxSociaux() {

@@ -31,7 +31,7 @@ export default function RecoveryCard({ username, password, pin, recoveryCode, on
         <!DOCTYPE html>
         <html>
         <head>
-          <title>Infinity Gym - Carte de Recuperation</title>
+          <title>Infinity Gym - Carte de Récupération</title>
           <style>
             body { font-family: Arial, sans-serif; max-width: 500px; margin: 40px auto; padding: 20px; }
             .header { background: linear-gradient(135deg, #f97316, #ea580c); color: white; padding: 20px; text-align: center; border-radius: 12px 12px 0 0; }
@@ -51,7 +51,7 @@ export default function RecoveryCard({ username, password, pin, recoveryCode, on
         <body>
           <div class="header">
             <h1>Infinity Gym</h1>
-            <p>Carte de Recuperation - Admin</p>
+            <p>Carte de Récupération - Admin</p>
           </div>
           <div class="content">
             <div class="section">
@@ -67,16 +67,16 @@ export default function RecoveryCard({ username, password, pin, recoveryCode, on
               <div class="value">${pin}</div>
             </div>
             <div class="section recovery">
-              <div class="label">Code de Recuperation d'Urgence</div>
+              <div class="label">Code de Récupération d'Urgence</div>
               <div class="value">${recoveryCode}</div>
             </div>
             <div class="warning">
-              <strong>IMPORTANT :</strong> Gardez cette carte en lieu sur. Ne la partagez avec personne.
-              Le code de recuperation est necessaire pour reinitialiser votre mot de passe en cas d'oubli.
+              <strong>IMPORTANT :</strong> Gardez cette carte en lieu sûr. Ne la partagez avec personne.
+              Le code de récupération est nécessaire pour réinitialiser votre mot de passe en cas d'oubli.
             </div>
           </div>
           <div class="footer">
-            <p>Genere le ${new Date().toLocaleDateString('fr-FR')} - Infinity Gym Management System</p>
+            <p>Généré le ${new Date().toLocaleDateString('fr-FR')} - Infinity Gym Management System</p>
           </div>
         </body>
         </html>
@@ -93,15 +93,15 @@ export default function RecoveryCard({ username, password, pin, recoveryCode, on
           <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
             <Check className="w-10 h-10 text-green-500" />
           </div>
-          <h2 className="text-2xl font-bold text-white mb-3">Informations Sauvegardees</h2>
+          <h2 className="text-2xl font-bold text-white mb-3">Informations Sauvegardées</h2>
           <p className="text-gray-400 mb-6">
-            Vos identifiants ont ete enregistres. Conservez la carte imprimee en lieu sur.
+            Vos identifiants ont été enregistrés. Conservez la carte imprimée en lieu sûr.
           </p>
           <button
             onClick={onConfirm}
             className="w-full py-3 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-xl hover:from-green-600 hover:to-green-700 transition-all"
           >
-            Acceder a l'application
+            Accéder à l'application
           </button>
         </div>
       </div>
@@ -127,8 +127,8 @@ export default function RecoveryCard({ username, password, pin, recoveryCode, on
           {/* Warning */}
           <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl">
             <p className="text-sm text-yellow-400">
-              <strong>Important :</strong> Imprimez cette carte et gardez-la en lieu sur.
-              Ces informations ne seront affichees qu'une seule fois.
+              <strong>Important :</strong> Imprimez cette carte et gardez-la en lieu sûr.
+              Ces informations ne seront affichées qu'une seule fois.
             </p>
           </div>
 
@@ -196,7 +196,7 @@ export default function RecoveryCard({ username, password, pin, recoveryCode, on
 
             {/* Recovery Code */}
             <div className="p-4 bg-orange-500/10 border border-orange-500/30 rounded-xl">
-              <label className="block text-xs font-medium text-orange-400 mb-2">Code de Recuperation d'Urgence</label>
+              <label className="block text-xs font-medium text-orange-400 mb-2">Code de Récupération d'Urgence</label>
               <div className="flex items-center gap-2">
                 <div className="flex-1 px-4 py-3 bg-gray-800 border border-orange-500/50 rounded-xl text-orange-400 font-mono text-lg tracking-wider text-center">
                   {showRecovery ? recoveryCode : '••••-••••-••••-••••'}
@@ -233,7 +233,7 @@ export default function RecoveryCard({ username, password, pin, recoveryCode, on
               onClick={() => setConfirmed(true)}
               className="flex-1 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all"
             >
-              J'ai sauvegarde
+              J'ai sauvegardé
             </button>
           </div>
         </div>

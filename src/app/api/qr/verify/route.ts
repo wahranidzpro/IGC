@@ -7,7 +7,7 @@ export async function POST(request: Request) {
   const { token: rawToken, deviceId } = body
 
   if (!rawToken || typeof rawToken !== "string") {
-    return NextResponse.json({ valid: false, reason: "TOKEN_REQUIRED" })
+    return NextResponse.json({ valid: false, reason: "TOKEN_REQUIRED" }, { status: 400 })
   }
 
   const cookieStore = await cookies()
@@ -34,15 +34,15 @@ export async function POST(request: Request) {
     .maybeSingle()
 
   if (findError || !qrToken) {
-    return NextResponse.json({ valid: false, reason: "TOKEN_NOT_FOUND" })
+    return NextResponse.json({ valid: false, reason: "TOKEN_NOT_FOUND" }, { status: 404 })
   }
 
   if (qrToken.is_used) {
-    return NextResponse.json({ valid: false, reason: "TOKEN_ALREADY_USED" })
+    return NextResponse.json({ valid: false, reason: "TOKEN_ALREADY_USED" }, { status: 410 })
   }
 
   if (new Date(qrToken.expires_at) < new Date()) {
-    return NextResponse.json({ valid: false, reason: "TOKEN_EXPIRED" })
+    return NextResponse.json({ valid: false, reason: "TOKEN_EXPIRED" }, { status: 410 })
   }
 
   const { data: member } = await supabase
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
     .maybeSingle()
 
   if (!member || member.status !== "active") {
-    return NextResponse.json({ valid: false, memberId: qrToken.member_id, reason: "MEMBER_NOT_ACTIVE" })
+    return NextResponse.json({ valid: false, memberId: qrToken.member_id, reason: "MEMBER_NOT_ACTIVE" }, { status: 403 })
   }
 
   const now = new Date().toISOString()

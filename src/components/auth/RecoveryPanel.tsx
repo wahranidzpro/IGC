@@ -30,7 +30,7 @@ export default function RecoveryPanel({ onClose, onSuccess }: RecoveryPanelProps
       return;
     }
     if (!recoveryCode.trim()) {
-      setError('Entrez le code de recuperation');
+      setError('Entrez le code de récupération');
       return;
     }
 
@@ -41,7 +41,7 @@ export default function RecoveryPanel({ onClose, onSuccess }: RecoveryPanelProps
     setAttempts(validation.remaining);
 
     if (!validation.allowed) {
-      setError(`Trop de tentatives. Reessayez dans ${Math.ceil((validation.lockedUntil - Date.now()) / 60000)} minutes.`);
+      setError(`Trop de tentatives. Réessayez dans ${Math.ceil((validation.lockedUntil - Date.now()) / 60000)} minutes.`);
       setLoading(false);
       return;
     }
@@ -51,7 +51,7 @@ export default function RecoveryPanel({ onClose, onSuccess }: RecoveryPanelProps
       if (result.success) {
         setStep('success');
       } else {
-        setError(result.error || 'Erreur lors du deblocage');
+        setError(result.error || 'Erreur lors du déblocage');
         setStep('error');
       }
     } else {
@@ -63,7 +63,7 @@ export default function RecoveryPanel({ onClose, onSuccess }: RecoveryPanelProps
 
   const handleReset = async () => {
     if (newPassword.length < 6) {
-      setError('Le mot de passe doit contenir au moins 6 caracteres');
+      setError('Le mot de passe doit contenir au moins 6 caractères');
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -87,7 +87,7 @@ export default function RecoveryPanel({ onClose, onSuccess }: RecoveryPanelProps
     if (result.success) {
       setStep('success');
     } else {
-      setError(result.error || 'Erreur lors de la recuperation');
+      setError(result.error || 'Erreur lors de la récupération');
       setStep('error');
     }
 
@@ -113,7 +113,7 @@ export default function RecoveryPanel({ onClose, onSuccess }: RecoveryPanelProps
         <div className="bg-gradient-to-r from-orange-600 to-orange-500 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Key className="w-6 h-6 text-white" />
-            <h2 className="text-lg font-bold text-white">Mot de passe oublie</h2>
+            <h2 className="text-lg font-bold text-white">Mot de passe oublié</h2>
           </div>
           <button
             onClick={onClose}
@@ -145,7 +145,7 @@ export default function RecoveryPanel({ onClose, onSuccess }: RecoveryPanelProps
             }`}
           >
             <UserCheck className="w-4 h-4 inline mr-1" />
-            Debloquer compte
+            Débloquer compte
           </button>
         </div>
 
@@ -155,7 +155,7 @@ export default function RecoveryPanel({ onClose, onSuccess }: RecoveryPanelProps
               <div className="flex items-center gap-3 p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl">
                 <AlertTriangle className="w-5 h-5 text-blue-500 flex-shrink-0" />
                 <p className="text-sm text-blue-400">
-                  Entrez votre nom d&apos;utilisateur et le code de recuperation (sur votre carte imprimee).
+                  Entrez votre nom d&apos;utilisateur et le code de récupération (sur votre carte imprimée).
                 </p>
               </div>
 
@@ -175,7 +175,7 @@ export default function RecoveryPanel({ onClose, onSuccess }: RecoveryPanelProps
 
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-2">
-                  Code de recuperation
+                  Code de récupération
                 </label>
                 <input
                   type="text"
@@ -207,7 +207,7 @@ export default function RecoveryPanel({ onClose, onSuccess }: RecoveryPanelProps
                 ) : (
                   <>
                     <Shield className="w-4 h-4" />
-                    Verifier
+                    Vérifier
                   </>
                 )}
               </button>
@@ -219,7 +219,7 @@ export default function RecoveryPanel({ onClose, onSuccess }: RecoveryPanelProps
               <div className="flex items-center gap-3 p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
                 <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
                 <p className="text-sm text-green-400">
-                  Code valide. Crez votre nouveau mot de passe.
+                  Code valide. Créez votre nouveau mot de passe.
                 </p>
               </div>
 
@@ -232,7 +232,7 @@ export default function RecoveryPanel({ onClose, onSuccess }: RecoveryPanelProps
                     type={showPassword ? 'text' : 'password'}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Minimum 6 caracteres"
+                    placeholder="Minimum 6 caractères"
                     className="w-full px-4 py-3 pr-12 bg-gray-800 border border-gray-700 rounded-xl text-white focus:outline-none focus:border-orange-500"
                   />
                   <button
@@ -329,18 +329,18 @@ export default function RecoveryPanel({ onClose, onSuccess }: RecoveryPanelProps
                 <CheckCircle className="w-8 h-8 text-green-500" />
               </div>
               <h3 className="text-lg font-bold text-white">
-                {mode === 'unlock' ? 'Compte debloque' : 'Mot de passe mis a jour'}
+                {mode === 'unlock' ? 'Compte débloqué' : 'Mot de passe mis à jour'}
               </h3>
               <p className="text-sm text-gray-400">
                 {mode === 'unlock'
-                  ? `Le compte ${username} a ete debloque avec succes.`
-                  : 'Votre mot de passe et PIN ont ete mis a jour.'}
+                  ? `Le compte ${username} a été débloqué avec succès.`
+                  : 'Votre mot de passe et PIN ont été mis à jour.'}
               </p>
               <button
                 onClick={handleSuccess}
                 className="w-full py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-colors"
               >
-                Retour a la connexion
+                Retour à la connexion
               </button>
             </div>
           )}
@@ -357,7 +357,7 @@ export default function RecoveryPanel({ onClose, onSuccess }: RecoveryPanelProps
                   onClick={() => setStep('info')}
                   className="flex-1 py-3 bg-gray-800 hover:bg-gray-700 text-white font-semibold rounded-xl transition-colors"
                 >
-                  Reessayer
+                  Réessayer
                 </button>
                 <button
                   onClick={onClose}

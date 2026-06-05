@@ -50,12 +50,7 @@ export async function signInWithPin(pin: string) {
     .eq('is_locked', false)
     .single();
   if (error || !users) throw new Error('PIN invalide');
-  const { data, error: signInError } = await supabase.auth.signInWithPassword({
-    email: `${users.username}@infinitygym.local`,
-    password: users.password_hash,
-  });
-  if (signInError) throw signInError;
-  return data;
+  return users;
 }
 
 export async function signOutUser() {
@@ -80,36 +75,4 @@ export function onAuthStateChange(callback: (event: string, session: any) => voi
   return supabase.auth.onAuthStateChange(callback);
 }
 
-export async function syncLocalUsersToCloud(localUsers: Array<{ username: string; password: string; pin: string; role: string; name: string; isLocked: boolean }>) {
-  if (!supabase) return { synced: 0 };
-  let synced = 0;
-  for (const u of localUsers) {
-    const { data: existing } = await (supabase.from('gym_users') as any)
-      .select('id')
-      .eq('username', u.username)
-      .single()
-      .catch(() => ({ data: null }));
-    if (!existing) {
-      const email = `${u.username}@infinitygym.local`;
-      const { data: authData } = await supabase.auth.admin?.createUser({
-        email,
-        password: u.password,
-        email_confirm: true,
-        user_metadata: { username: u.username, role: u.role, name: u.name, pin: u.pin },
-      }) || { data: null };
-      if (authData?.user) {
-        await (supabase.from('gym_users') as any).insert([{
-          id: authData.user.id,
-          username: u.username,
-          password_hash: u.password,
-          pin: u.pin,
-          role: u.role,
-          name: u.name,
-          is_locked: u.isLocked,
-        }]);
-        synced++;
-      }
-    }
-  }
-  return { synced };
-}
+

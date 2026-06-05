@@ -1,10 +1,11 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { db, Member } from '@/lib/db/dexie-db';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { canAccessApp, fetchAccessStatus } from '@/lib/auth/authorization';
 import { logger } from '@/lib/logger';
+import bcrypt from 'bcryptjs';
 
 type Role = 'admin' | 'reception' | 'coach' | 'adherent' | null;
 type LoginMode = 'admin' | 'adherent';
@@ -48,7 +49,6 @@ interface AuthContextType {
   hasRole: (...roles: UserRole[]) => boolean;
   hasAccess: (minLevel: number) => boolean;
   dashboardPath: string;
-  signup: (email: string, password: string) => Promise<{ error?: string }>;
   loading: boolean;
   isStructureLocked: boolean;
   checkStructureLock: () => Promise<boolean>;
@@ -63,11 +63,13 @@ function authLog(tag: string, msg: string, data?: any) {
   logger.info(line);
 }
 
-async function setServerCookie(username: string, role: string, supabaseUserId?: string) {
+async function setServerCookie(username: string, role: string, supabaseUserId?: string, accessToken?: string) {
   try {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
     await fetch('/api/auth/session', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({ username, role, supabaseUserId }),
     });
   } catch (err) {
@@ -138,6 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isStructureLocked, setIsStructureLocked] = useState(false);
   const [accessStatus, setAccessStatus] = useState<{ granted: boolean; message: string; reason: string } | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const authSubscriptionRef = useRef<{ data: { subscription: { unsubscribe: () => void } } } | null>(null);
 
   const loading = !isInitialized
 
@@ -150,16 +153,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [role])
 
   const dashboardPath = getDashboardPath(role ?? 'member')
-
-  const signup = useCallback(async (email: string, password: string) => {
-    const username = email.split('@')[0]
-    try {
-      await createUserInCloud({ username, password, pin: '0000', role: 'member', name: username })
-      return {}
-    } catch (e: any) {
-      return { error: e.message }
-    }
-  }, [])
 
   const checkAccess = useCallback(async (overrideUserId?: string): Promise<boolean> => {
     if (!isSupabaseConfigured || !supabase) {
@@ -190,6 +183,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     checkStructureLock();
     initAuth();
+    return () => {
+      if (authSubscriptionRef.current?.data.subscription) {
+        authSubscriptionRef.current.data.subscription.unsubscribe();
+        authSubscriptionRef.current = null;
+      }
+    };
   }, []);
 
   const initAuth = useCallback(async () => {
@@ -224,7 +223,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setRole(gymUser.role);
             setUser(authUser);
             setLoginMode('admin');
-            await setServerCookie(gymUser.username, gymUser.role || '', session.user.id);
+            await setServerCookie(gymUser.username, gymUser.role || '', session.user.id, session.access_token);
             authLog('INIT', `Session restored for: ${gymUser.username} (${gymUser.role})`);
 
             await checkAccess(session.user.id);
@@ -236,37 +235,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           authLog('INIT', 'No Supabase session, checking cookie fallback...');
 
-          let cookieData: { username?: string; role?: string; supabaseUserId?: string } | null = null;
+          let sessionData: { authenticated: boolean; username?: string; role?: string; supabaseUserId?: string; user?: { id: string; username: string; role: string; name: string; phone: string | null; supabaseUserId: string } } | null = null;
           try {
             const res = await fetch('/api/auth/session');
-            if (res.ok) cookieData = await res.json();
+            if (res.ok) sessionData = await res.json();
           } catch {}
-          if (cookieData?.supabaseUserId) {
-            const gymUser = await fetchGymUserFromDB(cookieData.supabaseUserId);
-            if (gymUser) {
-              const authUser: AuthUser = {
-                id: gymUser.id,
-                email: '',
-                username: gymUser.username,
-                role: gymUser.role,
-                name: gymUser.name,
-                phone: gymUser.phone,
-                supabaseUserId: cookieData.supabaseUserId,
-                gymUserId: gymUser.id,
-              };
-              if (gymUser.role === 'coach') {
-                authUser.coachId = await resolveCoachId(gymUser.username, gymUser.phone);
-              }
-              setIsAuthenticated(true);
-              setRole(gymUser.role);
-              setUser(authUser);
-              setLoginMode('admin');
-              authLog('INIT', `Cookie session restored for: ${gymUser.username}`);
+          if (sessionData?.user) {
+            const { user: u } = sessionData;
+            const authUser: AuthUser = {
+              id: u.id,
+              email: '',
+              username: u.username,
+              role: u.role as Role,
+              name: u.name,
+              phone: u.phone || undefined,
+              supabaseUserId: u.supabaseUserId,
+              gymUserId: u.id,
+            };
+            if (authUser.role === 'coach') {
+              authUser.coachId = await resolveCoachId(u.username, u.phone || undefined);
             }
+            setIsAuthenticated(true);
+            setRole(authUser.role);
+            setUser(authUser);
+            setLoginMode('admin');
+            authLog('INIT', `Cookie session restored for: ${u.username}`);
           }
         }
 
-        supabase.auth.onAuthStateChange(async (event, session) => {
+        authSubscriptionRef.current = supabase.auth.onAuthStateChange(async (event, session) => {
           authLog('AUTH_STATE', `Event: ${event}`, { hasSession: !!session });
           if (event === 'SIGNED_OUT') {
             setIsAuthenticated(false);
@@ -287,7 +284,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     authLog('INIT', 'Auth initialization complete');
   }, [checkAccess]);
 
-  const checkStructureLock = async (): Promise<boolean> => {
+  const checkStructureLock = useCallback(async (): Promise<boolean> => {
     if (isSupabaseConfigured && supabase) {
       try {
         const { data: s } = await (supabase as any)
@@ -310,9 +307,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       return false;
     }
-  };
+  }, []);
 
-  const loginAsAdherent = async (phone: string, _password: string): Promise<{ success: boolean; error?: string }> => {
+  const loginAsAdherent = async (phone: string, password: string): Promise<{ success: boolean; error?: string }> => {
     const cleanPhone = phone.replace(/\D/g, '');
     try {
       if (isSupabaseConfigured && supabase) {
@@ -322,6 +319,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .ilike('phone', `%${cleanPhone}`)
           .maybeSingle();
         if (profile) {
+          const { data: gymUser } = await (supabase as any)
+            .from('gym_users')
+            .select('password_hash')
+            .eq('phone', profile.phone)
+            .maybeSingle();
+          if (gymUser?.password_hash) {
+            const isHashed = gymUser.password_hash.startsWith('$2a$') || gymUser.password_hash.startsWith('$2b$') || gymUser.password_hash.startsWith('$2$');
+            const valid = isHashed ? await bcrypt.compare(password, gymUser.password_hash) : password === gymUser.password_hash;
+            if (!valid) return { success: false, error: 'Mot de passe incorrect' };
+          } else {
+            return { success: false, error: 'Mot de passe incorrect' };
+          }
           const { data: memberRow } = await (supabase as any)
             .from('members')
             .select('id, status')
@@ -357,6 +366,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: false, error: 'Votre abonnement a expiré. Veuillez contacter l\'administration.' };
       }
 
+      const pinUser = await db.pinUsers.where('username').equals(found.phone.replace(/\s/g, '')).first();
+      if (pinUser) {
+        const isHashed = pinUser.password.startsWith('$2a$') || pinUser.password.startsWith('$2b$') || pinUser.password.startsWith('$2$');
+        const valid = isHashed ? await bcrypt.compare(password, pinUser.password) : password === pinUser.password;
+        if (!valid) return { success: false, error: 'Mot de passe incorrect' };
+      } else {
+        return { success: false, error: 'Mot de passe incorrect' };
+      }
+
       setIsAuthenticated(true);
       setRole('adherent');
       setUser(found);
@@ -385,6 +403,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await res.json();
 
       if (!res.ok || !data.success) {
+        authLog('LOGIN', `Cloud login failed: ${data.error}, trying local fallback`);
+        const localUser = await db.pinUsers.where('username').equals(username).first();
+        if (localUser) {
+          const isHashed = localUser.password.startsWith('$2a$') || localUser.password.startsWith('$2b$') || localUser.password.startsWith('$2$');
+          const valid = isHashed ? await bcrypt.compare(password, localUser.password) : password === localUser.password;
+          if (valid) {
+            authLog('LOGIN', `Local fallback SUCCESS for: ${username}`);
+            const authUser: AuthUser = {
+              id: String(localUser.id),
+              email: `${localUser.username}@infinitygym.local`,
+              username: localUser.username,
+              role: localUser.role as Role,
+              name: localUser.name,
+              phone: localUser.phone,
+              supabaseUserId: '',
+              gymUserId: String(localUser.id),
+            };
+            if (localUser.role === 'coach' && localUser.coachId) {
+              authUser.coachId = String(localUser.coachId);
+            }
+            setIsAuthenticated(true);
+            setRole(authUser.role);
+            setUser(authUser);
+            setLoginMode('admin');
+            await setServerCookie(localUser.username, localUser.role || '', '');
+            return { success: true };
+          }
+        }
         return { success: false, error: data.error === 'Supabase not configured' ? 'Supabase n\'est pas configuré. Contactez l\'administration.' : (data.error || 'Identifiants invalides') };
       }
 
@@ -478,7 +524,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         hasRole,
         hasAccess,
         dashboardPath,
-        signup,
         loading,
         isStructureLocked,
         checkStructureLock,
