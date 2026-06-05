@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { X, Download, Smartphone, Apple } from 'lucide-react';
+import { useAuth } from '@/lib/auth/context';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -9,6 +10,7 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 export default function PWAInstallPrompt() {
+  const { isAuthenticated } = useAuth();
   const [show, setShow] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
@@ -16,6 +18,13 @@ export default function PWAInstallPrompt() {
   const [isSamsung, setIsSamsung] = useState(false);
 
   useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
     const dismissedSession = sessionStorage.getItem('pwa-dismissed');
     if (dismissedSession) {
       setDismissed(true);
@@ -39,10 +48,10 @@ export default function PWAInstallPrompt() {
       window.addEventListener('beforeinstallprompt', handler);
       return () => window.removeEventListener('beforeinstallprompt', handler);
     }
-  }, []);
+  }, [isAuthenticated]);
 
   const triggerShow = useCallback((delay: number) => {
-    if (dismissed) return;
+    if (dismissed || !isAuthenticated) return;
 
     let hasInteracted = false;
     const onInteract = () => { hasInteracted = true; };
@@ -68,7 +77,7 @@ export default function PWAInstallPrompt() {
       window.removeEventListener('scroll', onInteract);
       window.removeEventListener('touchstart', onInteract);
     };
-  }, [dismissed]);
+  }, [dismissed, isAuthenticated]);
 
   useEffect(() => {
     const cleanup = triggerShow(8000);
