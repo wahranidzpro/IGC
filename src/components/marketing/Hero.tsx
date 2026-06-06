@@ -47,14 +47,8 @@ export default function Hero({
   return (
     <>
       <style>{`
-        @keyframes coinRotate {
-          from { transform: rotateY(0deg); }
-          to   { transform: rotateY(360deg); }
-        }
         .coin-rotate {
-          animation: coinRotate 25s linear infinite;
           transform-style: preserve-3d;
-          backface-visibility: hidden;
         }
       `}</style>
     <section

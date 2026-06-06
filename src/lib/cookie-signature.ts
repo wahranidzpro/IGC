@@ -1,9 +1,13 @@
 const SECRET = process.env.COOKIE_SECRET;
-if (!SECRET) throw new Error('COOKIE_SECRET environment variable is required');
+
+function getSecret(): string {
+  if (!SECRET) throw new Error('COOKIE_SECRET environment variable is required');
+  return SECRET;
+}
 
 async function getKey(): Promise<CryptoKey> {
   return crypto.subtle.importKey(
-    'raw', new TextEncoder().encode(SECRET),
+    'raw', new TextEncoder().encode(getSecret()),
     { name: 'HMAC', hash: 'SHA-256' },
     false, ['sign', 'verify']
   );
