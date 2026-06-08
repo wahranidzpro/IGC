@@ -107,6 +107,7 @@ export function useRealtimeSync() {
               height: newRecord.height,
               fitnessGoal: newRecord.fitness_goal,
               experienceLevel: newRecord.experience_level,
+              referredBy: newRecord.referred_by || 0,
               isBlocked: newRecord.is_blocked,
               blockReason: newRecord.block_reason,
               blockDate: newRecord.block_date ? new Date(newRecord.block_date) : undefined,

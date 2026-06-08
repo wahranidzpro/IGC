@@ -1,5 +1,5 @@
 import { db } from '@/lib/db/dexie-db';
-import type { Product, Program, SubscriptionPlan, Sale, Employee, Absence, PayrollRecord, Coach, Expense, PrivateSession, GymEvent, EventRegistration } from '@/lib/db/dexie-db';
+import type { Product, Program, SubscriptionPlan, Sale, Employee, Absence, PayrollRecord, Coach, Expense, PrivateSession, GymEvent, EventRegistration, Reward, ProductCategory } from '@/lib/db/dexie-db';
 
 export interface SyncEntityConfig<T> {
   dexieTable: any;
@@ -367,6 +367,45 @@ export const ENTITY_REGISTRY: Record<string, SyncEntityConfig<any>> = {
       checkedInAt: r.checked_in_at ? new Date(r.checked_in_at) : undefined,
       createdAt: new Date(r.created_at || Date.now()),
       syncStatus: 'synced',
+    }),
+  },
+
+  rewards: {
+    dexieTable: db.rewards as any,
+    supabaseTable: 'synced_rewards',
+    rpcName: 'upsert_synced_reward',
+    toCloudRecord: (item: Partial<Reward> & { id?: number }) => ({
+      p_local_id: item.id,
+      p_name: item.name || '',
+      p_description: item.description || '',
+      p_points_required: item.pointsRequired ?? 0,
+      p_stock: item.stock ?? 0,
+      p_image: item.image || '',
+    }),
+    fromCloudRecord: (r: any): Reward => ({
+      id: r.local_id,
+      name: r.name || '',
+      description: r.description || '',
+      pointsRequired: r.points_required || 0,
+      stock: r.stock || 0,
+      image: r.image || '',
+      createdAt: new Date(r.created_at || Date.now()),
+      syncStatus: 'synced',
+    }),
+  },
+
+  productCategories: {
+    dexieTable: db.productCategories as any,
+    supabaseTable: 'synced_product_categories',
+    rpcName: 'upsert_synced_product_category',
+    toCloudRecord: (item: Partial<ProductCategory> & { id?: number }) => ({
+      p_local_id: item.id,
+      p_name: item.name || '',
+    }),
+    fromCloudRecord: (r: any): ProductCategory => ({
+      id: r.local_id,
+      name: r.name || '',
+      createdAt: new Date(r.created_at || Date.now()),
     }),
   },
 };

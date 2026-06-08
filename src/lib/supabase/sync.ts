@@ -81,6 +81,7 @@ export async function syncMembersToCloud() {
         p_height: m.height ?? null,
         p_fitness_goal: m.fitnessGoal || null,
         p_experience_level: m.experienceLevel || null,
+        p_referred_by: m.referredBy ?? 0,
         p_updated_at: m.updatedAt ? m.updatedAt.toISOString() : new Date().toISOString(),
       });
 
