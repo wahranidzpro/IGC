@@ -40,6 +40,7 @@ export interface Member {
   createdAt: Date;
   updatedAt: Date;
   syncStatus: 'pending' | 'synced';
+  referredBy?: number; // Member ID of the sponsor
   // New fields for adherent info
   email?: string;
   emergencyContactName?: string;
@@ -65,6 +66,8 @@ export interface Coach {
   programIds: number[];
   isActive: boolean;
   createdAt: Date;
+  syncStatus?: 'pending' | 'synced';
+  updatedAt?: Date;
 }
 
 export interface CoachAvailability {
@@ -102,6 +105,8 @@ export interface Expense {
   date: Date;
   description: string;
   createdAt: Date;
+  syncStatus?: 'pending' | 'synced';
+  updatedAt?: Date;
 }
 
 export interface Product {
@@ -210,6 +215,8 @@ export interface PrivateSession {
   price: number;
   status: 'pending' | 'scheduled' | 'completed' | 'cancelled';
   createdAt: Date;
+  syncStatus?: 'pending' | 'synced';
+  updatedAt?: Date;
 }
 
 export interface SaleItem {
@@ -297,6 +304,12 @@ export interface EventRegistration {
   syncStatus: 'pending' | 'synced';
 }
 
+export interface ProductCategory {
+  id?: number;
+  name: string;
+  createdAt: Date;
+}
+
 export type ContractType = 'cdi' | 'cdd' | 'freelance' | 'stage' | 'other';
 export type AbsenceType = 'vacation' | 'sick' | 'unpaid' | 'other';
 export type AbsenceStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
@@ -371,6 +384,17 @@ export interface SubscriptionPlan {
   programId?: number;
   isActive: boolean;
   createdAt: Date;
+}
+
+export interface Reward {
+  id?: number;
+  name: string;
+  description: string;
+  pointsRequired: number;
+  stock: number;
+  image: string;
+  createdAt: Date;
+  syncStatus: 'pending' | 'synced';
 }
 
 const DAYS = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
@@ -600,6 +624,8 @@ export class GymDatabase extends Dexie {
   offlineQueue!: Table<OfflineQueueItem>;
   events!: Table<GymEvent>;
   eventRegistrations!: Table<EventRegistration>;
+  productCategories!: Table<ProductCategory>;
+  rewards!: Table<Reward>;
   employees!: Table<Employee>;
   absences!: Table<Absence>;
   payrollRecords!: Table<PayrollRecord>;
@@ -640,6 +666,17 @@ export class GymDatabase extends Dexie {
       employees: '++id, name, phone, position, department, isActive, createdAt, syncStatus',
       absences: '++id, employeeId, type, startDate, endDate, status, createdAt, syncStatus',
       payrollRecords: '++id, employeeId, period, status, createdAt, syncStatus',
+    });
+    this.version(19).stores({
+      coaches: '++id, name, phone, isActive, syncStatus',
+      expenses: '++id, category, date, createdAt, syncStatus',
+      privateSessions: '++id, memberId, coachId, date, status, createdAt, syncStatus',
+    });
+    this.version(20).stores({
+      productCategories: '++id, name, createdAt',
+    });
+    this.version(21).stores({
+      rewards: '++id, name, pointsRequired, stock, createdAt, syncStatus',
     });
   }
 }

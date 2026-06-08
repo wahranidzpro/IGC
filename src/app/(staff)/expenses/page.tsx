@@ -20,7 +20,8 @@ export default function ExpensesPage() {
 
   const handleSave = async () => {
     if (!formData.amount || !formData.category) return;
-    await db.expenses.add({ ...formData, date: new Date(), createdAt: new Date() });
+    const now = new Date();
+    await db.expenses.add({ ...formData, date: now, createdAt: now, syncStatus: 'pending' });
     setFormData({ category: 'Loyer', amount: 0, description: '' });
     setShowAddModal(false);
   };

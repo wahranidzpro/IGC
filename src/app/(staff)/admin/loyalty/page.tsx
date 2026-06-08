@@ -20,6 +20,10 @@ export default function LoyaltyPage() {
     redemptionMaxPercent: 50,
     posRedemptionEnabled: true,
     subscriptionRedemptionEnabled: true,
+    earlyPaymentBonusEnabled: true,
+    earlyPaymentMinAmount: 5000,
+    earlyPaymentBonusPercent: 10,
+    earlyPaymentMinMonths: 3,
   });
   const [saved, setSaved] = useState(false);
   const [activeTab, setActiveTab] = useState<'settings' | 'ledger'>('settings');
@@ -235,6 +239,45 @@ export default function LoyaltyPage() {
                 >
                   <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${config.posRedemptionEnabled ? 'left-6' : 'left-0.5'}`} />
                 </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-xl p-6" style={{ background: 'var(--surface)', borderColor: 'var(--border)', borderWidth: 1 }}>
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-blue-400" />
+              BONUS PAIEMENT ANTICIPÉ
+            </h3>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 rounded-lg" style={{ background: 'var(--input-bg)' }}>
+                <div>
+                  <p className="font-medium" style={{ color: 'var(--text)' }}>Activer le bonus</p>
+                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Points bonus pour paiements anticipés</p>
+                </div>
+                <button onClick={() => setConfig({ ...config, earlyPaymentBonusEnabled: !config.earlyPaymentBonusEnabled })}
+                  className={`relative w-12 h-6 rounded-full transition-colors ${config.earlyPaymentBonusEnabled ? 'bg-blue-500' : 'bg-gray-600'}`}>
+                  <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${config.earlyPaymentBonusEnabled ? 'left-6' : 'left-0.5'}`} />
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-muted)' }}>Montant minimum (DA)</label>
+                  <input type="number" value={config.earlyPaymentMinAmount} onChange={e => setConfig({ ...config, earlyPaymentMinAmount: Number(e.target.value) })}
+                    className="w-full px-4 py-3 rounded-xl focus:outline-none focus:border-orange-500"
+                    style={{ background: 'var(--input-bg)', borderColor: 'var(--border)', color: 'var(--text)', borderWidth: 1 }} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-muted)' }}>Bonus (%)</label>
+                  <input type="number" value={config.earlyPaymentBonusPercent} onChange={e => setConfig({ ...config, earlyPaymentBonusPercent: Number(e.target.value) })}
+                    className="w-full px-4 py-3 rounded-xl focus:outline-none focus:border-orange-500"
+                    style={{ background: 'var(--input-bg)', borderColor: 'var(--border)', color: 'var(--text)', borderWidth: 1 }} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-muted)' }}>Mois minimum</label>
+                  <input type="number" value={config.earlyPaymentMinMonths} onChange={e => setConfig({ ...config, earlyPaymentMinMonths: Number(e.target.value) })}
+                    className="w-full px-4 py-3 rounded-xl focus:outline-none focus:border-orange-500"
+                    style={{ background: 'var(--input-bg)', borderColor: 'var(--border)', color: 'var(--text)', borderWidth: 1 }} />
+                </div>
               </div>
             </div>
           </div>

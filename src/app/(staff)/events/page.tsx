@@ -179,6 +179,7 @@ export default function EventsPage() {
       maxParticipants: form.maxParticipants,
       description: form.description,
       updatedAt: now,
+      syncStatus: 'pending',
     });
     setShowModal(false);
     setEditEvent(null);
@@ -212,7 +213,7 @@ export default function EventsPage() {
       } as EventRegistration);
 
       const newCount = (event.participants || 0) + 1;
-      const updates: Record<string, any> = { participants: newCount };
+      const updates: Record<string, any> = { participants: newCount, syncStatus: 'pending' };
       if (newCount >= (event.maxParticipants || 999)) {
         updates.status = 'full';
       }
@@ -227,7 +228,7 @@ export default function EventsPage() {
   );
 
   const handleCheckin = useCallback(async (regId: number) => {
-    await db.eventRegistrations.update(regId, { status: 'checked_in', checkedInAt: new Date() });
+    await db.eventRegistrations.update(regId, { status: 'checked_in', checkedInAt: new Date(), syncStatus: 'pending' });
   }, []);
 
   const openCreate = () => {

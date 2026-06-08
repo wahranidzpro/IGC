@@ -133,6 +133,7 @@ export default function MembersPage() {
   bloodType: string; photo: string; coachId: number; programId: number;
   sessionsLeft: number; programAmount: number; amountPaid: number; balanceDue: number; discount: number; advance: number;
   rfidCode: string;
+  referredBy: number;
   subscriptionType: SubscriptionType;
   subscriptionDuration: SubscriptionDuration | '';
   email: string; emergencyContactName: string; emergencyContactPhone: string; allergies: string; allergiesOther: string;
@@ -144,6 +145,7 @@ export default function MembersPage() {
     bloodType: '', photo: '', coachId: 0, programId: 0,
     sessionsLeft: sessionsPerDuration['1_mois'], programAmount: 0, amountPaid: 0, balanceDue: 0, discount: 0, advance: 0,
     rfidCode: '',
+    referredBy: 0,
     subscriptionType: 'subscription',
     subscriptionDuration: '1_mois',
 email: '', emergencyContactName: '', emergencyContactPhone: '', allergies: '', allergiesOther: '',
@@ -228,7 +230,7 @@ email: '', emergencyContactName: '', emergencyContactPhone: '', allergies: '', a
   
 
   const resetForm = () => {
-    setFormData({ firstName: '', lastName: '', phone: '', birthDate: '', address: '', gender: 'male', bloodType: '', photo: '', coachId: 0, programId: 0, sessionsLeft: sessionsPerDuration['1_mois'], programAmount: 0, amountPaid: 0, balanceDue: 0, discount: 0, advance: 0, rfidCode: '', subscriptionType: 'subscription', subscriptionDuration: '1_mois', email: '', emergencyContactName: '', emergencyContactPhone: '', allergies: '', allergiesOther: '', weight: undefined, weightCurrent: undefined, height: undefined, fitnessGoal: '', experienceLevel: '' });
+    setFormData({ firstName: '', lastName: '', phone: '', birthDate: '', address: '', gender: 'male', bloodType: '', photo: '', coachId: 0, programId: 0, sessionsLeft: sessionsPerDuration['1_mois'], programAmount: 0, amountPaid: 0, balanceDue: 0, discount: 0, advance: 0, rfidCode: '', referredBy: 0, subscriptionType: 'subscription', subscriptionDuration: '1_mois', email: '', emergencyContactName: '', emergencyContactPhone: '', allergies: '', allergiesOther: '', weight: undefined, weightCurrent: undefined, height: undefined, fitnessGoal: '', experienceLevel: '' });
     setPhotoPreview('');
     setEditMember(null);
   };
@@ -242,6 +244,7 @@ email: '', emergencyContactName: '', emergencyContactPhone: '', allergies: '', a
       amountPaid: m.amountPaid || 0,
       balanceDue: m.balanceDue || 0, discount: m.discount || 0, advance: m.advance || 0,
       rfidCode: m.rfidCode || '',
+      referredBy: m.referredBy || 0,
       subscriptionType: m.subscriptionType || 'subscription',
       subscriptionDuration: m.subscriptionDuration || '1_mois',
       email: m.email || '', emergencyContactName: m.emergencyContactName || '', emergencyContactPhone: m.emergencyContactPhone || '',
@@ -298,6 +301,28 @@ email: '', emergencyContactName: '', emergencyContactPhone: '', allergies: '', a
     } else {
       const now = new Date();
       const id = await db.members.add({ ...updateData, status: 'active', fidelityPoints: 0, createdAt: now });
+      // Auto-payment and points for subscription creation
+      if (formData.subscriptionType === 'subscription' && formData.amountPaid > 0) {
+        const paymentId = await db.payments.add({
+          memberId: id,
+          amount: formData.amountPaid,
+          type: 'subscription',
+          mode: 'cash',
+          date: now,
+          description: `Paiement abonnement ${formData.subscriptionDuration || ''}`,
+          createdAt: now,
+        });
+        const memberName = `${formData.firstName} ${formData.lastName}`;
+        await earnPoints(id, memberName, formData.amountPaid, paymentId, 'subscription');
+      }
+      // Auto-points for referral
+      if (formData.referredBy && formData.referredBy > 0) {
+        const sponsor = await db.members.get(formData.referredBy);
+        if (sponsor) {
+          const sponsorName = `${sponsor.firstName} ${sponsor.lastName}`;
+          await earnPoints(formData.referredBy, sponsorName, 500, id, 'subscription');
+        }
+      }
       await logAudit({ action: 'member_create', memberId: id, memberName: `${formData.firstName} ${formData.lastName}`, newValue: JSON.stringify({ nom: `${formData.firstName} ${formData.lastName}`, tel: formData.phone, abonnement: formData.subscriptionType }) }, (user as { username?: string })?.username || 'unknown', role || 'unknown');
       resetForm();
       setShowAddModal(false);
@@ -339,6 +364,7 @@ email: '', emergencyContactName: '', emergencyContactPhone: '', allergies: '', a
       fitnessGoal: m.fitnessGoal || '',
       experienceLevel: m.experienceLevel || '',
       rfidCode: m.rfidCode || '',
+      referredBy: m.referredBy || 0,
     });
     setEditMember(m);
     setShowAddModal(true);
@@ -639,6 +665,13 @@ email: '', emergencyContactName: '', emergencyContactPhone: '', allergies: '', a
                 <h4 className="text-sm font-medium text-gray-300 mb-3">Accès</h4>
               </div>
               <div className="col-span-2"><label className="block text-xs font-medium text-gray-400 mb-1">Badge RFID/NFC</label><input type="text" value={formData.rfidCode} onChange={e => setFormData({...formData, rfidCode: e.target.value})} placeholder="Scannez le badge ou entrez le numéro manuellement" className="w-full px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-orange-500" /></div>
+              <div className="col-span-2">
+                <label className="block text-xs font-medium text-gray-400 mb-1">Parrainé par</label>
+                <select value={formData.referredBy || 0} onChange={e => setFormData({...formData, referredBy: Number(e.target.value)})} className="w-full px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-orange-500">
+                  <option value={0}>Aucun parrain</option>
+                  {members?.map(m => <option key={m.id} value={m.id!}>{m.firstName} {m.lastName}</option>)}
+                </select>
+              </div>
 
               <div className="col-span-2 border-t border-gray-800 pt-4 mt-2">
                 <h4 className="text-sm font-medium text-gray-300 mb-3">Plus de détails</h4>
@@ -817,7 +850,7 @@ onClick={() => {
                   {usePoints && pointsToUse > 0 && (
                     <div className="flex items-center justify-between p-3 bg-green-500/10 rounded-xl">
                       <span className="text-sm text-green-400">Reduction points</span>
-                      <span className="text-lg font-bold text-green-400">-{calculatePointsValue(pointsToUse, { earnRateDzd: 100, earnRatePoints: 1, redemptionEnabled: true, redemptionRatePoints: 100, redemptionRateDzd: 10, redemptionMaxPercent: 50, posRedemptionEnabled: true, subscriptionRedemptionEnabled: true })} DA</span>
+                      <span className="text-lg font-bold text-green-400">-{calculatePointsValue(pointsToUse, { earnRateDzd: 100, earnRatePoints: 1, redemptionEnabled: true, redemptionRatePoints: 100, redemptionRateDzd: 10, redemptionMaxPercent: 50, posRedemptionEnabled: true, subscriptionRedemptionEnabled: true, earlyPaymentBonusEnabled: false, earlyPaymentMinAmount: 5000, earlyPaymentBonusPercent: 10, earlyPaymentMinMonths: 3 })} DA</span>
                     </div>
                   )}
                 </div>

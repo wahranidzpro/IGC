@@ -88,6 +88,7 @@ export default function CoachingPage() {
       price: sessionForm.price,
       status: sessionForm.status,
       createdAt: new Date(),
+      syncStatus: 'pending',
     });
     setShowSessionModal(false);
     resetForm();
@@ -100,6 +101,8 @@ export default function CoachingPage() {
       time: sessionForm.time,
       price: sessionForm.price,
       status: sessionForm.status,
+      syncStatus: 'pending',
+      updatedAt: new Date(),
     });
     setEditingSession(null);
     setShowSessionModal(false);
@@ -112,7 +115,7 @@ export default function CoachingPage() {
   };
 
   const updateStatus = async (id: number, status: SessionStatus) => {
-    await db.privateSessions.update(id, { status });
+    await db.privateSessions.update(id, { status, syncStatus: 'pending', updatedAt: new Date() });
   };
 
   const resetForm = () => {

@@ -182,7 +182,6 @@ export default function Navbar() {
           </nav>
 
           <div className="hidden lg:flex items-center gap-2">
-            <ThemeToggle />
 
             <Link
               href="/login"
@@ -199,7 +198,6 @@ export default function Navbar() {
           </div>
 
           <div className="flex lg:hidden items-center gap-2">
-            <ThemeToggle />
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
               className={cn("p-2", isDark ? "text-white" : "text-brand-black")}

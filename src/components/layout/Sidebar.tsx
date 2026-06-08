@@ -58,8 +58,7 @@ const navSections: NavSection[] = [
     defaultOpen: true,
     items: [
       { href: "/coaches", labelKey: "sidebar.coaches", icon: <UserCheck className="w-5 h-5" />, roles: ["admin", "reception"] },
-      { href: "/programs", labelKey: "sidebar.programs", icon: <Dumbbell className="w-5 h-5" />, roles: ["admin", "reception"] },
-      { href: "/plans", labelKey: "sidebar.plans", icon: <ClipboardList className="w-5 h-5" />, roles: ["admin", "reception"] },
+      { href: "/programs-plans", labelKey: "sidebar.programs", icon: <ClipboardList className="w-5 h-5" />, roles: ["admin", "reception"] },
     ],
   },
   {
@@ -89,6 +88,7 @@ const navSections: NavSection[] = [
     defaultOpen: true,
     items: [
       { href: "/notifications", labelKey: "sidebar.notifications", icon: <MessageSquare className="w-5 h-5" />, roles: ["admin", "reception"] },
+      { href: "/admin/rewards", labelKey: "sidebar.rewards", icon: <Gift className="w-5 h-5" />, roles: ["admin"] },
       { href: "/admin/audit", labelKey: "sidebar.audit", icon: <Activity className="w-5 h-5" />, roles: ["admin"] },
       { href: "/admin/loyalty", labelKey: "sidebar.loyalty", icon: <Gift className="w-5 h-5" />, roles: ["admin"] },
       { href: "/admin/database", labelKey: "sidebar.database", icon: <Database className="w-5 h-5" />, roles: ["admin"] },
@@ -100,7 +100,6 @@ const navSections: NavSection[] = [
     icon: <Trophy className="w-4 h-4" />,
     defaultOpen: false,
     items: [
-      { href: "/fidelity", labelKey: "sidebar.fidelity", icon: <Star className="w-5 h-5" />, roles: ["admin"] },
       { href: "/commissions", labelKey: "sidebar.commissions", icon: <CreditCard className="w-5 h-5" />, roles: ["admin"] },
       { href: "/private-coaching", labelKey: "sidebar.coaching", icon: <UserPlus className="w-5 h-5" />, roles: ["admin"] },
       { href: "/events", labelKey: "sidebar.events", icon: <Calendar className="w-5 h-5" />, roles: ["admin"] },

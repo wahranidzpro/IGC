@@ -380,6 +380,7 @@ export default function CheckinPage() {
   const [phoneFoundMembers, setPhoneFoundMembers] = useState<Member[]>([]);
   const [foundMembers, setFoundMembers] = useState<Member[]>([]);
   const [checkinSearch, setCheckinSearch] = useState('');
+  const [showExpiredModal, setShowExpiredModal] = useState<{ id: number; name: string } | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [exportDateFrom, setExportDateFrom] = useState(() => new Date().toISOString().split('T')[0]);
   const [exportDateTo, setExportDateTo] = useState(() => new Date().toISOString().split('T')[0]);
@@ -550,9 +551,7 @@ export default function CheckinPage() {
     if (memberStatus === 'expired') {
       playBeep('denied');
       syncCheckinToSupabase(memberId, member, getCurrentMethod(member), 'denied', 'expired');
-      setSelectedMember(memberId);
-      setScanStatus('expired');
-      setTimeout(() => { setScanStatus('idle'); }, 10000);
+      setShowExpiredModal({ id: member.id!, name: `${member.firstName} ${member.lastName}` });
       return;
     }
     if (memberStatus === 'inactive') {
@@ -1508,6 +1507,26 @@ const renderBlocked = () => {
         )}
       </div>
     </div>
+      {showExpiredModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-200">
+          <div className="rounded-2xl p-8 text-center max-w-sm shadow-2xl animate-in zoom-in-95 duration-200" style={{ background: 'rgba(8,17,32,0.98)', border: '1px solid rgba(200,155,60,0.15)' }}>
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ background: 'rgba(255,77,77,0.15)' }}>
+              <svg className="w-8 h-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L4.268 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">Abonnement expiré</h3>
+            <p className="text-sm text-white/60 mb-1">{showExpiredModal.name}</p>
+            <p className="text-sm text-red-400/80 mb-6">Veuillez renouveler l&apos;abonnement</p>
+            <div className="flex gap-3">
+              <button onClick={() => setShowExpiredModal(null)} className="flex-1 px-4 py-3 rounded-xl text-sm font-medium text-white/60 hover:text-white transition-all" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                Annuler
+              </button>
+              <button onClick={() => { window.location.href = '/pos'; }} className="flex-1 px-4 py-3 rounded-xl text-sm font-bold text-white transition-all" style={{ background: 'linear-gradient(to right, #C89B3C, #D4AF37)' }}>
+                Réabonner au POS
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     {kioskMode && (
       <KioskOverlay
         members={members}

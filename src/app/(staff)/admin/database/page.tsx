@@ -14,7 +14,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { formatPhoneDisplay } from '@/lib/whatsapp';
 
-type Tab = 'members' | 'pos' | 'audit';
+type Tab = 'members' | 'pos' | 'audit' | 'transfer';
 
 const DURATION_LABELS: Record<string, string> = {
   '1_mois': '1 mois',
@@ -937,6 +937,94 @@ export default function AdminDatabasePage() {
           </div>
         );
 
+      case 'transfer':
+        return (
+          <div className="space-y-6">
+            <div className="rounded-xl p-6" style={{ background: 'var(--surface)', borderColor: 'var(--border)', borderWidth: 1 }}>
+              <h3 className="text-lg font-semibold text-white mb-4">Export des données</h3>
+              <p className="text-sm text-gray-400 mb-4">Téléchargez toutes les données de la base locale (Dexie) au format JSON ou Excel.</p>
+              <div className="flex gap-3">
+                <button onClick={async () => {
+                  const tables = ['members', 'payments', 'sales', 'products', 'coaches', 'programs', 'subscriptionPlans', 'checkins', 'expenses', 'events', 'eventRegistrations', 'rewards', 'productCategories'];
+                  const data: Record<string, any> = {};
+                  for (const table of tables) {
+                    const arr = await (db as any)[table]?.toArray();
+                    if (arr) data[table] = arr;
+                  }
+                  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `infinity-gym-backup-${new Date().toISOString().slice(0, 10)}.json`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }} className="px-5 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-medium rounded-xl hover:from-orange-600 hover:to-orange-700 text-sm">
+                  Export JSON (complet)
+                </button>
+                <button onClick={async () => {
+                  const { exportToXlsx } = await import('@/components/ui/ImportExportButtons');
+                  const tables = ['members', 'payments', 'sales', 'products', 'coaches', 'programs', 'subscriptionPlans'];
+                  for (const table of tables) {
+                    const arr = await (db as any)[table]?.toArray();
+                    if (arr && arr.length > 0) exportToXlsx(arr, `infinity-gym-${table}`);
+                  }
+                }} className="px-5 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium rounded-xl hover:from-blue-600 hover:to-blue-700 text-sm">
+                  Export Excel (par table)
+                </button>
+              </div>
+            </div>
+
+            <div className="rounded-xl p-6" style={{ background: 'var(--surface)', borderColor: 'var(--border)', borderWidth: 1 }}>
+              <h3 className="text-lg font-semibold text-white mb-4">Import des données</h3>
+              <p className="text-sm text-gray-400 mb-4">Importez un fichier JSON exporté précédemment pour restaurer les données.</p>
+              <div className="flex items-center gap-3">
+                <input type="file" accept=".json" onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const text = await file.text();
+                  try {
+                    const data = JSON.parse(text);
+                    let count = 0;
+                    for (const [table, rows] of Object.entries(data)) {
+                      if (Array.isArray(rows) && rows.length > 0 && (db as any)[table]) {
+                        await (db as any)[table].bulkAdd(rows);
+                        count += rows.length;
+                      }
+                    }
+                    alert(`Import réussi : ${count} enregistrements importés dans ${Object.keys(data).length} tables.`);
+                  } catch {
+                    alert('Erreur : fichier JSON invalide.');
+                  }
+                }} className="flex-1 px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-orange-500 file:text-white hover:file:bg-orange-600" />
+              </div>
+            </div>
+
+            <div className="rounded-xl p-6" style={{ background: 'var(--surface)', borderColor: 'var(--border)', borderWidth: 1 }}>
+              <h3 className="text-lg font-semibold text-white mb-4">Export CSV</h3>
+              <p className="text-sm text-gray-400 mb-4">Exportez chaque table au format CSV pour analyse dans Excel/Google Sheets.</p>
+              <div className="flex flex-wrap gap-2">
+                {['members', 'payments', 'sales', 'products', 'coaches', 'checkins', 'expenses'].map(table => (
+                  <button key={table} onClick={async () => {
+                    const arr: any[] = await (db as any)[table]?.toArray() || [];
+                    if (arr.length === 0) return;
+                    const headers = Object.keys(arr[0]).filter(k => k !== 'id');
+                    const csv = [headers.join(','), ...arr.map(row => headers.map(h => `"${String(row[h] || '').replace(/"/g, '""')}"`).join(','))].join('\n');
+                    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `infinity-gym-${table}-${new Date().toISOString().slice(0, 10)}.csv`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }} className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-xs font-medium hover:bg-gray-700 capitalize">
+                    {table}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+
       default:
         return null;
     }
@@ -964,6 +1052,7 @@ export default function AdminDatabasePage() {
           { id: 'members' as Tab, label: 'BDD Adhérents', icon: <Users className="w-4 h-4" /> },
           { id: 'pos' as Tab, label: 'Analyse POS', icon: <ShoppingCart className="w-4 h-4" /> },
           { id: 'audit' as Tab, label: 'Audit', icon: <Search className="w-4 h-4" /> },
+          { id: 'transfer' as Tab, label: 'Import / Export', icon: <FileText className="w-4 h-4" /> },
         ].map(tab => (
           <button
             key={tab.id}

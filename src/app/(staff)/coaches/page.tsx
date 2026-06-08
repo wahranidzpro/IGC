@@ -39,24 +39,27 @@ export default function CoachesPage() {
      setShowAddModal(true);
      };
 
-   const handleSave = async () => {
-     if (!formData.name) return;
-     const availArray = Object.entries(availability)
-       .filter(([_, v]) => v.active)
-       .map(([day, v]) => ({ day, start: v.start, end: v.end }));
-     const data = {
-       name: formData.name,
-       phone: formData.phone,
-       availability: availArray,
-       programIds: formData.programIds,
-       isActive: editCoach?.isActive ?? true,
-       createdAt: editCoach?.createdAt || new Date(),
-     };
-     if (editCoach?.id) {
-       await db.coaches.update(editCoach.id, data);
-     } else {
-       await db.coaches.add(data);
-     }
+    const handleSave = async () => {
+      if (!formData.name) return;
+      const availArray = Object.entries(availability)
+        .filter(([_, v]) => v.active)
+        .map(([day, v]) => ({ day, start: v.start, end: v.end }));
+      const now = new Date();
+      const data = {
+        name: formData.name,
+        phone: formData.phone,
+        availability: availArray,
+        programIds: formData.programIds,
+        isActive: editCoach?.isActive ?? true,
+        createdAt: editCoach?.createdAt || now,
+        syncStatus: 'pending' as const,
+        updatedAt: now,
+      };
+      if (editCoach?.id) {
+        await db.coaches.update(editCoach.id, data);
+      } else {
+        await db.coaches.add(data);
+      }
      resetForm();
      setShowAddModal(false);
    };

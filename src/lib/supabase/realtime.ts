@@ -125,6 +125,123 @@ export function useRealtimeSync() {
         logger.info(`synced_members realtime channel status: ${status}`);
       });
 
+    // Payments
+    const paymentChannel = supabase
+      .channel('synced_payments_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'synced_payments' },
+        async (payload) => {
+          const eventType = payload.eventType;
+          const newRecord = payload.new as any;
+          const oldRecord = payload.old as any;
+
+          if (eventType === 'DELETE' && oldRecord?.local_id) {
+            await db.payments.delete(oldRecord.local_id);
+            return;
+          }
+
+          if (newRecord?.local_id) {
+            const existing = await db.payments.get(newRecord.local_id);
+            const paymentData = {
+              id: newRecord.local_id,
+              memberId: newRecord.member_id ?? 0,
+              amount: Number(newRecord.amount) || 0,
+              type: (newRecord.type || 'subscription') as any,
+              mode: (newRecord.mode || 'cash') as any,
+              date: new Date(newRecord.date || newRecord.created_at || Date.now()),
+              description: newRecord.notes || '',
+              createdAt: new Date(newRecord.created_at || Date.now()),
+            };
+            if (existing) {
+              await db.payments.update(newRecord.local_id, paymentData);
+            } else {
+              await db.payments.add(paymentData);
+            }
+          }
+        }
+      )
+      .subscribe((status) => {
+        logger.info(`synced_payments realtime channel status: ${status}`);
+      });
+
+    // Check-ins
+    const checkinChannel = supabase
+      .channel('synced_checkins_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'synced_checkins' },
+        async (payload) => {
+          const eventType = payload.eventType;
+          const newRecord = payload.new as any;
+          const oldRecord = payload.old as any;
+
+          if (eventType === 'DELETE' && oldRecord?.local_id) {
+            await db.checkins.delete(oldRecord.local_id);
+            return;
+          }
+
+          if (newRecord?.local_id) {
+            const existing = await db.checkins.get(newRecord.local_id);
+            const checkinData = {
+              id: newRecord.local_id,
+              memberId: newRecord.member_id ?? 0,
+              timestamp: new Date(newRecord.timestamp || Date.now()),
+              type: (newRecord.type || 'checkin') as any,
+            };
+            if (existing) {
+              await db.checkins.update(newRecord.local_id, checkinData);
+            } else {
+              await db.checkins.add(checkinData);
+            }
+          }
+        }
+      )
+      .subscribe((status) => {
+        logger.info(`synced_checkins realtime channel status: ${status}`);
+      });
+
+    // Points Ledger
+    const pointsChannel = supabase
+      .channel('synced_points_ledger_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'synced_points_ledger' },
+        async (payload) => {
+          const eventType = payload.eventType;
+          const newRecord = payload.new as any;
+          const oldRecord = payload.old as any;
+
+          if (eventType === 'DELETE' && oldRecord?.local_id) {
+            await db.pointsLedger.delete(oldRecord.local_id);
+            return;
+          }
+
+          if (newRecord?.local_id) {
+            const existing = await db.pointsLedger.get(newRecord.local_id);
+            const ledgerData = {
+              id: newRecord.local_id,
+              memberId: newRecord.member_id ?? 0,
+              memberName: newRecord.member_name || '',
+              points: newRecord.points || 0,
+              type: (newRecord.type || 'earn') as any,
+              reason: newRecord.reason || '',
+              referenceId: newRecord.reference_id,
+              balanceAfter: newRecord.balance_after || 0,
+              createdAt: new Date(newRecord.created_at || Date.now()),
+            };
+            if (existing) {
+              await db.pointsLedger.update(newRecord.local_id, ledgerData);
+            } else {
+              await db.pointsLedger.add(ledgerData);
+            }
+          }
+        }
+      )
+      .subscribe((status) => {
+        logger.info(`synced_points_ledger realtime channel status: ${status}`);
+      });
+
     const userChannel = supabase
       .channel('gym_users_changes')
       .on(
@@ -170,7 +287,7 @@ export function useRealtimeSync() {
         logger.info(`gym_users realtime channel status: ${status}`);
       });
 
-    channels.push(memberChannel, userChannel);
+    channels.push(memberChannel, userChannel, paymentChannel, checkinChannel, pointsChannel);
 
     // Subscribe to generic entities
     for (const entityName of Object.keys(ENTITY_REGISTRY)) {

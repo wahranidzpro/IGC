@@ -260,11 +260,7 @@ export default function AdminDashboardPage() {
           <p className="text-[#A8B2C7] text-sm ml-[52px]">Vue d&apos;ensemble du centre</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#0A84FF] to-[#00D4FF] text-white text-sm font-semibold shadow-lg shadow-[#0A84FF]/20 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-2">
-            <Plus className="w-4 h-4" />
-            Nouvel utilisateur
-          </button>
-          <button className="px-5 py-2.5 rounded-xl glass-light text-[#A8B2C7] hover:text-white hover:bg-[rgba(255,255,255,0.08)] text-sm font-semibold transition-all duration-200 flex items-center gap-2 border border-[rgba(255,255,255,0.06)]">
+          <button onClick={fetchUsers} className="px-5 py-2.5 rounded-xl glass-light text-[#A8B2C7] hover:text-white hover:bg-[rgba(255,255,255,0.08)] text-sm font-semibold transition-all duration-200 flex items-center gap-2 border border-[rgba(255,255,255,0.06)]">
             <RefreshCw className="w-4 h-4" />
             Actualiser
           </button>

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db/dexie-db';
-import { Sparkles, Droplets, Package, Wrench, Calendar, TrendingUp, TrendingDown, DollarSign, ShoppingBag, BarChart3, PieChart, Plus, X, Edit, Save, Box, Monitor, ClipboardList, Printer } from 'lucide-react';
+import { Sparkles, Droplets, Package, Wrench, Calendar, TrendingUp, TrendingDown, DollarSign, ShoppingBag, BarChart3, PieChart, Plus, X, Edit, Save, Box, Monitor, ClipboardList, Printer, Tag, Trash2 } from 'lucide-react';
 
 interface PurchaseRecord {
   id: number;
@@ -123,6 +123,11 @@ export default function ConsumablesPage() {
     supplier: 'Hammache'
   });
 
+  const [mainTab, setMainTab] = useState<'conso' | 'categories'>('conso');
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [catForm, setCatForm] = useState({ name: '' });
+  const productCategories = useLiveQuery(() => db.productCategories.toArray(), []);
+
   const products = useLiveQuery(() => db.products.toArray(), []);
 
   const totalInventoryValue = (products || []).reduce((s, p) => s + ((p.buyPrice || 0) * (p.stock || 0)), 0)
@@ -221,6 +226,14 @@ export default function ConsumablesPage() {
 
   return (
     <div className="space-y-6">
+      {/* Main Tabs */}
+      <div className="flex gap-2">
+        <button onClick={() => setMainTab('conso')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${mainTab === 'conso' ? 'bg-orange-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>Consommables</button>
+        <button onClick={() => setMainTab('categories')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${mainTab === 'categories' ? 'bg-orange-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>Catégories</button>
+      </div>
+
+      {mainTab === 'conso' && (
+      <>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -229,7 +242,7 @@ export default function ConsumablesPage() {
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Sub Tabs */}
       <div className="flex gap-2">
         {[
           { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
@@ -914,6 +927,63 @@ export default function ConsumablesPage() {
             >
               Enregistrer
             </button>
+          </div>
+        </div>
+      )}
+      </>)}
+
+      {/* Categories Section */}
+      <div className="rounded-xl p-6" style={{ background: 'var(--surface)', borderColor: 'var(--border)', borderWidth: 1 }}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+            <Tag className="w-5 h-5 text-orange-400" />
+            Catégories Produits
+          </h3>
+          <button onClick={() => { setCatForm({ name: '' }); setShowCategoryModal(true); }} className="flex items-center gap-2 px-3 py-2 bg-orange-500/20 text-orange-400 rounded-lg hover:bg-orange-500/30 text-sm font-medium">
+            <Plus className="w-4 h-4" /> Nouvelle Catégorie
+          </button>
+        </div>
+        {(!productCategories || productCategories.length === 0) ? (
+          <p className="text-gray-500 text-sm text-center py-8">Aucune catégorie</p>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            {productCategories.map(cat => (
+              <div key={cat.id} className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-4 text-center group hover:border-orange-500/30 transition-all">
+                <p className="text-white font-medium text-sm">{cat.name}</p>
+                <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={async () => {
+                    if (confirm(`Supprimer la catégorie "${cat.name}" ?`)) {
+                      await db.productCategories.delete(cat.id!);
+                    }
+                  }} className="text-red-400 hover:text-red-300 text-xs">
+                    <Trash2 className="w-3.5 h-3.5 inline mr-1" /> Supprimer
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Category Modal */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-white">Nouvelle Catégorie</h3>
+              <button onClick={() => setShowCategoryModal(false)} className="p-2 text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Nom</label>
+                <input type="text" value={catForm.name} onChange={e => setCatForm({ name: e.target.value })} className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white focus:outline-none focus:border-orange-500" placeholder="Ex: Eaux, Fruits, Protéines..." />
+              </div>
+            </div>
+            <button onClick={async () => {
+              if (!catForm.name) return;
+              await db.productCategories.add({ name: catForm.name, createdAt: new Date() });
+              setShowCategoryModal(false);
+            }} disabled={!catForm.name} className="w-full mt-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-orange-700 disabled:opacity-50">Créer</button>
           </div>
         </div>
       )}

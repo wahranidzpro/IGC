@@ -9,6 +9,10 @@ export interface LoyaltyConfig {
   redemptionMaxPercent: number;
   posRedemptionEnabled: boolean;
   subscriptionRedemptionEnabled: boolean;
+  earlyPaymentBonusEnabled: boolean;
+  earlyPaymentMinAmount: number;
+  earlyPaymentBonusPercent: number;
+  earlyPaymentMinMonths: number;
 }
 
 export async function getLoyaltyConfig(): Promise<LoyaltyConfig> {
@@ -24,6 +28,10 @@ export async function getLoyaltyConfig(): Promise<LoyaltyConfig> {
     redemptionMaxPercent: Number(map.get('redemption_max_percent') || '50'),
     posRedemptionEnabled: map.get('pos_redemption_enabled') !== 'false',
     subscriptionRedemptionEnabled: map.get('subscription_redemption_enabled') !== 'false',
+    earlyPaymentBonusEnabled: map.get('early_payment_bonus_enabled') !== 'false',
+    earlyPaymentMinAmount: Number(map.get('early_payment_min_amount') || '5000'),
+    earlyPaymentBonusPercent: Number(map.get('early_payment_bonus_percent') || '10'),
+    earlyPaymentMinMonths: Number(map.get('early_payment_min_months') || '3'),
   };
 }
 
@@ -37,6 +45,10 @@ export async function saveLoyaltyConfig(config: Partial<LoyaltyConfig>): Promise
   if (config.redemptionMaxPercent !== undefined) map.redemption_max_percent = String(config.redemptionMaxPercent);
   if (config.posRedemptionEnabled !== undefined) map.pos_redemption_enabled = String(config.posRedemptionEnabled);
   if (config.subscriptionRedemptionEnabled !== undefined) map.subscription_redemption_enabled = String(config.subscriptionRedemptionEnabled);
+  if (config.earlyPaymentBonusEnabled !== undefined) map.early_payment_bonus_enabled = String(config.earlyPaymentBonusEnabled);
+  if (config.earlyPaymentMinAmount !== undefined) map.early_payment_min_amount = String(config.earlyPaymentMinAmount);
+  if (config.earlyPaymentBonusPercent !== undefined) map.early_payment_bonus_percent = String(config.earlyPaymentBonusPercent);
+  if (config.earlyPaymentMinMonths !== undefined) map.early_payment_min_months = String(config.earlyPaymentMinMonths);
 
   for (const [key, value] of Object.entries(map)) {
     const existing = await db.loyaltySettings.where('key').equals(key).first();
@@ -60,6 +72,13 @@ export function calculatePointsValue(points: number, config: LoyaltyConfig): num
 
 export function calculateMaxDiscount(total: number, config: LoyaltyConfig): number {
   return Math.floor(total * (config.redemptionMaxPercent / 100));
+}
+
+export function calculateEarlyPaymentBonus(amount: number, config: LoyaltyConfig): number {
+  if (!config.earlyPaymentBonusEnabled) return 0;
+  if (amount < config.earlyPaymentMinAmount) return 0;
+  const bonusPoints = Math.floor(amount * (config.earlyPaymentBonusPercent / 100));
+  return bonusPoints;
 }
 
 export async function earnPoints(memberId: number, memberName: string, amount: number, referenceId?: number, referenceType?: 'payment' | 'subscription' | 'pos' | 'admin'): Promise<number> {

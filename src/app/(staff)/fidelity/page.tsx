@@ -19,6 +19,8 @@ export default function FidelityPage() {
     earnRateDzd: 100, earnRatePoints: 1, redemptionEnabled: true,
     redemptionRatePoints: 100, redemptionRateDzd: 10, redemptionMaxPercent: 50,
     posRedemptionEnabled: true, subscriptionRedemptionEnabled: true,
+    earlyPaymentBonusEnabled: false, earlyPaymentMinAmount: 5000,
+    earlyPaymentBonusPercent: 10, earlyPaymentMinMonths: 3,
   });
 
   const members = useLiveQuery(() => db.members.toArray(), []);

@@ -5,7 +5,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db, type Sale } from '@/lib/db/dexie-db'
 import { useAuth } from '@/lib/auth/context'
 import {
-  Search, ShoppingCart, Barcode, Minus, Plus, X, Printer, CreditCard,
+  Search, ShoppingCart, Barcode, Minus, Plus, X, Printer, CreditCard, Star,
   Banknote, Receipt, User, Wallet, Wifi, WifiOff,
   History, QrCode,
   Percent, Smartphone, Send, FileText, Mail,
@@ -13,7 +13,8 @@ import {
 import { Sidebar } from "@/components/layout/Sidebar"
 import { logAudit } from '@/lib/audit'
 import { enqueueAndProcess } from '@/lib/offline/queue'
-import { getLoyaltyConfig, calculatePointsValue, spendPoints } from '@/lib/loyalty'
+import { getLoyaltyConfig, calculatePointsValue, spendPoints, earnPoints } from '@/lib/loyalty'
+import type { LoyaltyConfig } from '@/lib/loyalty'
 
 interface CartItem {
   productId: number
@@ -30,31 +31,6 @@ function idToNum(id: string): number {
 }
 
 type PosTab = 'subscriptions' | 'consumables' | 'accessories'
-
-interface SubscriptionPlan {
-  id?: number
-  name: string
-  type: string
-  duration: string
-  sessionsCount: number
-  price: number
-  description: string
-  isActive: boolean
-  createdAt: Date
-}
-
-const SUBSCRIPTION_ITEMS = [
-  { id: 's1', name: 'Premium', price: 8000, desc: 'Musculation + Cardio + Cours', emoji: '⭐' },
-  { id: 's2', name: 'Elite', price: 12000, desc: 'Accès complet illimité', emoji: '👑' },
-  { id: 's3', name: 'VIP', price: 15000, desc: 'Tout inclus + Coaching privé', emoji: '💎' },
-  { id: 's4', name: 'Étudiant', price: 4500, desc: 'Musculation + Cardio (offre étudiante)', emoji: '🎓' },
-  { id: 's5', name: 'Journalier', price: 500, desc: 'Accès 1 jour', emoji: '☀️' },
-  { id: 's6', name: 'Coaching Perso', price: 6000, desc: '5 séances coaching individuel', emoji: '🏋️' },
-  { id: 's7', name: 'Coaching Duo', price: 9000, desc: '5 séances coaching à deux', emoji: '👥' },
-  { id: 's8', name: 'Coaching Femme', price: 5000, desc: '5 séances coaching féminin', emoji: '💪' },
-  { id: 's9', name: 'Coaching Transfo', price: 15000, desc: 'Programme transformation 8 sem.', emoji: '🔥' },
-  { id: 's10', name: 'Coaching Perf', price: 20000, desc: 'Programme performance 12 sem.', emoji: '⚡' },
-]
 
 const CONSUMABLES = [
   { id: 'c1', name: 'Eau PM', price: 30, stock: 100, emoji: '💧' },
@@ -108,10 +84,14 @@ export default function PosPage() {
   const { user } = useAuth()
   const [search, setSearch] = useState('')
   const [activeTab, setActiveTab] = useState<PosTab>('subscriptions')
+  const [subTab, setSubTab] = useState<'subscriptions' | 'coaching'>('subscriptions')
   const [cart, setCart] = useState<CartItem[]>([])
   const [paid, setPaid] = useState(0)
   const [showSuccess, setShowSuccess] = useState(false)
-  const [paymentMode, setPaymentMode] = useState<'cash' | 'card' | 'mobile' | 'transfer' | 'mixed'>('cash')
+  const [paymentMode, setPaymentMode] = useState<'cash' | 'card' | 'points'>('cash')
+  const [cardType, setCardType] = useState<string>('Visa')
+  const [pointsConfig, setPointsConfig] = useState<LoyaltyConfig | null>(null)
+  const [pointsToUse, setPointsToUse] = useState(0)
   const [lastSale, setLastSale] = useState<Sale | null>(null)
   const [showSalesHistory, setShowSalesHistory] = useState(false)
   const [salesPage, setSalesPage] = useState(0)
@@ -131,7 +111,10 @@ export default function PosPage() {
     return () => { window.removeEventListener('online', handler); window.removeEventListener('offline', handler) }
   }, [])
 
+  useEffect(() => { getLoyaltyConfig().then(setPointsConfig) }, [])
+
   const products = useLiveQuery(() => db.products.toArray(), [])
+  const subscriptionPlans = useLiveQuery(() => db.subscriptionPlans.toArray(), [])
   const members = useLiveQuery(() => db.members.toArray(), [])
   const totalSales = useLiveQuery(() => db.sales.count(), [])
   const todaySales = useLiveQuery(
@@ -166,9 +149,13 @@ export default function PosPage() {
   const totalQty = cart.reduce((s, item) => s + item.qty, 0)
   const change = paid >= total ? paid - total : 0
 
-  const filteredSubscriptions = SUBSCRIPTION_ITEMS.filter(s =>
-    s.name.toLowerCase().includes(search.toLowerCase()),
-  )
+  const activePlans = subscriptionPlans?.filter(p => p.isActive) || []
+  const filteredSubscriptions = activePlans
+    .filter(p => p.type === 'subscription')
+    .filter(s => s.name.toLowerCase().includes(search.toLowerCase()))
+  const filteredCoaching = activePlans
+    .filter(p => p.type === 'free_session')
+    .filter(s => s.name.toLowerCase().includes(search.toLowerCase()))
   const filteredConsumables = CONSUMABLES.filter(c =>
     c.name.toLowerCase().includes(search.toLowerCase()),
   )
@@ -179,10 +166,22 @@ export default function PosPage() {
 
   const handleCheckout = async () => {
     if (cart.length === 0) return
-    if (paid < total) return
+    if (paymentMode !== 'points' && paid < total) return
     const items = [...cart]
     const changeAmount = Math.max(0, paid - total)
     const now = new Date()
+
+    if (paymentMode === 'points') {
+      if (!selectedMember) return
+      if (pointsToUse <= 0) return
+      if (!pointsConfig) return
+      const discount = calculatePointsValue(pointsToUse, pointsConfig)
+      if (discount < total) return
+      const result = await spendPoints(selectedMember.id, selectedMember.name, pointsToUse, `Achat POS: ${items.map(i => i.name).join(', ')}`)
+      if (!result.success) { alert(result.error || 'Erreur points'); return }
+      await earnPoints(selectedMember.id, selectedMember.name, total, undefined, 'pos')
+      setPaid(total)
+    }
 
     const saleId = await db.sales.add({
       items,
@@ -213,6 +212,10 @@ export default function PosPage() {
       newValue: `${total} DA - ${items.map(i => `${i.name} x${i.qty}`).join(', ')}`,
       reason: `Mode: ${paymentMode}`,
     }, (user as { username?: string })?.username || 'unknown', 'reception')
+
+    if (paymentMode !== 'points' && selectedMember) {
+      await earnPoints(selectedMember.id, selectedMember.name, total, saleId, 'pos').catch(() => {})
+    }
 
     setLastSale({ items, total, paid, change: changeAmount, paymentMode, createdAt: now, updatedAt: now, syncStatus: 'pending' })
     setCart([])
@@ -358,34 +361,61 @@ export default function PosPage() {
         </div>
 
         {/* ── Tabs ── */}
-        <div className="shrink-0 flex items-center gap-1 px-4 pt-2 border-b" style={{ borderColor: 'rgba(200,155,60,0.08)' }}>
-          {[
-            { id: 'subscriptions' as PosTab, label: 'Abonnements & Coaching', icon: '👑' },
-            { id: 'consumables' as PosTab, label: 'Consommations Rapides', icon: '⚡' },
-            { id: 'accessories' as PosTab, label: 'Accessoires & Services', icon: '🧤' },
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold rounded-t-xl transition-all ${
-                activeTab === tab.id
-                  ? 'text-[#C89B3C] shadow-[inset_0_-2px_0_#C89B3C]'
-                  : 'text-white/40 hover:text-white/70'
-              }`}
-              style={activeTab === tab.id ? { background: 'rgba(200,155,60,0.06)' } : {}}
-            >
-              <span className="text-sm">{tab.icon}</span> {tab.label}
-            </button>
-          ))}
+        <div className="shrink-0 space-y-0">
+          <div className="flex items-center gap-1 px-4 pt-2 border-b" style={{ borderColor: 'rgba(200,155,60,0.08)' }}>
+            {[
+              { id: 'subscriptions' as PosTab, label: 'Abonnements', icon: '📋' },
+              { id: 'consumables' as PosTab, label: 'Consommations', icon: '⚡' },
+              { id: 'accessories' as PosTab, label: 'Accessoires', icon: '🧤' },
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold rounded-t-xl transition-all ${
+                  activeTab === tab.id
+                    ? 'text-[#C89B3C] shadow-[inset_0_-2px_0_#C89B3C]'
+                    : 'text-white/40 hover:text-white/70'
+                }`}
+                style={activeTab === tab.id ? { background: 'rgba(200,155,60,0.06)' } : {}}
+              >
+                <span className="text-sm">{tab.icon}</span> {tab.label}
+              </button>
+            ))}
+          </div>
+          {activeTab === 'subscriptions' && (
+            <div className="flex items-center gap-1 px-4 pt-1.5 pb-0">
+              {[
+                { id: 'subscriptions' as const, label: 'Abonnements', icon: '📋' },
+                { id: 'coaching' as const, label: 'Coaching', icon: '🏋️' },
+              ].map(st => (
+                <button
+                  key={st.id}
+                  onClick={() => setSubTab(st.id)}
+                  className={`flex items-center gap-1 px-3 py-1.5 text-[10px] font-semibold rounded-t-lg transition-all ${
+                    subTab === st.id
+                      ? 'text-[#C89B3C] bg-[rgba(200,155,60,0.08)]'
+                      : 'text-white/30 hover:text-white/60'
+                  }`}
+                >
+                  <span>{st.icon}</span> {st.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* ── Content Grid ── */}
         <div className="flex-1 overflow-y-auto p-3 scrollbar-gold">
           <div className="grid grid-cols-4 2xl:grid-cols-6 gap-2">
-            {activeTab === 'subscriptions' && (
+            {activeTab === 'subscriptions' && subTab === 'subscriptions' && (
               filteredSubscriptions.length === 0
                 ? <p className="col-span-full text-center text-white/30 py-12 text-sm">Aucun abonnement trouvé</p>
-                : filteredSubscriptions.map(item => renderProductCard({ ...item, stock: undefined }, false))
+                : filteredSubscriptions.map(item => renderProductCard({ id: item.id?.toString() || '', name: item.name, price: item.price, desc: item.description, emoji: '📋' }, false))
+            )}
+            {activeTab === 'subscriptions' && subTab === 'coaching' && (
+              filteredCoaching.length === 0
+                ? <p className="col-span-full text-center text-white/30 py-12 text-sm">Aucun forfait coaching trouvé</p>
+                : filteredCoaching.map(item => renderProductCard({ id: item.id?.toString() || '', name: item.name, price: item.price, desc: item.description, emoji: '🏋️' }, false))
             )}
             {activeTab === 'consumables' && (
               filteredConsumables.length === 0
@@ -528,13 +558,11 @@ export default function PosPage() {
 
         {/* Payment Methods */}
         <div className="shrink-0 px-4 pb-1">
-          <div className="grid grid-cols-5 gap-1">
+          <div className="grid grid-cols-3 gap-1">
             {[
               { mode: 'cash' as const, label: 'Espèces', icon: Banknote, color: '#22c55e' },
               { mode: 'card' as const, label: 'Carte', icon: CreditCard, color: '#3b82f6' },
-              { mode: 'mobile' as const, label: 'Mobile', icon: Smartphone, color: '#a855f7' },
-              { mode: 'transfer' as const, label: 'Virement', icon: Send, color: '#f59e0b' },
-              { mode: 'mixed' as const, label: 'Mixte', icon: Percent, color: '#ec4899' },
+              { mode: 'points' as const, label: 'Points', icon: Star, color: '#f59e0b' },
             ].map(pm => (
               <button
                 key={pm.mode}
@@ -549,13 +577,70 @@ export default function PosPage() {
               </button>
             ))}
           </div>
+
+        {/* Card Type Selector */}
+        {paymentMode === 'card' && (
+          <div className="shrink-0 px-4 pb-1">
+            <div className="grid grid-cols-3 gap-1">
+              {['Visa', 'MasterCard', 'CIB', 'Edahabia', 'Autre'].map(type => (
+                <button
+                  key={type}
+                  onClick={() => setCardType(type)}
+                  className={`flex items-center justify-center py-1.5 rounded-lg text-[10px] font-semibold transition-all ${
+                    cardType === type ? 'text-white shadow-sm' : 'text-white/30 hover:text-white/60'
+                  }`}
+                  style={cardType === type ? { background: '#3b82f615', border: '1px solid #3b82f630' } : { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+                >
+                  {type}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Points Fidélité */}
+        {paymentMode === 'points' && (
+          <div className="shrink-0 px-4 pb-1">
+            {selectedMember ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.15)' }}>
+                  <span className="text-[10px] text-yellow-400">Points disponibles</span>
+                  <span className="text-[10px] text-yellow-400 font-semibold">{members?.find(m => m.id === selectedMember.id)?.fidelityPoints || 0} pts</span>
+                </div>
+                {pointsConfig && (
+                  <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg" style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.15)' }}>
+                    <span className="text-[10px] text-green-400">Valeur totale</span>
+                    <span className="text-[10px] text-green-400 font-semibold">{calculatePointsValue(members?.find(m => m.id === selectedMember.id)?.fidelityPoints || 0, pointsConfig).toLocaleString()} DA</span>
+                  </div>
+                )}
+                <input
+                  type="number"
+                  value={pointsToUse || ''}
+                  onChange={e => setPointsToUse(Math.min(Number(e.target.value), members?.find(m => m.id === selectedMember.id)?.fidelityPoints || 0))}
+                  className="w-full px-2.5 py-1.5 rounded-lg text-white text-right text-xs font-semibold focus:outline-none tabular-nums transition-all"
+                  style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+                  placeholder="Points à utiliser"
+                />
+                {pointsToUse > 0 && pointsConfig && (
+                  <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg" style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.15)' }}>
+                    <span className="text-[10px] text-green-400">Réduction</span>
+                    <span className="text-xs font-bold text-green-400">-{calculatePointsValue(pointsToUse, pointsConfig).toLocaleString()} DA</span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-[10px] text-yellow-400/60 text-center py-1">Sélectionnez un adhérent pour utiliser ses points</p>
+            )}
+          </div>
+        )}
+
         </div>
 
         {/* Checkout Button */}
         <div className="shrink-0 px-4 pb-3 pt-1">
           <button
             onClick={handleCheckout}
-            disabled={cart.length === 0 || paid < total}
+            disabled={cart.length === 0 || (paymentMode !== 'points' && paid < total)}
             className="w-full py-3.5 rounded-xl text-white font-bold text-sm transition-all duration-200 active:scale-[0.98] shadow-lg disabled:opacity-20 disabled:cursor-not-allowed"
             style={{
               background: 'linear-gradient(to right, #C89B3C, #D4AF37)',
@@ -576,7 +661,7 @@ export default function PosPage() {
             </div>
             <h3 className="text-xl font-bold text-white mb-2">Vente effectuée !</h3>
             <p className="text-2xl font-bold text-[#C89B3C] mb-1">{total.toLocaleString()} DA</p>
-            <p className="text-sm text-white/40">{paymentMode === 'cash' ? 'Espèces' : paymentMode === 'card' ? 'Carte' : paymentMode === 'mobile' ? 'Mobile' : paymentMode === 'transfer' ? 'Virement' : 'Mixte'} · {totalQty} article{totalQty > 1 ? 's' : ''}</p>
+            <p className="text-sm text-white/40">{paymentMode === 'cash' ? 'Espèces' : paymentMode === 'card' ? 'Carte' : 'Points Fidélité'} · {totalQty} article{totalQty > 1 ? 's' : ''}</p>
             <div className="flex gap-2 mt-6">
               <button onClick={printReceipt} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold transition-all" style={{ background: 'linear-gradient(to right, #C89B3C, #D4AF37)', color: '#000' }}>
                 <Printer className="w-4 h-4" /> Imprimer
