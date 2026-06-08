@@ -1,5 +1,5 @@
 import { db } from '@/lib/db/dexie-db';
-import type { Product, Program, SubscriptionPlan, Sale, Employee, Absence, PayrollRecord, Coach, Expense, PrivateSession, GymEvent, EventRegistration, Reward, ProductCategory } from '@/lib/db/dexie-db';
+import type { Product, Program, SubscriptionPlan, Sale, Employee, Absence, PayrollRecord, Coach, Expense, PrivateSession, GymEvent, EventRegistration, Reward, ProductCategory, WhatsAppCampaign } from '@/lib/db/dexie-db';
 
 export interface SyncEntityConfig<T> {
   dexieTable: any;
@@ -406,6 +406,32 @@ export const ENTITY_REGISTRY: Record<string, SyncEntityConfig<any>> = {
       id: r.local_id,
       name: r.name || '',
       createdAt: new Date(r.created_at || Date.now()),
+    }),
+  },
+
+  whatsappCampaigns: {
+    dexieTable: db.whatsappCampaigns as any,
+    supabaseTable: 'synced_whatsapp_campaigns',
+    rpcName: 'upsert_synced_whatsapp_campaign',
+    toCloudRecord: (item: Partial<WhatsAppCampaign> & { id?: number }) => ({
+      p_local_id: item.id,
+      p_template: item.template || '',
+      p_member_id: item.memberId ?? 0,
+      p_member_name: item.memberName || '',
+      p_phone: item.phone || '',
+      p_message: item.message || '',
+      p_status: item.status || 'sent',
+    }),
+    fromCloudRecord: (r: any): WhatsAppCampaign => ({
+      id: r.local_id,
+      template: r.template || '',
+      memberId: r.member_id ?? 0,
+      memberName: r.member_name || '',
+      phone: r.phone || '',
+      message: r.message || '',
+      status: r.status || 'sent',
+      createdAt: new Date(r.created_at || Date.now()),
+      syncStatus: 'synced',
     }),
   },
 };

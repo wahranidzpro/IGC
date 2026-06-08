@@ -7,7 +7,7 @@ import { db, Member, Program, SubscriptionType, SubscriptionDuration } from '@/l
 import { useAuth } from '@/lib/auth/context';
 import { useRef, useCallback } from 'react';
 import { Scan, Search, Plus, X, Award, CheckCircle, XCircle, Camera, User, QrCode, Wallet, Star, Dumbbell, Edit, Trash2, Ban, Fingerprint } from 'lucide-react';
-import { getMemberQRValue, parseMemberIdFromQR, getQrWhatsAppMessage, downloadQRAndOpenWhatsApp, formatPhoneDisplay } from '@/lib/whatsapp';
+import { getMemberQRValue, parseMemberIdFromQR, getQrWhatsAppMessage, openWhatsAppDirect, formatPhoneDisplay } from '@/lib/whatsapp';
 import { ImportExportButtons, exportToXlsx, importFromXlsx } from '@/components/ui/ImportExportButtons';
 import { logAudit } from '@/lib/audit';
 import { earnPoints, getLoyaltyConfig, spendPoints, calculatePointsValue, calculateMaxDiscount } from '@/lib/loyalty';
@@ -771,9 +771,7 @@ onClick={() => {
             <p className="text-xs text-gray-500 mb-4 font-mono">{savedMemberData.qrValue}</p>
             <div className="flex flex-col gap-2">
               <button
-                onClick={() => downloadQRAndOpenWhatsApp(
-                  'qr-saved-svg',
-                  `QR_${savedMemberData.name.replace(/\s/g, '_')}.png`,
+                onClick={() => openWhatsAppDirect(
                   savedMemberData.phone,
                   getQrWhatsAppMessage(savedMemberData.name, savedMemberData.qrValue, savedMemberData.rfidCode)
                 )}
@@ -972,9 +970,7 @@ onClick={() => {
                 Telecharger QR
               </button>
               <button
-                onClick={() => downloadQRAndOpenWhatsApp(
-                  'qr-modal-svg',
-                  `IGC_QR_${showQr.firstName}_${showQr.lastName}.png`,
+                onClick={() => openWhatsAppDirect(
                   showQr.phone,
                   getQrWhatsAppMessage(`${showQr.firstName} ${showQr.lastName}`, getMemberQRValue(showQr.id!), showQr.rfidCode || '')
                 )}

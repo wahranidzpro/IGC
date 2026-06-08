@@ -5,7 +5,18 @@ export interface TemplateData {
 }
 
 export function sendWhatsApp(phone: string, message: string): void {
-  window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank')
+  const text = encodeURIComponent(message)
+  const webUrl = `https://wa.me/${phone}?text=${text}`
+  const desktopUrl = `whatsapp://send?phone=${phone}&text=${text}`
+
+  const isDesktop = typeof navigator !== 'undefined' && /Win|Mac|Linux/i.test(navigator.platform)
+
+  if (isDesktop) {
+    window.open(desktopUrl, '_blank')
+    setTimeout(() => window.open(webUrl, '_blank'), 800)
+  } else {
+    window.open(webUrl, '_blank')
+  }
 }
 
 export function formatPhone(phone: string): string {
@@ -13,9 +24,10 @@ export function formatPhone(phone: string): string {
 }
 
 export function openWhatsApp(phone: string, template: MessageTemplate, data: TemplateData): void {
+  const resolved = messageTemplates[template] || template
   const message = Object.entries(data).reduce((msg, [key, value]) => {
     return msg.replace(new RegExp(`{{${key}}}`, 'g'), value)
-  }, template)
+  }, resolved)
   sendWhatsApp(phone, message)
 }
 
@@ -38,7 +50,7 @@ export function getQrWhatsAppMessage(memberName: string, qrValue: string, rfidCo
   return `Bonjour ${memberName}, voici votre code QR IGC: ${qrValue}${rfidCode ? `\nCode RFID: ${rfidCode}` : ''}`
 }
 
-export async function downloadQRAndOpenWhatsApp(canvasId: string, filename: string, phone: string, message: string): Promise<void> {
+export function openWhatsAppDirect(phone: string, message: string): void {
   sendWhatsApp(phone, message)
 }
 

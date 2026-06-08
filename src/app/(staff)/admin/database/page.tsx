@@ -945,7 +945,7 @@ export default function AdminDatabasePage() {
               <p className="text-sm text-gray-400 mb-4">Téléchargez toutes les données de la base locale (Dexie) au format JSON ou Excel.</p>
               <div className="flex gap-3">
                 <button onClick={async () => {
-                  const tables = ['members', 'payments', 'sales', 'products', 'coaches', 'programs', 'subscriptionPlans', 'checkins', 'expenses', 'events', 'eventRegistrations', 'rewards', 'productCategories'];
+                  const tables = ['members', 'payments', 'sales', 'products', 'coaches', 'programs', 'subscriptionPlans', 'checkins', 'expenses', 'events', 'eventRegistrations', 'rewards', 'productCategories', 'whatsappCampaigns'];
                   const data: Record<string, any> = {};
                   for (const table of tables) {
                     const arr = await (db as any)[table]?.toArray();
@@ -963,7 +963,7 @@ export default function AdminDatabasePage() {
                 </button>
                 <button onClick={async () => {
                   const { exportToXlsx } = await import('@/components/ui/ImportExportButtons');
-                  const tables = ['members', 'payments', 'sales', 'products', 'coaches', 'programs', 'subscriptionPlans'];
+                  const tables = ['members', 'payments', 'sales', 'products', 'coaches', 'programs', 'subscriptionPlans', 'whatsappCampaigns'];
                   for (const table of tables) {
                     const arr = await (db as any)[table]?.toArray();
                     if (arr && arr.length > 0) exportToXlsx(arr, `infinity-gym-${table}`);
@@ -1003,7 +1003,7 @@ export default function AdminDatabasePage() {
               <h3 className="text-lg font-semibold text-white mb-4">Export CSV</h3>
               <p className="text-sm text-gray-400 mb-4">Exportez chaque table au format CSV pour analyse dans Excel/Google Sheets.</p>
               <div className="flex flex-wrap gap-2">
-                {['members', 'payments', 'sales', 'products', 'coaches', 'checkins', 'expenses'].map(table => (
+                {['members', 'payments', 'sales', 'products', 'coaches', 'checkins', 'expenses', 'whatsappCampaigns'].map(table => (
                   <button key={table} onClick={async () => {
                     const arr: any[] = await (db as any)[table]?.toArray() || [];
                     if (arr.length === 0) return;

@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, Member } from '@/lib/db/dexie-db';
 import { WhatsAppButton } from '@/components/ui/WhatsAppButton';
-import { getTemplate, openWhatsApp, MessageTemplate, formatPhoneDisplay } from '@/lib/whatsapp';
-import { MessageSquare, AlertTriangle, Search, X, CheckCircle, Send, Bell, CalendarClock, UserX } from 'lucide-react';
+import { getTemplate, sendWhatsApp, MessageTemplate, formatPhoneDisplay } from '@/lib/whatsapp';
+import { MessageSquare, AlertTriangle, Search, X, CheckCircle, Send, Bell, CalendarClock, UserX, Upload } from 'lucide-react';
 import { ImportExportButtons, exportToXlsx } from '@/components/ui/ImportExportButtons';
 import Link from 'next/link';
 
@@ -33,8 +33,10 @@ export default function NotificationsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'expired' | 'inactive'>('all');
   const [selectedMembers, setSelectedMembers] = useState<Set<number>>(new Set());
-  const [showPreview, setShowPreview] = useState<{ phone: string; name: string; days?: number } | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'renewal' | 'expired'>('all');
+  const [sending, setSending] = useState(false);
+  const [sentCount, setSentCount] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const members = useLiveQuery(() => db.members.toArray(), []);
 
@@ -214,8 +216,24 @@ export default function NotificationsPage() {
           </div>
           <ImportExportButtons
             onExport={() => exportToXlsx(filtered.map(({ id, ...rest }) => rest), 'membres-notifications')}
-            onImport={() => {}}
+            onImport={() => fileInputRef.current?.click()}
           />
+          <input ref={fileInputRef} type="file" accept=".xlsx,.csv" className="hidden" onChange={async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            try {
+              const XLSX = await import('xlsx');
+              const data = await file.arrayBuffer();
+              const workbook = XLSX.read(data, { type: 'array' });
+              const sheet = workbook.Sheets[workbook.SheetNames[0]];
+              const rows = XLSX.utils.sheet_to_json<Record<string, any>>(sheet);
+              const phones = new Set(rows.map(r => String(r.phone || r.téléphone || r.Téléphone || r.tel || '').replace(/[^0-9]/g, '')));
+              const matched = members?.filter(m => phones.has(m.phone)) || [];
+              if (matched.length === 0) { alert('Aucun membre trouvé dans le fichier.'); return; }
+              setSelectedMembers(new Set(matched.map(m => m.id!)));
+            } catch { alert('Erreur de lecture du fichier.'); }
+            e.target.value = '';
+          }} />
         </div>
 
         {/* Templates */}
@@ -325,20 +343,31 @@ export default function NotificationsPage() {
           <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
             <div className="bg-gray-900 border border-green-500/30 rounded-xl px-6 py-3 shadow-2xl flex items-center gap-4">
               <CheckCircle className="w-5 h-5 text-green-400" />
-              <span className="text-white text-sm">{selectedMembers.size} membre(s) sélectionné(s)</span>
+              <span className="text-white text-sm">{sending ? `Envoi... (${sentCount}/${selectedMembers.size})` : `${selectedMembers.size} membre(s) sélectionné(s)`}</span>
               <button
-                onClick={() => {
-                  const selected = members?.filter(m => selectedMembers.has(m.id!));
-                  selected?.forEach((m: Member) => {
-                    openWhatsApp(m.phone, selectedTemplate, {
+                disabled={sending}
+                onClick={async () => {
+                  setSending(true);
+                  setSentCount(0);
+                  const selected = members?.filter(m => selectedMembers.has(m.id!)) || [];
+                  for (const m of selected) {
+                    const message = getTemplate(selectedTemplate, {
                       name: `${m.firstName} ${m.lastName}`,
                       days: String(selectedTemplate === 'renewal_reminder' ? getDaysLeft(m) : ''),
                     });
-                  });
+                    sendWhatsApp(m.phone, message);
+                    await db.whatsappCampaigns.add({
+                      template: selectedTemplate, memberId: m.id!, memberName: `${m.firstName} ${m.lastName}`,
+                      phone: m.phone, message, status: 'sent', createdAt: new Date(), syncStatus: 'pending',
+                    });
+                    setSentCount(prev => prev + 1);
+                  }
+                  setSelectedMembers(new Set());
+                  setSending(false);
                 }}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm ${sending ? 'bg-gray-600 text-gray-400' : 'bg-green-600 text-white hover:bg-green-700'}`}
               >
-                <Send className="w-4 h-4" /> Envoyer à tous
+                <Send className="w-4 h-4" /> {sending ? 'Envoi en cours...' : 'Envoyer à tous'}
               </button>
             </div>
           </div>

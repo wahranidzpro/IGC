@@ -386,6 +386,18 @@ export interface SubscriptionPlan {
   createdAt: Date;
 }
 
+export interface WhatsAppCampaign {
+  id?: number;
+  template: string;
+  memberId: number;
+  memberName: string;
+  phone: string;
+  message: string;
+  status: 'sent' | 'failed';
+  createdAt: Date;
+  syncStatus: 'pending' | 'synced';
+}
+
 export interface Reward {
   id?: number;
   name: string;
@@ -626,6 +638,7 @@ export class GymDatabase extends Dexie {
   eventRegistrations!: Table<EventRegistration>;
   productCategories!: Table<ProductCategory>;
   rewards!: Table<Reward>;
+  whatsappCampaigns!: Table<WhatsAppCampaign>;
   employees!: Table<Employee>;
   absences!: Table<Absence>;
   payrollRecords!: Table<PayrollRecord>;
@@ -677,6 +690,9 @@ export class GymDatabase extends Dexie {
     });
     this.version(21).stores({
       rewards: '++id, name, pointsRequired, stock, createdAt, syncStatus',
+    });
+    this.version(22).stores({
+      whatsappCampaigns: '++id, template, memberId, status, createdAt, syncStatus',
     });
   }
 }
