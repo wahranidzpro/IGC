@@ -1,26 +1,27 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { QRCodeSVG } from "qrcode.react"
 import { useAuth } from "@/lib/auth/context"
 import { createClient } from "@/lib/supabase/client"
-import { mapRow, mapRows } from "@/lib/utils/transform"
+import { mapRow } from "@/lib/utils/transform"
 import { checkActiveDevice, isMobileDevice } from "@/lib/device"
+import { PrivacyScreen } from "@capacitor/privacy-screen"
 import {
-  ShieldAlert, Clock, RefreshCw, Wifi, CircleCheck, Smartphone,
-  Monitor, Lock, Eye,
+  ShieldAlert, RefreshCw, Smartphone,
+  Monitor, Lock, Eye, QrCode,
 } from "lucide-react"
-import type { Membership } from "@/types"
+import type { Membership, Profile } from "@/types"
 
-const REFRESH_INTERVAL = 5000
+const REFRESH_INTERVAL = 6000
 
 export default function MemberQRPage() {
   const { user, role } = useAuth()
   const [token, setToken] = useState<string | null>(null)
   const [timeLeft, setTimeLeft] = useState(REFRESH_INTERVAL / 1000)
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [clock, setClock] = useState("")
   const [membership, setMembership] = useState<Membership | null>(null)
+  const [profile, setProfile] = useState<Profile | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const [deviceChecked, setDeviceChecked] = useState(false)
@@ -29,6 +30,14 @@ export default function MemberQRPage() {
 
   const [isHidden, setIsHidden] = useState(false)
   const [isMobile, setIsMobile] = useState(true)
+  const [flashOverlay, setFlashOverlay] = useState(false)
+  const qrRef = useRef<HTMLDivElement>(null)
+
+  const memberName = profile?.firstName
+    ? `${profile.firstName} ${profile.lastName || ""}`.trim()
+    : user && "name" in user
+      ? (user as any).name
+      : "Membre"
 
   useEffect(() => {
     setIsMobile(isMobileDevice())
@@ -39,7 +48,10 @@ export default function MemberQRPage() {
     const uid = user?.id as string
     const supabase = createClient()
     async function load() {
-      const { data: m } = await supabase.from("members").select("*").eq("profile_id", uid).maybeSingle()
+      const { data: p } = await supabase.from("profiles").select("first_name, last_name").eq("id", uid).maybeSingle()
+      if (p) setProfile(mapRow<Profile>(p))
+
+      const { data: m } = await supabase.from("members").select("id").eq("profile_id", uid).maybeSingle()
       const memberId = mapRow<{ id?: string }>(m as unknown as Record<string, unknown> | null)?.id
       if (memberId) {
         const { data: ms } = await supabase
@@ -79,17 +91,56 @@ export default function MemberQRPage() {
         setTimeout(() => setIsHidden(false), 2000)
       }
     }
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length > 1) {
+        setIsHidden(true)
+        setTimeout(() => setIsHidden(false), 2000)
+      }
+    }
     window.addEventListener("blur", onBlur)
     window.addEventListener("focus", onFocus)
     document.addEventListener("visibilitychange", onVisibility)
     document.addEventListener("keydown", onKeyDown)
+    document.addEventListener("touchstart", onTouchStart, { passive: true })
     return () => {
       window.removeEventListener("blur", onBlur)
       window.removeEventListener("focus", onFocus)
       document.removeEventListener("visibilitychange", onVisibility)
       document.removeEventListener("keydown", onKeyDown)
+      document.removeEventListener("touchstart", onTouchStart)
     }
   }, [])
+
+  useEffect(() => {
+    try {
+      PrivacyScreen.enable({
+        android: { dimBackground: true },
+        ios: { blurEffect: "dark" },
+      })
+    } catch {}
+  }, [])
+
+  useEffect(() => {
+    try {
+      const m = navigator.mediaDevices
+      if (m?.getDisplayMedia) {
+        const original = m.getDisplayMedia.bind(m)
+        m.getDisplayMedia = function (opts?: DisplayMediaStreamOptions) {
+          setIsHidden(true)
+          setTimeout(() => setIsHidden(false), 5000)
+          return original(opts)
+        }
+      }
+    } catch {}
+  }, [])
+
+  useEffect(() => {
+    if (timeLeft <= 1 && !isHidden) {
+      const t = setTimeout(() => setFlashOverlay(true), 100)
+      const t2 = setTimeout(() => setFlashOverlay(false), 200)
+      return () => { clearTimeout(t); clearTimeout(t2) }
+    }
+  }, [timeLeft, isHidden])
 
   const generateToken = useCallback(async () => {
     try {
@@ -114,21 +165,17 @@ export default function MemberQRPage() {
     return () => { clearInterval(refresh); clearInterval(tick) }
   }, [generateToken])
 
-  useEffect(() => {
-    const update = () => setClock(new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" }))
-    update()
-    const i = setInterval(update, 1000)
-    return () => clearInterval(i)
-  }, [])
-
   const progress = (timeLeft / (REFRESH_INTERVAL / 1000)) * 100
 
   if (role !== "adherent") {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
+      <div
+        className="min-h-screen flex items-center justify-center p-4"
+        style={{ background: "linear-gradient(180deg, #020B22 0%, #08173B 100%)" }}
+      >
         <div className="text-center space-y-4">
-          <div className="w-16 h-16 rounded-full bg-brand-red/10 flex items-center justify-center mx-auto">
-            <ShieldAlert className="w-8 h-8 text-brand-red" />
+          <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto">
+            <ShieldAlert className="w-8 h-8 text-red-400" />
           </div>
           <h1 className="text-xl font-bold text-white">Accès réservé aux membres</h1>
           <p className="text-sm text-gray-400">Cette page est uniquement accessible aux membres.</p>
@@ -139,7 +186,10 @@ export default function MemberQRPage() {
 
   if (!deviceChecked) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
+      <div
+        className="min-h-screen flex items-center justify-center p-4"
+        style={{ background: "linear-gradient(180deg, #020B22 0%, #08173B 100%)" }}
+      >
         <div className="flex items-center gap-3 text-gray-500">
           <RefreshCw className="w-5 h-5 animate-spin" />
           <span className="text-sm">Vérification de l&apos;appareil...</span>
@@ -150,7 +200,10 @@ export default function MemberQRPage() {
 
   if (deviceBlocked) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
+      <div
+        className="min-h-screen flex items-center justify-center p-4"
+        style={{ background: "linear-gradient(180deg, #020B22 0%, #08173B 100%)" }}
+      >
         <div className="w-full max-w-sm text-center space-y-5">
           <div className="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center mx-auto">
             <Smartphone className="w-8 h-8 text-amber-400" />
@@ -158,12 +211,7 @@ export default function MemberQRPage() {
           <h1 className="text-xl font-bold text-white">Appareil non autorisé</h1>
           <p className="text-sm text-gray-400 leading-relaxed">
             Un autre appareil est déjà connecté à votre compte.
-            Pour des raisons de sécurité, un seul appareil peut afficher le QR à la fois.
           </p>
-          <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 text-left text-sm">
-            <p className="text-amber-400 font-medium mb-1">Appareil actif détecté</p>
-            <p className="text-amber-300 text-xs">{deviceBlockReason}</p>
-          </div>
           <button
             onClick={async () => {
               const res = await fetch("/api/device/transfer/request", {
@@ -172,11 +220,9 @@ export default function MemberQRPage() {
                 body: JSON.stringify({ profileId: user?.id }),
               })
               const data = await res.json()
-              if (data.success) {
-                window.location.href = `/login?migrate=${user?.id}`
-              }
+              if (data.success) window.location.href = `/login?migrate=${user?.id}`
             }}
-            className="w-full bg-brand-red text-white py-3 rounded-xl font-semibold text-sm hover:bg-red-700 transition-colors"
+            className="w-full bg-red-600 text-white py-3 rounded-xl font-semibold text-sm hover:bg-red-700 transition-colors"
           >
             Migrer vers cet appareil
           </button>
@@ -187,76 +233,83 @@ export default function MemberQRPage() {
 
   if (!isMobile) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
+      <div
+        className="min-h-screen flex items-center justify-center p-4"
+        style={{ background: "linear-gradient(180deg, #020B22 0%, #08173B 100%)" }}
+      >
         <div className="w-full max-w-sm text-center space-y-5">
-          <div className="w-16 h-16 rounded-full bg-brand-red/10 flex items-center justify-center mx-auto">
-            <Smartphone className="w-8 h-8 text-brand-red" />
+          <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto">
+            <Smartphone className="w-8 h-8 text-red-400" />
           </div>
           <h1 className="text-xl font-bold text-white">Application mobile requise</h1>
-          <p className="text-sm text-gray-400 leading-relaxed">
-            Le QR code d&apos;accès est uniquement disponible sur l&apos;application mobile
-            Infinity Gym Center.
-          </p>
-          <div className="glass rounded-xl p-5 space-y-3">
+          <p className="text-sm text-gray-400">Le QR est disponible uniquement sur mobile.</p>
+          <div className="rounded-xl p-5 space-y-3" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
             <div className="flex items-center gap-3 text-left">
               <Monitor className="w-5 h-5 text-gray-400 shrink-0" />
               <div>
                 <p className="text-sm font-medium text-white">Vous êtes sur un ordinateur</p>
-                <p className="text-xs text-gray-400">Ouvrez l&apos;app sur votre téléphone pour accéder au QR</p>
+                <p className="text-xs text-gray-400">Ouvrez l&apos;app sur votre téléphone</p>
               </div>
             </div>
             <div className="flex items-center gap-3 text-left">
-              <QrCodeIcon className="w-5 h-5 text-gray-400 shrink-0" />
+              <QrCode className="w-5 h-5 text-gray-400 shrink-0" />
               <div>
-                <p className="text-sm font-medium text-white">QR code dynamique</p>
-                <p className="text-xs text-gray-400">Disponible uniquement sur mobile pour votre sécurité</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 text-left">
-              <Lock className="w-5 h-5 text-gray-400 shrink-0" />
-              <div>
-                <p className="text-sm font-medium text-white">Sécurisé</p>
-                <p className="text-xs text-gray-400">Anti-capture d&apos;écran et rotation automatique</p>
+                <p className="text-sm font-medium text-white">QR dynamique sécurisé</p>
+                <p className="text-xs text-gray-400">Renouvelé toutes les 6 secondes</p>
               </div>
             </div>
           </div>
-          <p className="text-xs text-gray-500">Téléchargez l&apos;app depuis le Play Store ou l&apos;App Store</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8 relative overflow-hidden select-none">
-      <div className="w-full max-w-sm mx-auto flex flex-col items-center gap-6">
-          <div className="flex items-center justify-between w-full">
-          <div className="flex items-center gap-2 text-white">
-            <Clock className="w-4 h-4" />
-            <span className="text-sm font-semibold tabular-nums">{clock}</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className={`w-1.5 h-1.5 rounded-full ${membership ? "bg-green-500 animate-pulse" : "bg-white/20"}`} />
-            <span className="text-xs text-gray-400 font-medium">
-              {membership ? "Actif" : "Inactif"}
-            </span>
-          </div>
-        </div>
+    <div
+      className="min-h-screen flex flex-col items-center justify-center px-4 py-8 relative overflow-hidden select-none"
+      style={{
+        background: "linear-gradient(180deg, #020B22 0%, #08173B 100%)",
+        WebkitUserSelect: "none",
+        userSelect: "none",
+        WebkitTouchCallout: "none",
+      }}
+      onContextMenu={(e) => e.preventDefault()}
+    >
+      {flashOverlay && (
+        <div className="fixed inset-0 z-50 pointer-events-none" style={{
+          background: "white",
+          opacity: 0.8,
+          mixBlendMode: "difference",
+          animation: "flash 0.15s ease-out",
+        }} />
+      )}
 
+      <div className="w-full max-w-sm mx-auto flex flex-col items-center gap-6">
         <div className="text-center">
-          <h1 className="text-lg font-bold text-white">Mon QR d&apos;accès</h1>
+          <h1 className="text-lg font-bold text-white">Accès à la salle</h1>
           <p className="text-xs text-gray-400 mt-0.5">Présentez au tourniquet</p>
         </div>
 
-        <div className="relative" onContextMenu={(e) => e.preventDefault()}>
-          <div className={`glass rounded-3xl p-6 shadow-xl transition-all duration-400 ${
-            isRefreshing ? "scale-95 opacity-50" : "scale-100 opacity-100"
-          } ${isHidden ? "ring-4 ring-red-300" : "border-white/10"}`}>
-            <div className={`transition-all duration-400 ${
-              isRefreshing || isHidden ? "opacity-0 scale-75 blur-sm" : "opacity-100 scale-100 blur-none"
-            }`}>
+        <div ref={qrRef} className="relative" onContextMenu={(e) => e.preventDefault()}>
+          <div
+            className="rounded-3xl p-6 shadow-xl transition-all duration-300 border select-none"
+            style={{
+              background: "rgba(255,255,255,0.04)",
+              borderColor: isHidden ? "rgba(255,77,77,0.4)" : "rgba(255,255,255,0.08)",
+              WebkitUserSelect: "none",
+              userSelect: "none",
+              WebkitTouchCallout: "none",
+            }}
+          >
+            <div
+              className={`transition-all duration-300 ${
+                isRefreshing || isHidden ? "opacity-0 scale-75 blur-sm" : "opacity-100 scale-100 blur-none"
+              }`}
+              style={{ pointerEvents: "none" }}
+            >
               {token ? (
                 <QRCodeSVG
-                  value={`IGC:${user?.id}:${token}`}
+                  value={`IGC:${user?.id}:${encodeURIComponent(memberName)}:${token}`}
                   size={220}
                   level="H"
                   bgColor="#FFFFFF"
@@ -270,7 +323,7 @@ export default function MemberQRPage() {
               )}
             </div>
             {isHidden && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-3xl backdrop-blur-sm">
+              <div className="absolute inset-0 flex items-center justify-center bg-black/70 rounded-3xl backdrop-blur-md">
                 <div className="text-center">
                   <Eye className="w-8 h-8 text-red-400 mx-auto mb-2" />
                   <p className="text-sm font-bold text-red-500">QR masqué</p>
@@ -281,58 +334,38 @@ export default function MemberQRPage() {
           </div>
         </div>
 
-        <div className="w-full max-w-[236px] space-y-2">
-          <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-brand-red rounded-full transition-all duration-1000 ease-linear"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-gray-400 flex items-center gap-1">
-              <RefreshCw className={`w-3 h-3 ${timeLeft <= 1 ? "animate-spin text-brand-red" : ""}`} />
-              {timeLeft > 0 ? `${timeLeft}s` : "Actualisation..."}
-            </span>
-            <span className="text-gray-400 flex items-center gap-1">
-              <Wifi className="w-3 h-3" />
-              Temps réel
-            </span>
-          </div>
+        <div className="text-center">
+          <p className="text-base font-bold text-white">{memberName}</p>
+          <p className="text-xs text-gray-400 mt-0.5">Carte #{user?.id?.toString().slice(0, 8).toUpperCase() || "IGC-0000"}</p>
         </div>
 
-        <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium ${
-          membership
-            ? "bg-green-500/10 text-green-400 border border-green-500/20"
-            : "bg-white/5 text-gray-400 border border-white/10"
-        }`}>
-          <CircleCheck className="w-3.5 h-3.5" />
-          {membership
-            ? `${membership.planName} · Expire le ${new Date(membership.endDate).toLocaleDateString("fr-FR")}`
-            : "Aucun abonnement actif"}
+        <div className="w-full max-w-[236px] space-y-2">
+          <div className="text-center">
+            <span className="text-3xl font-black tabular-nums text-white" style={{ fontVariantNumeric: "tabular-nums" }}>
+              {String(Math.floor(timeLeft / 60)).padStart(2, "0")}:{String(timeLeft % 60).padStart(2, "0")}
+            </span>
+          </div>
+          <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-1000 ease-linear"
+              style={{ width: `${progress}%`, background: "linear-gradient(90deg, #0A84FF, #0066CC)" }}
+            />
+          </div>
+          <p className="text-[10px] text-gray-400 text-center">
+            Actualisation automatique toutes les 6 secondes
+          </p>
         </div>
 
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px]">
           <Lock className="w-3 h-3" />
-          Protection anti-capture activée
+          Protection anti-capture activée · Flash aléatoire
         </div>
 
-        <p className="text-[10px] text-gray-400 text-center max-w-xs leading-relaxed">
-          QR dynamique renouvelé toutes les 5 secondes.
-          Il se masque automatiquement si vous quittez l&apos;app.
+        <p className="text-[10px] text-gray-500 text-center max-w-xs leading-relaxed px-4">
+          QR dynamique contenant vos informations personnelles. 
+          Toute tentative de capture d&apos;écran ou d&apos;enregistrement sera détectée.
         </p>
       </div>
     </div>
-  )
-}
-
-function QrCodeIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="5" height="5" />
-      <rect x="16" y="3" width="5" height="5" />
-      <rect x="3" y="16" width="5" height="5" />
-      <path d="M21 16h-3v3" />
-      <path d="M16 21v-5h5" />
-    </svg>
   )
 }

@@ -55,6 +55,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ valid: false, memberId: qrToken.member_id, reason: "MEMBER_NOT_ACTIVE" }, { status: 403 })
   }
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("firstName, lastName, avatarUrl")
+    .eq("id", qrToken.member_id)
+    .maybeSingle()
+
   const now = new Date().toISOString()
 
   await supabase
@@ -73,5 +79,10 @@ export async function POST(request: Request) {
       timestamp: now,
     })
 
-  return NextResponse.json({ valid: true, memberId: qrToken.member_id })
+  return NextResponse.json({
+    valid: true,
+    memberId: qrToken.member_id,
+    memberName: profile ? `${profile.firstName} ${profile.lastName || ""}`.trim() : null,
+    memberPhoto: profile?.avatarUrl || null,
+  })
 }

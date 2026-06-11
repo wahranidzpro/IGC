@@ -1,18 +1,21 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { useAuth } from "@/lib/auth/context"
 import { CoachSidebar } from "@/components/coach/CoachSidebar"
 import { CoachHeader } from "@/components/coach/CoachHeader"
-import { useState } from "react"
+import {
+  LayoutDashboard, Users, Calendar, MessageSquare,
+  Info,
+} from "lucide-react"
 
 const bottomNavItems = [
-  { label: "Dashboard", href: "/coach", icon: "LayoutDashboard" },
-  { label: "Clients", href: "/coach/members", icon: "Users" },
-  { label: "Planning", href: "/coach/schedule", icon: "Calendar" },
-  { label: "Messages", href: "/coach/messages", icon: "MessageSquare" },
-  { label: "Profil", href: "/coach/profile", icon: "User" },
+  { label: "Dashboard", href: "/coach", icon: LayoutDashboard },
+  { label: "Adhérents", href: "/coach/members", icon: Users },
+  { label: "Planning", href: "/coach/schedule", icon: Calendar },
+  { label: "Messages", href: "/coach/messages", icon: MessageSquare },
+  { label: "Infos", href: "/coach/progress", icon: Info },
 ]
 
 export default function CoachLayout({ children }: { children: React.ReactNode }) {
@@ -46,14 +49,14 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
         <CoachHeader />
 
         {/* Page content */}
-        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto">
+        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto pb-[85px] lg:pb-8">
           {children}
         </main>
       </div>
 
       {/* Mobile bottom navigation */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-gradient-to-r from-[#050505] via-[#081120] to-[#050505] border-t border-white/5 safe-area-bottom">
-        <div className="flex items-center justify-around h-14">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30" style={{ background: "rgba(8,15,35,0.95)" }}>
+        <div className="flex items-center justify-around h-[85px] border-t border-[rgba(255,255,255,0.06)]">
           {bottomNavItems.map((item) => {
             const active = item.href === "/coach"
               ? pathname === "/coach"
@@ -62,10 +65,12 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
               <button
                 key={item.href}
                 onClick={() => router.push(item.href)}
-                className={`flex flex-col items-center justify-center gap-0.5 px-3 py-1 transition-colors ${
-                  active ? "text-[#C89B3C]" : "text-white/40 hover:text-white/60"
-                }`}
+                className="flex flex-col items-center justify-center gap-0.5 px-3 py-1 transition-all duration-200"
+                style={{ color: active ? "#0A84FF" : "rgba(184,192,204,0.4)" }}
               >
+                <span className="relative inline-flex">
+                  <item.icon className="w-5 h-5" style={{ filter: active ? "drop-shadow(0 0 8px rgba(10,132,255,0.5))" : "none" }} />
+                </span>
                 <span className="text-[9px] font-medium">{item.label}</span>
               </button>
             )

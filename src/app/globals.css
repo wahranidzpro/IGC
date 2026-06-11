@@ -327,6 +327,24 @@ body.dashboard-active::after {
   }
 }
 
+@keyframes flash {
+  0% { opacity: 0.8; }
+  100% { opacity: 0; }
+}
+
+@keyframes qrPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(10,132,255,0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(10,132,255,0); }
+}
+
+.qr-anti-capture {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+  pointer-events: none;
+}
+
 @media print {
   body.dashboard-active main,
   .qr-protected,

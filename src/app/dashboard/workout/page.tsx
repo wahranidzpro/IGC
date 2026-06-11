@@ -1,7 +1,9 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { Dumbbell, Plus, Clock, Check, Play, ChevronRight, Flag, Zap, AlertCircle, RefreshCw } from "lucide-react"
+import { useEffect, useState, useCallback } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { Dumbbell, Plus, Clock, Check, Play, ChevronRight, Flag, Zap, X, AlertCircle, RefreshCw, Loader2 } from "lucide-react"
+import { getExerciseGif } from "@/data/exercise-gifs"
 
 interface Exercise {
   name: string
@@ -9,6 +11,7 @@ interface Exercise {
   reps: string
   weight: string
   done: boolean
+  gifUrl?: string | null
 }
 
 interface WorkoutDay {
@@ -68,11 +71,61 @@ const sampleWorkouts: WorkoutDay[] = [
   },
 ]
 
+function ExerciseGifThumb({ name, size = 80 }: { name: string; size?: number }) {
+  const [gifUrl, setGifUrl] = useState<string | null | undefined>(undefined)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    getExerciseGif(name).then((url) => {
+      if (!cancelled) {
+        setGifUrl(url)
+        setLoading(false)
+      }
+    })
+    return () => { cancelled = true }
+  }, [name])
+
+  if (loading) {
+    return (
+      <div
+        className="shrink-0 rounded-xl bg-white/5 flex items-center justify-center overflow-hidden"
+        style={{ width: size, height: size }}
+      >
+        <Loader2 className="w-5 h-5 text-gray-500 animate-spin" />
+      </div>
+    )
+  }
+
+  if (!gifUrl) {
+    return (
+      <div
+        className="shrink-0 rounded-xl bg-gradient-to-br from-white/[0.04] to-white/[0.02] flex items-center justify-center overflow-hidden border border-white/5"
+        style={{ width: size, height: size }}
+      >
+        <Dumbbell className="w-6 h-6 text-gray-600" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="shrink-0 rounded-xl overflow-hidden" style={{ width: size, height: size }}>
+      <img
+        src={gifUrl}
+        alt={name}
+        className="w-full h-full object-cover"
+        loading="lazy"
+      />
+    </div>
+  )
+}
+
 export default function WorkoutPage() {
   const [activeDay, setActiveDay] = useState(0)
   const [workouts, setWorkouts] = useState<WorkoutDay[] | null>(null)
   const [loading, setLoading] = useState(false)
-  const [error] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [selectedExercise, setSelectedExercise] = useState<number | null>(null)
 
   useEffect(() => {
     const timer = setTimeout(() => setWorkouts(sampleWorkouts), 300)
@@ -127,14 +180,16 @@ export default function WorkoutPage() {
   const done = current.exercises.filter((e) => e.done).length
   const progress = total > 0 ? Math.round((done / total) * 100) : 0
 
-  const toggleExercise = (index: number) => {
+  const toggleExercise = useCallback((index: number) => {
     setWorkouts((prev) => {
       if (!prev) return prev
       const copy = prev.map((d) => ({ ...d, exercises: d.exercises.map((e) => ({ ...e })) }))
       copy[activeDay].exercises[index].done = !copy[activeDay].exercises[index].done
       return copy
     })
-  }
+  }, [activeDay])
+
+  const selectedEx = selectedExercise !== null ? current.exercises[selectedExercise] : null
 
   return (
     <div className="p-4 md:p-6 lg:p-8 space-y-5">
@@ -148,11 +203,13 @@ export default function WorkoutPage() {
         </button>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+      <motion.div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none" layout>
         {workouts.map((w, i) => (
-          <button
+          <motion.button
             key={i}
-            onClick={() => setActiveDay(i)}
+            onClick={() => { setActiveDay(i); setSelectedExercise(null) }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             className={`shrink-0 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${
               activeDay === i
                 ? "bg-brand-red text-white shadow-lg shadow-brand-red/20"
@@ -160,11 +217,17 @@ export default function WorkoutPage() {
             }`}
           >
             {w.day}
-          </button>
+          </motion.button>
         ))}
-      </div>
+      </motion.div>
 
-      <div className="glass-strong rounded-2xl border border-white/10 shadow-lg overflow-hidden">
+      <motion.div
+        key={activeDay}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="glass-strong rounded-2xl border border-white/10 shadow-lg overflow-hidden"
+      >
         <div className="bg-gradient-to-r from-brand-red to-red-700 px-5 py-4 text-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -183,7 +246,12 @@ export default function WorkoutPage() {
           </div>
           <div className="mt-4 flex items-center gap-3">
             <div className="flex-1 h-1.5 bg-white/20 rounded-full overflow-hidden">
-              <div className="h-full bg-white rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
+              <motion.div
+                className="h-full bg-white rounded-full"
+                initial={{ width: 0 }}
+                animate={{ width: `${progress}%` }}
+                transition={{ duration: 0.5 }}
+              />
             </div>
             <span className="text-xs font-bold">{done}/{total}</span>
             <Flag className="w-4 h-4 text-white/70" />
@@ -192,9 +260,20 @@ export default function WorkoutPage() {
 
         <div className="divide-y divide-white/5">
           {current.exercises.map((ex, i) => (
-            <div key={i} className={`flex items-center gap-4 px-5 py-4 transition-colors ${ex.done ? "bg-green-500/5" : "hover:bg-white/5"}`}>
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.05 }}
+              className={`flex items-center gap-3 px-4 py-3 transition-colors cursor-pointer ${
+                ex.done ? "bg-green-500/5" : "hover:bg-white/5"
+              }`}
+              onClick={() => setSelectedExercise(i)}
+            >
+              <ExerciseGifThumb name={ex.name} size={64} />
+
               <button
-                onClick={() => toggleExercise(i)}
+                onClick={(e) => { e.stopPropagation(); toggleExercise(i) }}
                 className={`shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
                   ex.done
                     ? "bg-green-500 border-green-500 text-white scale-110 shadow-md shadow-green-500/30"
@@ -203,6 +282,7 @@ export default function WorkoutPage() {
               >
                 {ex.done && <Check className="w-3.5 h-3.5" />}
               </button>
+
               <div className="flex-1 min-w-0">
                 <p className={`text-sm font-medium ${ex.done ? "text-gray-500 line-through" : "text-white"}`}>{ex.name}</p>
                 <div className="flex items-center gap-3 mt-1">
@@ -215,13 +295,19 @@ export default function WorkoutPage() {
                   )}
                 </div>
               </div>
+
               <ChevronRight className={`w-4 h-4 shrink-0 ${ex.done ? "text-green-400/50" : "text-white/20"}`} />
-            </div>
+            </motion.div>
           ))}
         </div>
-      </div>
+      </motion.div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <motion.div
+        className="grid grid-cols-3 gap-3"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+      >
         {[
           { label: "Exercices", value: `${done}/${total}`, sub: `${progress}% complété`, color: "bg-brand-red/10 text-brand-red" },
           { label: "Temps estimé", value: current.duration, sub: "Par séance", color: "bg-brand-blue/10 text-brand-blue" },
@@ -236,12 +322,93 @@ export default function WorkoutPage() {
             <p className="text-[10px] text-gray-500">{s.sub}</p>
           </div>
         ))}
-      </div>
+      </motion.div>
 
-      <button className="w-full flex items-center justify-center gap-2 bg-brand-red text-white py-3.5 rounded-xl text-sm font-bold hover:bg-red-700 transition-colors shadow-lg shadow-brand-red/20">
+      <motion.button
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        className="w-full flex items-center justify-center gap-2 bg-brand-red text-white py-3.5 rounded-xl text-sm font-bold hover:bg-red-700 transition-colors shadow-lg shadow-brand-red/20"
+      >
         <Play className="w-4 h-4" />
         {done === 0 ? "Commencer la séance" : done === total ? "Séance terminée ✓" : "Continuer la séance"}
-      </button>
+      </motion.button>
+
+      <AnimatePresence>
+        {selectedEx && (
+          <motion.div
+            key="modal"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+          >
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+              onClick={() => setSelectedExercise(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 100 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 100 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="relative w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl overflow-hidden"
+              style={{ background: "linear-gradient(180deg, #0D1B3E 0%, #081021 100%)" }}
+            >
+              <div className="relative">
+                <ExerciseGifThumb name={selectedEx.name} size={320} />
+                <button
+                  onClick={() => setSelectedExercise(null)}
+                  className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center border border-white/10"
+                >
+                  <X className="w-5 h-5 text-white" />
+                </button>
+              </div>
+
+              <div className="p-5 space-y-4">
+                <div>
+                  <h2 className="text-xl font-bold text-white">{selectedEx.name}</h2>
+                  <p className="text-sm text-gray-400 mt-1">
+                    {current.focus} · {current.day}
+                  </p>
+                </div>
+
+                <div className="flex gap-4">
+                  <div className="flex-1 rounded-2xl p-4 text-center border" style={{ background: "rgba(255,255,255,0.03)", borderColor: "rgba(255,255,255,0.08)" }}>
+                    <p className="text-2xl font-black text-white">{selectedEx.sets}</p>
+                    <p className="text-xs text-gray-400 mt-1">Séries</p>
+                  </div>
+                  <div className="flex-1 rounded-2xl p-4 text-center border" style={{ background: "rgba(255,255,255,0.03)", borderColor: "rgba(255,255,255,0.08)" }}>
+                    <p className="text-2xl font-black text-white">{selectedEx.reps}</p>
+                    <p className="text-xs text-gray-400 mt-1">Répétitions</p>
+                  </div>
+                  {selectedEx.weight !== "--" && (
+                    <div className="flex-1 rounded-2xl p-4 text-center border" style={{ background: "rgba(255,255,255,0.03)", borderColor: "rgba(255,255,255,0.08)" }}>
+                      <p className="text-2xl font-black text-white">{selectedEx.weight}</p>
+                      <p className="text-xs text-gray-400 mt-1">Charge</p>
+                    </div>
+                  )}
+                </div>
+
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => { toggleExercise(selectedExercise!); setSelectedExercise(null) }}
+                  className={`w-full py-3.5 rounded-xl text-sm font-bold transition-all ${
+                    selectedEx.done
+                      ? "bg-gray-600/50 text-gray-400"
+                      : "bg-brand-red text-white shadow-lg shadow-brand-red/20"
+                  }`}
+                >
+                  {selectedEx.done ? "Déjà complété ✓" : "Marquer comme complété"}
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

@@ -6,6 +6,7 @@ import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { canAccessApp, fetchAccessStatus } from '@/lib/auth/authorization';
 import { logger } from '@/lib/logger';
 import bcrypt from 'bcryptjs';
+import { getDeviceFingerprint, getDeviceInfo } from '@/lib/device';
 
 type Role = 'admin' | 'reception' | 'coach' | 'adherent' | null;
 type LoginMode = 'admin' | 'adherent';
@@ -54,6 +55,7 @@ interface AuthContextType {
   checkStructureLock: () => Promise<boolean>;
   accessStatus: { granted: boolean; message: string; reason: string } | null;
   checkAccess: () => Promise<boolean>;
+  sessionId: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -141,6 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [accessStatus, setAccessStatus] = useState<{ granted: boolean; message: string; reason: string } | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const authSubscriptionRef = useRef<{ data: { subscription: { unsubscribe: () => void } } } | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
 
   const loading = !isInitialized
 
@@ -427,6 +430,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setRole(authUser.role);
             setUser(authUser);
             setLoginMode('admin');
+            if (['admin', 'reception', 'coach'].includes(localUser.role as string)) {
+              try {
+                const startRes = await fetch('/api/staff-session/start', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    username: localUser.username,
+                    name: localUser.name,
+                    role: localUser.role,
+                    deviceFingerprint: getDeviceFingerprint(),
+                    deviceInfo: getDeviceInfo(),
+                  }),
+                });
+                const startData = await startRes.json();
+                if (startData.sessionId) setSessionId(startData.sessionId);
+              } catch (err) {
+                authLog('STAFF_SESSION', 'Failed to start staff session', err);
+              }
+            }
             await setServerCookie(localUser.username, localUser.role || '', '');
             return { success: true };
           }
@@ -474,6 +496,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setRole(authUser.role);
       setUser(authUser);
       setLoginMode('admin');
+      if (['admin', 'reception', 'coach'].includes(authUser.role as string)) {
+        try {
+          const startRes = await fetch('/api/staff-session/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              username: authUser.username,
+              name: authUser.name,
+              role: authUser.role,
+              deviceFingerprint: getDeviceFingerprint(),
+              deviceInfo: getDeviceInfo(),
+            }),
+          });
+          const startData = await startRes.json();
+          if (startData.sessionId) setSessionId(startData.sessionId);
+        } catch (err) {
+          authLog('STAFF_SESSION', 'Failed to start staff session', err);
+        }
+      }
       authLog('LOGIN', `Login SUCCESS: ${username} (${authUser.role})`);
 
       await checkAccess(authUser.supabaseUserId);
@@ -485,6 +526,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
+    if (sessionId) {
+      fetch('/api/staff-session/end', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId }),
+      }).catch(() => {});
+    }
     setIsAuthenticated(false);
     setRole(null);
     setUser(null);
@@ -502,6 +550,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     authLog('LOGOUT', 'User logged out');
   };
+
+  useEffect(() => {
+    const isStaff = role && ['admin', 'reception', 'coach'].includes(role);
+    if (!isStaff || !sessionId) return;
+
+    const sendHeartbeat = async () => {
+      try {
+        const res = await fetch('/api/staff-session/heartbeat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId,
+            deviceFingerprint: getDeviceFingerprint(),
+          }),
+        });
+        const data = await res.json();
+        if (data.closed === true) {
+          authLog('STAFF_SESSION', 'Session closed by admin, logging out');
+          logout();
+        }
+      } catch (err) {
+        authLog('STAFF_SESSION', 'Heartbeat error', err);
+      }
+    };
+
+    sendHeartbeat();
+    const interval = setInterval(sendHeartbeat, 30000);
+
+    return () => clearInterval(interval);
+  }, [role, sessionId]);
 
   if (!isInitialized) {
     return (
@@ -529,6 +607,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         checkStructureLock,
         accessStatus,
         checkAccess,
+        sessionId,
       }}
     >
       {children}

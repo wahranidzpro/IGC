@@ -11,7 +11,7 @@ import {
   Building2, ChevronDown, Trophy, Star, UserPlus, Calendar,
   Wrench, Box, Languages, Bot, Database, BarChart3, DoorOpen, Wifi,
   Activity, ShoppingCart, QrCode, Dumbbell, Fingerprint, Gift, ShoppingBag,
-  ChevronLeft, ChevronRight, Infinity,
+  ChevronLeft, ChevronRight, Infinity, Clock,
 } from "lucide-react"
 
 interface NavItem {
@@ -90,6 +90,7 @@ const navSections: NavSection[] = [
       { href: "/notifications", labelKey: "sidebar.notifications", icon: <MessageSquare className="w-5 h-5" />, roles: ["admin", "reception"] },
       { href: "/admin/rewards", labelKey: "sidebar.rewards", icon: <Gift className="w-5 h-5" />, roles: ["admin"] },
       { href: "/admin/audit", labelKey: "sidebar.audit", icon: <Activity className="w-5 h-5" />, roles: ["admin"] },
+      { href: "/admin/staff-sessions", labelKey: "sidebar.sessions_staff", icon: <Clock className="w-5 h-5" />, roles: ["admin"] },
       { href: "/admin/loyalty", labelKey: "sidebar.loyalty", icon: <Gift className="w-5 h-5" />, roles: ["admin"] },
       { href: "/admin/database", labelKey: "sidebar.database", icon: <Database className="w-5 h-5" />, roles: ["admin"] },
       { href: "/settings/access", labelKey: "sidebar.pin", icon: <Settings className="w-5 h-5" />, roles: ["admin"] },

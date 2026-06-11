@@ -8,10 +8,11 @@ import AccessDenied from "@/components/auth/AccessDenied"
 import { cn } from "@/lib/utils"
 import { startHeartbeat } from "@/lib/device"
 import { AdherentSidebar } from "@/components/dashboard/AdherentSidebar"
+import NotificationBadge from "@/components/dashboard/mobile/NotificationBadge"
 import { createBrowserClient } from "@supabase/ssr"
 import {
   LayoutDashboard, Dumbbell, MessageSquare, Bell, User,
-  Menu, X, Bot,
+  Menu, X, Bot, CalendarDays, QrCode, Grid3x3, CreditCard,
 } from "lucide-react"
 
 const bottomNavItems = [
@@ -22,12 +23,23 @@ const bottomNavItems = [
   { label: "Profil", href: "/dashboard/profile", icon: User },
 ]
 
+const adherentBottomNav = [
+  { label: "Accueil", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Profil", href: "/dashboard/profile", icon: User },
+  { label: "QR Code", href: "/dashboard/qr", icon: QrCode, isQr: true },
+  { label: "Notifications", href: "/dashboard/notifications", icon: Bell },
+  { label: "Plus", href: "/dashboard/plus", icon: Grid3x3 },
+]
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
-  const { user, loading, logout, accessStatus } = useAuth()
+  const { user, role, loading, logout, accessStatus } = useAuth()
+  const isAdherent = role === "adherent"
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
+  const [qrMode, setQrMode] = useState(false)
+  const [memberId, setMemberId] = useState<string | undefined>()
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -42,6 +54,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     document.body.classList.add('dashboard-active')
     return () => document.body.classList.remove('dashboard-active')
+  }, [])
+
+  useEffect(() => {
+    const t = setInterval(() => setQrMode(v => !v), 6000)
+    return () => clearInterval(t)
   }, [])
 
   useEffect(() => {
@@ -71,6 +88,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     return () => { supabase.removeChannel(channel) }
   }, [user, logout])
+
+  useEffect(() => {
+    if (!user) return
+    const uid = user?.id as string
+    async function load() {
+      const { data: m } = await supabase.from("members").select("id").eq("profile_id", uid).maybeSingle()
+      if (m) setMemberId((m as { id: string }).id)
+    }
+    load()
+  }, [user])
 
   if (!user) return null
   if (accessStatus && accessStatus.granted === false) {
@@ -127,30 +154,95 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         )}
 
-        <main className="flex-1 pb-20 lg:pb-0">{children}</main>
+        <main className={`flex-1 ${isAdherent ? "pb-[85px]" : "pb-20"} lg:pb-0`}>{children}</main>
       </div>
 
-      {/* Bottom navigation mobile */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30" style={{ background: "rgba(7,19,38,0.97)" }}>
-        <div className="flex items-center justify-around h-14 border-t border-[rgba(255,255,255,0.06)]">
-          {bottomNavItems.map((item) => {
-            const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))
-            return (
-              <button
-                key={item.href}
-                onClick={() => router.push(item.href)}
-                className={cn(
-                  "flex flex-col items-center justify-center gap-0.5 px-3 py-1 transition-all duration-200",
-                  active ? "text-[#C89B3C]" : "text-[rgba(184,192,204,0.4)] hover:text-[rgba(184,192,204,0.7)]"
-                )}
-              >
-                <item.icon className={cn("w-5 h-5", active && "drop-shadow-[0_0_8px_rgba(200,155,60,0.5)]")} />
-                <span className="text-[9px] font-medium">{item.label}</span>
-              </button>
-            )
-          })}
-        </div>
-      </nav>
+      {/* Bottom navigation mobile - Adherent */}
+      {isAdherent && (
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30" style={{ background: "rgba(8,15,35,0.95)" }}>
+          <div className="flex items-center justify-around h-[85px] border-t border-[rgba(255,255,255,0.06)] relative">
+            {adherentBottomNav.map((item) => {
+              if (item.isQr) {
+                return (
+                  <button
+                    key={item.href}
+                    onClick={() => router.push(item.href)}
+                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center"
+                    style={{ width: 76, height: 76 }}
+                  >
+                    <div
+                      className="w-[72px] h-[72px] rounded-full flex flex-col items-center justify-center transition-all duration-700"
+                      style={{
+                        background: qrMode
+                          ? "linear-gradient(135deg, #FF6B35, #FF4D4D)"
+                          : "linear-gradient(135deg, #0A84FF, #0066CC)",
+                        boxShadow: qrMode
+                          ? "0 0 40px rgba(255,107,53,0.7)"
+                          : "0 0 30px rgba(0,100,255,0.6)",
+                      }}
+                    >
+                      <span className="transition-all duration-700" style={{ opacity: qrMode ? 0 : 1, position: qrMode ? "absolute" : "relative" }}>
+                        <QrCode className="w-5 h-5 text-white" />
+                      </span>
+                      <span className="transition-all duration-700 flex flex-col items-center" style={{ opacity: qrMode ? 1 : 0, position: qrMode ? "relative" : "absolute" }}>
+                        <span className="text-white text-lg font-black leading-none">➜</span>
+                        <span className="text-[7px] font-bold text-white/90 leading-tight text-center mt-0.5">
+                          ENTRÉE
+                        </span>
+                      </span>
+                    </div>
+                  </button>
+                )
+              }
+              const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))
+              return (
+                <button
+                  key={item.href}
+                  onClick={() => router.push(item.href)}
+                  className="flex flex-col items-center justify-center gap-0.5 px-3 py-1 transition-all duration-200"
+                  style={{ color: active ? "#0A84FF" : "rgba(184,192,204,0.4)" }}
+                >
+                  <span className="relative inline-flex">
+                    {item.label === "Notifications" ? (
+                      <>
+                        <Bell className="w-5 h-5" style={{ filter: active ? "drop-shadow(0 0 8px rgba(10,132,255,0.5))" : "none" }} />
+                        <NotificationBadge memberId={memberId} />
+                      </>
+                    ) : (
+                      <item.icon className="w-5 h-5" style={{ filter: active ? "drop-shadow(0 0 8px rgba(10,132,255,0.5))" : "none" }} />
+                    )}
+                  </span>
+                  <span className="text-[9px] font-medium">{item.label}</span>
+                </button>
+              )
+            })}
+          </div>
+        </nav>
+      )}
+
+      {/* Bottom navigation mobile - Staff */}
+      {!isAdherent && (
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30" style={{ background: "rgba(7,19,38,0.97)" }}>
+          <div className="flex items-center justify-around h-14 border-t border-[rgba(255,255,255,0.06)]">
+            {bottomNavItems.map((item) => {
+              const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))
+              return (
+                <button
+                  key={item.href}
+                  onClick={() => router.push(item.href)}
+                  className={cn(
+                    "flex flex-col items-center justify-center gap-0.5 px-3 py-1 transition-all duration-200",
+                    active ? "text-[#C89B3C]" : "text-[rgba(184,192,204,0.4)] hover:text-[rgba(184,192,204,0.7)]"
+                  )}
+                >
+                  <item.icon className={cn("w-5 h-5", active && "drop-shadow-[0_0_8px_rgba(200,155,60,0.5)]")} />
+                  <span className="text-[9px] font-medium">{item.label}</span>
+                </button>
+              )
+            })}
+          </div>
+        </nav>
+      )}
     </div>
   )
 }

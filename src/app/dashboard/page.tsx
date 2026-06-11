@@ -1,8 +1,9 @@
 "use client"
 
+import { useAuth } from "@/lib/auth/context"
+import MobileHome from "@/components/dashboard/mobile/MobileHome"
 import { useEffect, useState, useMemo } from "react"
 import { logger } from "@/lib/logger"
-import { useAuth } from "@/lib/auth/context"
 import { createClient } from "@/lib/supabase/client"
 import { mapRow, mapRows } from "@/lib/utils/transform"
 import Image from "next/image"
@@ -17,27 +18,29 @@ import {
 import AttendanceList from "@/components/dashboard/AttendanceList"
 
 const sportLinks = [
-  { label: "Entra\u00eenement", href: "/dashboard/workout", icon: Dumbbell, desc: "Programmes & s\u00e9ances", color: "from-[#0A84FF] to-[#38B6FF]", emoji: "\uD83C\uDFCB" },
-  { label: "Mes Progr\u00e8s", href: "/dashboard/progress", icon: TrendingUp, desc: "\u00c9volution & statistiques", color: "from-[#00D4FF] to-[#0A84FF]", emoji: "\uD83D\uDCC8" },
-  { label: "Pr\u00e9sences", href: "/dashboard/attendance", icon: DoorOpen, desc: "Historique & fr\u00e9quence", color: "from-[#10B981] to-[#34D399]", emoji: "\uD83D\uDEAA" },
-  { label: "Abonnement", href: "/dashboard/membership", icon: CreditCard, desc: "Offres & paiements", color: "from-[#C89B3C] to-[#E0B85D]", emoji: "\uD83D\uDCB3" },
+  { label: "Entra\u00eenement", href: "/dashboard/workout", icon: Dumbbell, desc: "Programmes & s\u00e9ances avec GIFs", color: "from-[#0A84FF] to-[#38B6FF]", emoji: "\uD83C\uDFCB" },
+  { label: "Planning", href: "/dashboard/planning", icon: CalendarDays, desc: "Cours & horaires", color: "from-[#00D4FF] to-[#0A84FF]", emoji: "\uD83D\uDCC5" },
+  { label: "Mes Progr\u00e8s", href: "/dashboard/progress", icon: TrendingUp, desc: "\u00c9volution & statistiques", color: "from-[#10B981] to-[#34D399]", emoji: "\uD83D\uDCC8" },
+  { label: "D\u00e9fis & Badges", href: "/dashboard/defis", icon: Trophy, desc: "D\u00e9fis & r\u00e9compenses", color: "from-[#FF4D4D] to-[#FF6B6B]", emoji: "\uD83C\uDFC6" },
 ]
 
 const coachingLinks = [
-  { label: "Coach IA", href: "/ai-coach", icon: Bot, desc: "Assistant intelligent 24/7", color: "from-[#7C3AED] to-[#A855F7]", emoji: "\uD83E\uDD16" },
+  { label: "Coach IA", href: "/dashboard/ai-coach", icon: Bot, desc: "Assistant intelligent 24/7", color: "from-[#7C3AED] to-[#A855F7]", emoji: "\uD83E\uDD16" },
   { label: "Personal Training", href: "/dashboard/coach", icon: Users, desc: "Coaching personnalis\u00e9", color: "from-[#0A84FF] to-[#00D4FF]", emoji: "\uD83D\uDC6B" },
   { label: "R\u00e9servation", href: "/dashboard/booking", icon: CalendarDays, desc: "Cours & coach", color: "from-[#FF4D4D] to-[#FF6B6B]", emoji: "\uD83D\uDCC5" },
-]
-
-const wellnessLinks = [
   { label: "Nutrition", href: "/dashboard/nutrition", icon: Apple, desc: "Plans alimentaires", color: "from-[#10B981] to-[#34D399]", emoji: "\uD83E\uDD55" },
-  { label: "QR Code", href: "/dashboard/qr", icon: QrCode, desc: "Acc\u00e8s \u00e0 la salle", color: "from-[#C89B3C] to-[#E0B85D]", emoji: "\uD83D\uDD0D" },
 ]
 
-const perksLinks = [
+const presenceLinks = [
+  { label: "QR Code", href: "/dashboard/qr", icon: QrCode, desc: "Acc\u00e8s rapide \u00e0 la salle", color: "from-[#C89B3C] to-[#E0B85D]", emoji: "\uD83D\uDD0D" },
+  { label: "Pr\u00e9sences", href: "/dashboard/attendance", icon: DoorOpen, desc: "Historique & fr\u00e9quence", color: "from-[#10B981] to-[#34D399]", emoji: "\uD83D\uDEAA" },
+]
+
+const accountLinks = [
+  { label: "Mon Profil", href: "/dashboard/profile", icon: User, desc: "Informations personnelles", color: "from-[#7C3AED] to-[#A855F7]", emoji: "\uD83D\uDC64" },
+  { label: "Abonnement", href: "/dashboard/membership", icon: CreditCard, desc: "Offres & paiements", color: "from-[#C89B3C] to-[#E0B85D]", emoji: "\uD83D\uDCB3" },
   { label: "Bons plans", href: "/dashboard/bon-plan", icon: Gift, desc: "Offres & r\u00e9ductions", color: "from-[#C89B3C] to-[#E0B85D]", emoji: "\uD83C\uDF81" },
   { label: "Parrainage", href: "/dashboard/referral", icon: UserPlus, desc: "Parrainez & gagnez", color: "from-[#00D4FF] to-[#0A84FF]", emoji: "\uD83E\uDD1D" },
-  { label: "Mon profil", href: "/dashboard/profile", icon: User, desc: "Informations personnelles", color: "from-[#7C3AED] to-[#A855F7]", emoji: "\uD83D\uDC64" },
 ]
 
 function SectionCard({ label, href, icon: Icon, desc, color, emoji }: {
@@ -64,8 +67,14 @@ function SectionCard({ label, href, icon: Icon, desc, color, emoji }: {
 }
 
 export default function DashboardPage() {
+  const { user, role } = useAuth()
+  const isAdherent = role === "adherent"
+
+  if (isAdherent) {
+    return <MobileHome />
+  }
+
   const router = useRouter()
-  const { user } = useAuth()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [member, setMember] = useState<Member | null>(null)
   const [membership, setMembership] = useState<Membership | null>(null)
@@ -140,14 +149,11 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen">
-      {/* Hero Section with Athlete */}
       <div className="relative overflow-hidden px-4 md:px-6 lg:px-8 pt-6 pb-28 md:pb-32">
-        {/* Background gradient */}
         <div className="absolute inset-0 bg-gradient-to-br from-[rgba(10,132,255,0.08)] via-[rgba(7,19,38,0.5)] to-transparent" />
         <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-[rgba(10,132,255,0.06)] rounded-full blur-[100px]" />
         <div className="absolute top-10 right-20 w-[400px] h-[400px] bg-[rgba(200,155,60,0.05)] rounded-full blur-[80px]" />
 
-        {/* Athlete silhouette - right side */}
         <div className="absolute right-0 top-0 bottom-0 w-[45%] pointer-events-none overflow-hidden opacity-60">
           <div className="absolute inset-0 bg-gradient-to-l from-[rgba(10,132,255,0.08)] via-[rgba(10,132,255,0.02)] to-transparent" />
           <svg viewBox="0 0 400 600" className="absolute right-0 bottom-0 h-full w-auto opacity-40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -163,41 +169,29 @@ export default function DashboardPage() {
                 <stop offset="100%" stopColor="#7C3AED" stopOpacity="0.15" />
               </linearGradient>
             </defs>
-            {/* Athlete bodybuilder silhouette - side view with dumbbell */}
             <g fill="url(#athleteGrad)" filter="url(#glow)">
               <path d="M280 80c0 0 15-10 25-5s10 15 10 15l-10 5c0 0-5-10-15-8s-10 8-10 8v-15z" />
               <path d="M300 95c0 0 20-5 25 5s0 20-5 25l-10-5c0 0 8-10 3-15s-13-5-13-5v-5z" />
               <path d="M250 100c0 0-15-15-25-10s-8 18-8 18l10 8c0 0 5-12 15-10s8 8 8 8v-14z" />
               <path d="M225 118c0 0-20-8-25 2s0 20 5 25l10-8c0 0-8-10-3-15s13-5 13-5v1z" />
-              {/* Head */}
               <ellipse cx="265" cy="60" rx="22" ry="25" />
-              {/* Neck */}
               <rect x="258" y="82" width="14" height="12" rx="4" />
-              {/* Torso */}
               <path d="M235 100c0 0-10 60-5 100s10 60 15 80h30c5-20 10-40 15-80s-5-100-5-100h-50z" />
-              {/* Left arm raised (dumbbell) */}
               <path d="M235 110c-15 10-30 25-35 40s-5 20-5 20l12 5c0 0 5-10 15-18s15-15 18-22l-5-25z" />
-              {/* Right arm (curling) */}
               <path d="M290 115c15 5 30 15 35 30l-12 8c-3-8-10-15-18-20s-10-10-10-10l5-8z" />
-              {/* Dumbbell */}
               <path d="M248 128c-3-2-8 0-10 5s-2 10 0 12 8-2 10-5 2-10 0-12z" />
               <rect x="240" y="130" width="8" height="4" rx="1" />
               <rect x="250" y="130" width="8" height="4" rx="1" />
-              {/* Legs */}
               <path d="M240 280c-5 20-15 60-15 100v60h-15v-60c0-40 10-80 15-100h15z" />
               <path d="M270 280c5 20 15 60 15 100v60h15v-60c0-40-10-80-15-100h-15z" />
             </g>
-            {/* Gold glow accent */}
             <ellipse cx="265" cy="200" rx="80" ry="120" fill="url(#athleteGlow)" opacity="0.3" />
           </svg>
-          {/* Neon light rays from athlete */}
           <div className="absolute top-1/4 right-0 w-32 h-32 bg-gradient-to-bl from-[#0A84FF]/20 to-transparent blur-3xl" />
           <div className="absolute top-1/3 right-[10%] w-24 h-24 bg-gradient-to-bl from-[#C89B3C]/15 to-transparent blur-3xl" />
         </div>
 
-        {/* Content */}
         <div className="relative z-10 max-w-4xl">
-          {/* Welcome text */}
           <div className="flex items-center gap-2 mb-2">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[rgba(10,132,255,0.1)] text-[#0A84FF] text-xs font-bold tracking-wide border border-[rgba(10,132,255,0.2)]">
               <Sparkles className="w-3 h-3" /> Fitness Premium
@@ -217,7 +211,6 @@ export default function DashboardPage() {
             Pr\u00eat \u00e0 d\u00e9passer tes limites aujourd'hui\u202f?
           </p>
 
-          {/* Quick stats */}
           <div className="flex flex-wrap gap-3 mt-5">
             <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-[rgba(16,185,129,0.1)] text-[#10B981] border border-[rgba(16,185,129,0.2)]">
               <span className={`w-1.5 h-1.5 rounded-full ${membership ? "bg-[#10B981] animate-pulse" : "bg-[#B8C0CC]"}`} />
@@ -235,7 +228,6 @@ export default function DashboardPage() {
             </span>
           </div>
 
-          {/* Membership progress bar */}
           {membership && (
             <div className="mt-6 glass rounded-2xl p-5 border border-[rgba(255,255,255,0.06)] max-w-xl">
               <div className="flex items-center justify-between mb-2">
@@ -265,7 +257,6 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* CTA */}
           <button
             onClick={() => router.push("/dashboard/workout")}
             className="mt-6 inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#0A84FF] to-[#00D4FF] text-white font-bold text-sm shadow-lg shadow-[#0A84FF]/30 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 group"
@@ -276,9 +267,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Main content grid */}
       <div className="px-4 md:px-6 lg:px-8 -mt-8 relative z-10 space-y-8 pb-16">
-        {/* Sport Section */}
         <div>
           <div className="flex items-center gap-3 mb-4">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#0A84FF] to-[#38B6FF] flex items-center justify-center shadow-lg shadow-[#0A84FF]/30">
@@ -293,7 +282,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Coaching Section */}
         <div>
           <div className="flex items-center gap-3 mb-4">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#7C3AED] to-[#A855F7] flex items-center justify-center shadow-lg shadow-[#7C3AED]/30">
@@ -301,14 +289,13 @@ export default function DashboardPage() {
             </div>
             <h2 className="text-sm font-bold uppercase tracking-[0.15em] text-[#B8C0CC]">Coaching</h2>
           </div>
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {coachingLinks.map((link) => (
               <SectionCard key={link.href} {...link} />
             ))}
           </div>
         </div>
 
-        {/* Attendance / Présences Section */}
         <div>
           <div className="flex items-center gap-3 mb-4">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#10B981] to-[#34D399] flex items-center justify-center shadow-lg shadow-[#10B981]/30">
@@ -328,37 +315,34 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Wellness Section */}
         <div>
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#10B981] to-[#34D399] flex items-center justify-center shadow-lg shadow-[#10B981]/30">
-              <Heart className="w-4 h-4 text-white" />
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#0A84FF] to-[#00D4FF] flex items-center justify-center shadow-lg shadow-[#0A84FF]/30">
+              <QrCode className="w-4 h-4 text-white" />
             </div>
-            <h2 className="text-sm font-bold uppercase tracking-[0.15em] text-[#B8C0CC]">Bien-\u00eatre</h2>
+            <h2 className="text-sm font-bold uppercase tracking-[0.15em] text-[#B8C0CC]">Acc\u00e8s & Pr\u00e9sences</h2>
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {wellnessLinks.map((link) => (
+            {presenceLinks.map((link) => (
               <SectionCard key={link.href} {...link} />
             ))}
           </div>
         </div>
 
-        {/* Avantages Section */}
         <div>
           <div className="flex items-center gap-3 mb-4">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#C89B3C] to-[#E0B85D] flex items-center justify-center shadow-lg shadow-[#C89B3C]/30">
-              <Trophy className="w-4 h-4 text-white" />
+              <User className="w-4 h-4 text-white" />
             </div>
-            <h2 className="text-sm font-bold uppercase tracking-[0.15em] text-[#B8C0CC]">Avantages</h2>
+            <h2 className="text-sm font-bold uppercase tracking-[0.15em] text-[#B8C0CC]">Compte</h2>
           </div>
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-            {perksLinks.map((link) => (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {accountLinks.map((link) => (
               <SectionCard key={link.href} {...link} />
             ))}
           </div>
         </div>
 
-        {/* Motivational Section */}
         <div className="relative overflow-hidden rounded-3xl glass border border-[rgba(255,255,255,0.06)] p-8 md:p-12 mt-8">
           <div className="absolute inset-0 bg-gradient-to-br from-[rgba(10,132,255,0.08)] via-[rgba(200,155,60,0.05)] to-[rgba(124,58,237,0.08)]" />
           <div className="absolute top-0 right-0 w-64 h-64 bg-[#0A84FF]/5 rounded-full blur-3xl" />
