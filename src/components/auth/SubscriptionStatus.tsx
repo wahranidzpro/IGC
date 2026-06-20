@@ -1,14 +1,14 @@
 'use client';
 
-import { useAuth } from '@/lib/auth/context';
-import { CheckCircle, XCircle, Clock, AlertTriangle, RefreshCw, ShieldCheck } from 'lucide-react';
+import { useAuth, type AuthUser } from '@/lib/auth/context';
+import { CheckCircle, XCircle, Clock, AlertTriangle, RefreshCw, type LucideIcon } from 'lucide-react';
 
 export default function SubscriptionStatus() {
   const { accessStatus, checkAccess, user } = useAuth();
 
   if (!accessStatus || !user || !('role' in user)) return null;
 
-  const role = (user as any).role;
+  const role = (user as AuthUser).role;
 
   const getBadge = () => {
     if (!accessStatus) return null;
@@ -74,7 +74,7 @@ export default function SubscriptionStatus() {
 }
 
 export function StatusBadge({ status }: { status: string }) {
-  const config: Record<string, { icon: any; label: string; color: string; bg: string }> = {
+  const config: Record<string, { icon: LucideIcon; label: string; color: string; bg: string }> = {
     active: {
       icon: CheckCircle,
       label: 'Actif',

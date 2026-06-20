@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useCallback, useState } from "react"
+import { useEffect, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { X, AlertCircle } from "lucide-react"
+import { X } from "lucide-react"
 import VideoPlayer from "@/components/ui/VideoPlayer"
 
 interface VideoModalProps {
@@ -13,12 +13,7 @@ interface VideoModalProps {
 }
 
 export default function VideoModal({ src, title, isOpen, onClose }: VideoModalProps) {
-  const [error, setError] = useState(false)
   const isYouTube = src.includes("youtube.com/embed")
-
-  useEffect(() => {
-    setError(false)
-  }, [src])
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -42,6 +37,7 @@ export default function VideoModal({ src, title, isOpen, onClose }: VideoModalPr
     <AnimatePresence>
       {isOpen && (
         <motion.div
+          key={src}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -71,12 +67,7 @@ export default function VideoModal({ src, title, isOpen, onClose }: VideoModalPr
             className="relative w-full max-w-4xl aspect-video rounded-2xl overflow-hidden shadow-2xl bg-brand-black"
             onClick={(e) => e.stopPropagation()}
           >
-            {error ? (
-              <div className="flex flex-col items-center justify-center w-full h-full gap-3 text-gray-400">
-                <AlertCircle className="w-10 h-10 text-brand-red/60" />
-                <p className="text-sm">Vidéo temporairement indisponible</p>
-              </div>
-            ) : isYouTube ? (
+            {isYouTube ? (
               <iframe
                 src={src + "?autoplay=1&rel=0"}
                 className="w-full h-full"

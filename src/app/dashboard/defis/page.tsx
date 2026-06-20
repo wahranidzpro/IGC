@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Trophy, Medal, TrendingUp, Lock, Check } from "lucide-react"
+import { Medal } from "lucide-react"
 import BackButton from "@/components/dashboard/mobile/BackButton"
 
 const tabs = ["Défis", "Badges", "Classement"]

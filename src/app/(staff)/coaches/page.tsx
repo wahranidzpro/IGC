@@ -2,14 +2,17 @@
 
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, Coach as CoachType, Coach, DAYS, Member, Program } from '@/lib/db/dexie-db';
-import { Plus, X, User, Phone, Calendar, Dumbbell, ChevronDown, ChevronUp } from 'lucide-react';
+import { db, Coach as CoachType, Coach, DAYS, Member } from '@/lib/db/dexie-db';
+import { useAuth } from '@/lib/auth/context';
+import { logAudit } from '@/lib/audit';
+import { Plus, X, User, Phone, Calendar, Dumbbell } from 'lucide-react';
 import { formatPhoneDisplay } from '@/lib/whatsapp';
 import { ImportExportButtons, exportToXlsx, importFromXlsx } from '@/components/ui/ImportExportButtons';
 
 const HOURS = ['06:00','07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00','22:00','23:00','00:00'];
 
 export default function CoachesPage() {
+  const { role, user } = useAuth();
   const [showAddModal, setShowAddModal] = useState(false);
   const [editCoach, setEditCoach] = useState<CoachType | null>(null);
   const [formData, setFormData] = useState({ name: '', phone: '', programIds: [] as number[] });
@@ -42,7 +45,7 @@ export default function CoachesPage() {
     const handleSave = async () => {
       if (!formData.name) return;
       const availArray = Object.entries(availability)
-        .filter(([_, v]) => v.active)
+        .filter(([, v]) => v.active)
         .map(([day, v]) => ({ day, start: v.start, end: v.end }));
       const now = new Date();
       const data = {
@@ -57,8 +60,12 @@ export default function CoachesPage() {
       };
       if (editCoach?.id) {
         await db.coaches.update(editCoach.id, data);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await logAudit({ action: 'coach_edit', newValue: `Coach #${editCoach.id} - ${formData.name}` }, (user as any)?.username || 'unknown', role || 'unknown');
       } else {
         await db.coaches.add(data);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await logAudit({ action: 'coach_create', newValue: `Coach - ${formData.name}` }, (user as any)?.username || 'unknown', role || 'unknown');
       }
      resetForm();
      setShowAddModal(false);
@@ -66,6 +73,8 @@ export default function CoachesPage() {
 
   const handleDelete = async (id: number) => {
     await db.coaches.delete(id);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await logAudit({ action: 'coach_delete', newValue: `Coach #${id} supprimé` }, (user as any)?.username || 'unknown', role || 'unknown');
   };
 
   const toggleDay = (day: string) => {
@@ -94,8 +103,9 @@ export default function CoachesPage() {
         <div><h2 className="text-2xl font-bold text-white">Coachs</h2><p className="text-gray-400 mt-1">Gestion des coachs et planning</p></div>
         <div className="flex items-center gap-2">
           <ImportExportButtons
-            onExport={() => { const data = coaches?.map(({ id, ...rest }) => rest) || []; exportToXlsx(data, 'coachs'); }}
-            onImport={() => importFromXlsx<Coach>(async (items) => { await db.coaches.bulkAdd(items); })}
+            onExport={() => { const data = coaches?.map((c) => { const rest = { ...c }; delete rest.id; return rest; }) || []; exportToXlsx(data, 'coachs'); }}
+            onImport={() => importFromXlsx<Coach>(async (items) => { await db.coaches.bulkAdd(items); // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              await logAudit({ action: 'coach_create', newValue: `Import ${items.length} coach(es)` }, (user as any)?.username || 'unknown', role || 'unknown'); })}
           />
           <button onClick={() => { resetForm(); setShowAddModal(true); }} className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-medium rounded-xl hover:from-orange-600 hover:to-orange-700"><Plus className="w-5 h-5" /> Nouveau Coach</button>
         </div>

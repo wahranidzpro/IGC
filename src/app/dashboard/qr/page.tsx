@@ -11,7 +11,7 @@ import {
   ShieldAlert, RefreshCw, Smartphone,
   Monitor, Lock, Eye, QrCode,
 } from "lucide-react"
-import type { Membership, Profile } from "@/types"
+import type { Profile } from "@/types"
 
 const REFRESH_INTERVAL = 6000
 
@@ -20,28 +20,25 @@ export default function MemberQRPage() {
   const [token, setToken] = useState<string | null>(null)
   const [timeLeft, setTimeLeft] = useState(REFRESH_INTERVAL / 1000)
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [membership, setMembership] = useState<Membership | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
-  const [error, setError] = useState<string | null>(null)
 
   const [deviceChecked, setDeviceChecked] = useState(false)
   const [deviceBlocked, setDeviceBlocked] = useState(false)
-  const [deviceBlockReason, setDeviceBlockReason] = useState("")
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [deviceBlockReason, setDeviceBlockReason] = useState<string | null>(null)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [error, setError] = useState<string | null>(null)
 
   const [isHidden, setIsHidden] = useState(false)
-  const [isMobile, setIsMobile] = useState(true)
+  const [isMobile] = useState(isMobileDevice())
   const [flashOverlay, setFlashOverlay] = useState(false)
   const qrRef = useRef<HTMLDivElement>(null)
 
   const memberName = profile?.firstName
     ? `${profile.firstName} ${profile.lastName || ""}`.trim()
     : user && "name" in user
-      ? (user as any).name
+      ? (user as { name: string }).name
       : "Membre"
-
-  useEffect(() => {
-    setIsMobile(isMobileDevice())
-  }, [])
 
   useEffect(() => {
     if (!user) return
@@ -50,18 +47,6 @@ export default function MemberQRPage() {
     async function load() {
       const { data: p } = await supabase.from("profiles").select("first_name, last_name").eq("id", uid).maybeSingle()
       if (p) setProfile(mapRow<Profile>(p))
-
-      const { data: m } = await supabase.from("members").select("id").eq("profile_id", uid).maybeSingle()
-      const memberId = mapRow<{ id?: string }>(m as unknown as Record<string, unknown> | null)?.id
-      if (memberId) {
-        const { data: ms } = await supabase
-          .from("memberships")
-          .select("*")
-          .eq("member_id", memberId)
-          .eq("status", "active")
-          .maybeSingle()
-        if (ms) setMembership(mapRow<Membership>(ms as unknown as Record<string, unknown> | null) as Membership)
-      }
     }
     load()
   }, [user])
@@ -159,10 +144,10 @@ export default function MemberQRPage() {
   }, [])
 
   useEffect(() => {
-    generateToken()
+    const init = setTimeout(() => generateToken(), 0)
     const refresh = setInterval(generateToken, REFRESH_INTERVAL)
     const tick = setInterval(() => setTimeLeft((p) => (p > 0 ? p - 1 : 0)), 1000)
-    return () => { clearInterval(refresh); clearInterval(tick) }
+    return () => { clearTimeout(init); clearInterval(refresh); clearInterval(tick) }
   }, [generateToken])
 
   const progress = (timeLeft / (REFRESH_INTERVAL / 1000)) * 100

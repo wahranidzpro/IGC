@@ -2,28 +2,25 @@
 
 import { useState, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, AuditLog } from '@/lib/db/dexie-db';
+import { db } from '@/lib/db/dexie-db';
 import { useAuth } from '@/lib/auth/context';
 import { useRouter } from 'next/navigation';
-import { Shield, Search, Filter, AlertTriangle, Clock, User, FileText, ArrowUpRight, Download } from 'lucide-react';
+import { Shield, Search, AlertTriangle, Clock, User, FileText, Download } from 'lucide-react';
 import { ACTION_LABELS, detectSuspicious } from '@/lib/audit';
+import PaginationControls from '@/components/ui/PaginationControls';
 import * as XLSX from 'xlsx';
 
 export default function AuditPage() {
-  const { role, user } = useAuth();
+  const { role } = useAuth();
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [actionFilter, setActionFilter] = useState<string>('all');
   const [userFilter, setUserFilter] = useState<string>('all');
   const [suspiciousOnly, setSuspiciousOnly] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 50;
 
   const allLogs = useLiveQuery(() => db.auditLogs.orderBy('createdAt').reverse().toArray(), []);
-
-  if (role !== 'admin') {
-    router.push('/');
-    return null;
-  }
-  const members = useLiveQuery(() => db.members.toArray(), []);
 
   const filteredLogs = useMemo(() => {
     if (!allLogs) return [];
@@ -45,6 +42,15 @@ export default function AuditPage() {
     });
   }, [allLogs, search, actionFilter, userFilter, suspiciousOnly]);
 
+  const totalPages = useMemo(() => Math.max(1, Math.ceil(filteredLogs.length / PAGE_SIZE)), [filteredLogs.length]);
+
+  const safeCurrentPage = useMemo(() => Math.min(currentPage, totalPages), [currentPage, totalPages]);
+
+  const paginatedLogs = useMemo(() => {
+    const start = (safeCurrentPage - 1) * PAGE_SIZE;
+    return filteredLogs.slice(start, start + PAGE_SIZE);
+  }, [filteredLogs, safeCurrentPage, PAGE_SIZE]);
+
   const uniqueUsers = useMemo(() => {
     if (!allLogs) return [];
     return [...new Set(allLogs.map(l => l.performedBy))];
@@ -60,6 +66,11 @@ export default function AuditPage() {
       today: allLogs.filter(l => new Date(l.createdAt) >= today).length,
     };
   }, [allLogs]);
+
+  if (role !== 'admin') {
+    router.push('/');
+    return null;
+  }
 
   const exportLogs = () => {
     const data = filteredLogs.map(l => ({
@@ -78,13 +89,6 @@ export default function AuditPage() {
     XLSX.writeFile(wb, `audit_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
-  const getMemberLink = (memberId?: number) => {
-    if (!memberId) return null;
-    const member = members?.find(m => m.id === memberId);
-    if (!member) return null;
-    return `${member.firstName} ${member.lastName}`;
-  };
-
   const formatTime = (date: Date) => {
     return new Date(date).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
@@ -95,7 +99,7 @@ export default function AuditPage() {
         <div>
           <h2 className="text-2xl font-bold text-white flex items-center gap-3">
             <Shield className="w-7 h-7 text-orange-400" />
-            Journal d'Audit
+            Journal d&apos;Audit
           </h2>
           <p className="text-gray-400 mt-1">Historique complet des actions sur les membres</p>
         </div>
@@ -128,7 +132,7 @@ export default function AuditPage() {
             <Clock className="w-8 h-8 text-green-400" />
             <div>
               <p className="text-2xl font-bold text-green-400">{stats.today}</p>
-              <p className="text-sm text-gray-400">Aujourd'hui</p>
+              <p className="text-sm text-gray-400">Aujourd&apos;hui</p>
             </div>
           </div>
         </div>
@@ -167,10 +171,10 @@ export default function AuditPage() {
             </tr>
           </thead>
           <tbody className="case-normal">
-            {filteredLogs.length === 0 ? (
-              <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-500">Aucun log d'audit</td></tr>
+            {paginatedLogs.length === 0 ? (
+              <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-500">Aucun log d&apos;audit</td></tr>
             ) : (
-              filteredLogs.map(log => {
+              paginatedLogs.map(log => {
                 const flag = detectSuspicious(log);
                 return (
                   <tr key={log.id} className={`border-b border-gray-800/50 hover:bg-gray-800/30 ${log.isSuspicious ? 'bg-red-500/5' : ''}`}>
@@ -217,6 +221,7 @@ export default function AuditPage() {
         </table>
       </div>
 
+      <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
       <p className="text-xs text-gray-600 text-center">{filteredLogs.length} entree(s) sur {stats.total}</p>
     </div>
   );

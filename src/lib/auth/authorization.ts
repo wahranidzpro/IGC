@@ -25,14 +25,25 @@ export async function canAccessApp(userId?: string | null): Promise<AccessResult
   }
 
   try {
+    const client = supabase as unknown as {
+      from: (t: string) => {
+        select: (c: string) => {
+          eq: (k: string, v: string) => {
+            maybeSingle: () => Promise<{ data: Record<string, unknown> | null; error: { message: string } | null }>;
+          };
+        };
+      };
+      rpc: (fn: string, args: Record<string, string>) => Promise<{ data: unknown; error: { message: string } | null }>;
+    };
+
     // Check user role first — staff always have access
-    const { data: gymUser, error: userError } = await (supabase as any)
+    const { data: gymUser, error: userError } = await client
       .from('gym_users')
       .select('role')
       .eq('auth_user_id', userId)
       .maybeSingle();
 
-    if (!userError && gymUser?.role && ['admin', 'reception', 'coach'].includes(gymUser.role)) {
+    if (!userError && gymUser?.role && ['admin', 'reception', 'coach'].includes(gymUser.role as string)) {
       logger.info('[AUTHZ] Staff access granted', { userId: userId.substring(0, 8), role: gymUser.role });
       return {
         granted: true,
@@ -41,7 +52,7 @@ export async function canAccessApp(userId?: string | null): Promise<AccessResult
       };
     }
 
-    const { data, error } = await (supabase.rpc as any)('can_access_app', { p_user_id: userId });
+    const { data, error } = await client.rpc('can_access_app', { p_user_id: userId });
 
     if (error) {
       logger.error('[AUTHZ] RPC error', error);

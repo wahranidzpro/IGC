@@ -5,13 +5,13 @@ import { logger } from "@/lib/logger"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth/context"
 import { createClient } from "@/lib/supabase/client"
-import { mapRow, mapRows } from "@/lib/utils/transform"
+import { mapRow } from "@/lib/utils/transform"
 import Image from "next/image"
 import {
   MessageSquare, Star, Calendar, Award, Users, Clock,
-  ChevronRight, Dumbbell, Apple, Heart, Zap, UserX,
+  Dumbbell, Apple, Zap, UserX,
 } from "lucide-react"
-import type { Coach, MemberCoach } from "@/types"
+import type { Coach } from "@/types"
 
 export default function CoachPage() {
   const router = useRouter()
@@ -19,6 +19,7 @@ export default function CoachPage() {
   const [coach, setCoach] = useState<{ coach: Coach; profile: { firstName: string; lastName: string; email: string; avatarUrl: string | null } } | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [yearsOfExperience, setYearsOfExperience] = useState(5)
 
   useEffect(() => {
     if (!user) return
@@ -46,7 +47,12 @@ export default function CoachPage() {
 
         const { data: p } = await supabase.from("profiles").select("first_name, last_name, email, avatar_url").eq("id", coachRow.profileId).maybeSingle()
         const profileRow = mapRow<{ firstName: string; lastName: string; email: string; avatarUrl: string | null }>(p as unknown as Record<string, unknown> | null)
-        if (profileRow) setCoach({ coach: coachRow, profile: profileRow })
+        if (profileRow) {
+          setCoach({ coach: coachRow, profile: profileRow })
+          if (coachRow.createdAt) {
+            setYearsOfExperience(Math.floor((Date.now() - new Date(coachRow.createdAt).getTime()) / (365.25 * 24 * 60 * 60 * 1000)))
+          }
+        }
       } catch (e) {
         setError("Impossible de charger les informations du coach")
         logger.error('Coach error', e)
@@ -138,7 +144,7 @@ export default function CoachPage() {
           <div className="glass rounded-xl border border-white/10 p-4">
             <div className="grid grid-cols-3 gap-3">
               {[
-                { icon: Award, label: "Expérience", value: `${coachData.createdAt ? Math.floor((Date.now() - new Date(coachData.createdAt).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : 5}+ ans` },
+                { icon: Award, label: "Expérience", value: `${yearsOfExperience}+ ans` },
                 { icon: Users, label: "Athlètes", value: clients },
                 { icon: Clock, label: "Séances", value: sessions },
               ].map((s, i) => (

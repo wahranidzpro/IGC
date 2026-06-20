@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { CalendarDays, Clock, Users, Dumbbell, ChevronRight, Search, Filter } from "lucide-react"
+import { CalendarDays, Clock, Users, Dumbbell, Search, Filter } from "lucide-react"
 
 const classes = [
   { name: "CrossFit", coach: "Karim", time: "08:00", duration: "45min", level: "Tous niveaux", spots: 5, icon: Dumbbell },

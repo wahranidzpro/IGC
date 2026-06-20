@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -6,7 +6,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const { createServerSupabaseClient } = await import('@/lib/supabase/server');
     const sb = await createServerSupabaseClient();
@@ -60,7 +60,8 @@ export async function GET(request: NextRequest) {
       message: 'Félicitations ! Vous êtes maintenant admin. Déconnectez-vous et reconnectez-vous pour accéder à /admin.',
       redirect: '/login',
     });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Erreur inconnue' }, { status: 500 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Erreur inconnue';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

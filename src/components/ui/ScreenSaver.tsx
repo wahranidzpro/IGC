@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useInactivity } from '@/hooks/useInactivity';
 
 interface ScreenSaverProps {
@@ -13,7 +14,8 @@ export default function ScreenSaver({ delayMs = 20000 }: ScreenSaverProps) {
   const [time, setTime] = useState(() => new Date());
 
   useEffect(() => {
-    setMounted(true);
+    const timer = setTimeout(() => setMounted(true), 0);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -43,9 +45,11 @@ export default function ScreenSaver({ delayMs = 20000 }: ScreenSaverProps) {
     >
       {/* Background rotating logo */}
       <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none">
-        <img
+        <Image
           src="/logo-transparent.png"
           alt=""
+          width={500}
+          height={500}
           className="w-[40vw] max-w-[500px] opacity-[0.25] animate-earth-rotate"
           style={{ filter: 'drop-shadow(0 0 80px rgba(249,115,22,0.15))' }}
         />

@@ -3,7 +3,8 @@
 import { useEffect, useState, useMemo } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { mapRow, mapRows } from "@/lib/utils/transform"
-import { Search, UserCheck, Mail, Phone, Calendar, Users, Shield, ChevronDown, ChevronRight } from "lucide-react"
+import { Search, UserCheck, Mail, Phone, Calendar, Users } from "lucide-react"
+import PaginationControls from "@/components/ui/PaginationControls"
 import { StatusBadge } from "@/components/auth/SubscriptionStatus"
 
 interface MemberRow {
@@ -36,7 +37,8 @@ export default function AdminMembresPage() {
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [loading, setLoading] = useState(true)
-  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const PAGE_SIZE = 20
 
   useEffect(() => {
     async function load() {
@@ -48,7 +50,9 @@ export default function AdminMembresPage() {
         .limit(50)
       if (data) {
         const enriched: MemberRow[] = await Promise.all(
-          mapRows<any>(data).map(async (m) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          mapRows<any>(data).map(async (m: Record<string, any>) => {
             const { data: ms } = await supabase
               .from("memberships")
               .select("plan_name, end_date, status")
@@ -83,6 +87,11 @@ export default function AdminMembresPage() {
     if (statusFilter !== "all") list = list.filter((m) => m.status === statusFilter)
     return list
   }, [members, search, statusFilter])
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
+  const paginated = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+
+  useEffect(() => { setTimeout(() => setCurrentPage(1)) }, [search, statusFilter])
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -132,64 +141,67 @@ export default function AdminMembresPage() {
           <p className="text-[#A8B2C7]">Aucun membre trouv\u00e9</p>
         </div>
       ) : (
-        <div className="glass rounded-2xl border border-[rgba(255,255,255,0.06)] overflow-hidden">
-          {/* Desktop table header */}
-          <div className="hidden lg:grid grid-cols-12 gap-4 px-6 py-4 text-xs font-bold uppercase tracking-wider text-[#A8B2C7] border-b border-[rgba(255,255,255,0.06)]">
-            <div className="col-span-4">Membre</div>
-            <div className="col-span-3">Contact</div>
-            <div className="col-span-2">Abonnement</div>
-            <div className="col-span-1 text-center">Statut</div>
-            <div className="col-span-2 text-right">Expiration</div>
-          </div>
+        <>
+          <div className="glass rounded-2xl border border-[rgba(255,255,255,0.06)] overflow-hidden">
+            {/* Desktop table header */}
+            <div className="hidden lg:grid grid-cols-12 gap-4 px-6 py-4 text-xs font-bold uppercase tracking-wider text-[#A8B2C7] border-b border-[rgba(255,255,255,0.06)]">
+              <div className="col-span-4">Membre</div>
+              <div className="col-span-3">Contact</div>
+              <div className="col-span-2">Abonnement</div>
+              <div className="col-span-1 text-center">Statut</div>
+              <div className="col-span-2 text-right">Expiration</div>
+            </div>
 
-          {filtered.map((m) => {
-            return (
-              <div key={m.id} className="border-b border-[rgba(255,255,255,0.04)] last:border-0">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 px-6 py-4 items-center hover:bg-[rgba(255,255,255,0.02)] transition-colors">
-                  <div className="col-span-4 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0A84FF]/20 to-[#00D4FF]/10 flex items-center justify-center shrink-0 border border-[rgba(10,132,255,0.15)]">
-                      <UserCheck className="w-5 h-5 text-[#0A84FF]" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-bold text-white truncate">
-                        {m.profile?.firstName} {m.profile?.lastName}
-                      </p>
-                      <p className="text-[#A8B2C7] text-xs">ID: {m.id.slice(0, 8)}</p>
-                    </div>
-                  </div>
-                  <div className="col-span-3 text-sm text-[#A8B2C7] space-y-0.5">
-                    <div className="flex items-center gap-1.5">
-                      <Mail className="w-3 h-3 shrink-0" />
-                      <span className="truncate">{m.profile?.email}</span>
-                    </div>
-                    {m.profile?.phone && (
-                      <div className="flex items-center gap-1.5">
-                        <Phone className="w-3 h-3 shrink-0" />
-                        <span>{m.profile.phone}</span>
+            {paginated.map((m) => {
+              return (
+                <div key={m.id} className="border-b border-[rgba(255,255,255,0.04)] last:border-0">
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 px-6 py-4 items-center hover:bg-[rgba(255,255,255,0.02)] transition-colors">
+                    <div className="col-span-4 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0A84FF]/20 to-[#00D4FF]/10 flex items-center justify-center shrink-0 border border-[rgba(10,132,255,0.15)]">
+                        <UserCheck className="w-5 h-5 text-[#0A84FF]" />
                       </div>
-                    )}
-                  </div>
-                  <div className="col-span-2">
-                    <span className="text-sm font-semibold text-white">
-                      {m.membership?.planName || "—"}
-                    </span>
-                  </div>
-                  <div className="col-span-1 text-center">
-                    <StatusBadge status={m.status} />
-                  </div>
-                  <div className="col-span-2 text-right text-sm text-[#A8B2C7]">
-                    {m.membership ? (
-                      <span className="flex items-center justify-end gap-1.5">
-                        <Calendar className="w-3 h-3" />
-                        {new Date(m.membership.endDate).toLocaleDateString("fr-FR")}
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-white truncate">
+                          {m.profile?.firstName} {m.profile?.lastName}
+                        </p>
+                        <p className="text-[#A8B2C7] text-xs">ID: {m.id.slice(0, 8)}</p>
+                      </div>
+                    </div>
+                    <div className="col-span-3 text-sm text-[#A8B2C7] space-y-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <Mail className="w-3 h-3 shrink-0" />
+                        <span className="truncate">{m.profile?.email}</span>
+                      </div>
+                      {m.profile?.phone && (
+                        <div className="flex items-center gap-1.5">
+                          <Phone className="w-3 h-3 shrink-0" />
+                          <span>{m.profile.phone}</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-sm font-semibold text-white">
+                        {m.membership?.planName || "—"}
                       </span>
-                    ) : "—"}
+                    </div>
+                    <div className="col-span-1 text-center">
+                      <StatusBadge status={m.status} />
+                    </div>
+                    <div className="col-span-2 text-right text-sm text-[#A8B2C7]">
+                      {m.membership ? (
+                        <span className="flex items-center justify-end gap-1.5">
+                          <Calendar className="w-3 h-3" />
+                          {new Date(m.membership.endDate).toLocaleDateString("fr-FR")}
+                        </span>
+                      ) : "—"}
+                    </div>
                   </div>
                 </div>
-              </div>
-            )
-          })}
-        </div>
+              )
+            })}
+          </div>
+          <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+        </>
       )}
     </div>
   )

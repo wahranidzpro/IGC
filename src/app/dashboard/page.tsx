@@ -6,14 +6,15 @@ import { useEffect, useState, useMemo } from "react"
 import { logger } from "@/lib/logger"
 import { createClient } from "@/lib/supabase/client"
 import { mapRow, mapRows } from "@/lib/utils/transform"
-import Image from "next/image"
 import { useRouter } from "next/navigation"
 import type { Profile, Member, Membership, Attendance } from "@/types"
 import {
-  Dumbbell, TrendingUp, DoorOpen, CreditCard, Bot, Users,
-  CalendarDays, Apple, QrCode, Gift, UserPlus, User,
-  ChevronRight, Zap, Building2, Trophy, Sparkles, Award,
-  Flame, Heart, Target, ArrowRight, Play, Star,
+  Dumbbell, DoorOpen, Users,
+  CalendarDays, QrCode, User,
+  ChevronRight, Sparkles, Award,
+  Flame, Target, ArrowRight, Play,
+  TrendingUp, Trophy, Bot, Apple,
+  CreditCard, Gift, UserPlus,
 } from "lucide-react"
 import AttendanceList from "@/components/dashboard/AttendanceList"
 
@@ -43,8 +44,8 @@ const accountLinks = [
   { label: "Parrainage", href: "/dashboard/referral", icon: UserPlus, desc: "Parrainez & gagnez", color: "from-[#00D4FF] to-[#0A84FF]", emoji: "\uD83E\uDD1D" },
 ]
 
-function SectionCard({ label, href, icon: Icon, desc, color, emoji }: {
-  label: string; href: string; icon: any; desc: string; color: string; emoji?: string
+function SectionCard({ label, href, icon: Icon, desc, color }: {
+  label: string; href: string; icon: React.ComponentType<{ className?: string }>; desc: string; color: string
 }) {
   const router = useRouter()
   return (
@@ -68,22 +69,19 @@ function SectionCard({ label, href, icon: Icon, desc, color, emoji }: {
 
 export default function DashboardPage() {
   const { user, role } = useAuth()
-  const isAdherent = role === "adherent"
-
-  if (isAdherent) {
-    return <MobileHome />
-  }
-
   const router = useRouter()
   const [profile, setProfile] = useState<Profile | null>(null)
-  const [member, setMember] = useState<Member | null>(null)
+  const [, setMember] = useState<Member | null>(null)
   const [membership, setMembership] = useState<Membership | null>(null)
   const [attendance, setAttendance] = useState<Attendance[]>([])
   const [loading, setLoading] = useState(true)
+  const [daysLeft, setDaysLeft] = useState(0)
+  const [totalDays, setTotalDays] = useState(30)
+  const isAdherent = role === "adherent"
 
   useEffect(() => {
     if (!user) return
-    const uid = user?.id as string
+    const uid = user.id as string
     const supabase = createClient()
 
     async function load() {
@@ -102,7 +100,13 @@ export default function DashboardPage() {
             .eq("member_id", memberRow.id)
             .eq("status", "active")
             .maybeSingle()
-          if (ms) setMembership(mapRow<Membership>(ms))
+          if (ms) {
+            const membershipRow = mapRow<Membership>(ms)
+            setMembership(membershipRow)
+            const now = Date.now()
+            setDaysLeft(membershipRow ? Math.ceil((new Date(membershipRow.endDate).getTime() - now) / (1000 * 60 * 60 * 24)) : 0)
+            setTotalDays(membershipRow ? Math.ceil((new Date(membershipRow.endDate).getTime() - new Date(membershipRow.startDate).getTime()) / (1000 * 60 * 60 * 24)) : 0)
+          }
 
           const now = new Date()
           const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
@@ -123,14 +127,12 @@ export default function DashboardPage() {
     load()
   }, [user])
 
-  const daysLeft = membership
-    ? Math.ceil((new Date(membership.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-    : 0
-  const totalDays = membership
-    ? Math.ceil((new Date(membership.endDate).getTime() - new Date(membership.startDate).getTime()) / (1000 * 60 * 60 * 24))
-    : 30
-  const entryCount = attendance.filter((a) => a.type === "entry").length
-  const progressPct = membership ? Math.min(100, Math.max(0, ((totalDays - Math.max(0, daysLeft)) / totalDays) * 100)) : 0
+  const entryCount = useMemo(() => attendance.filter((a) => a.type === "entry").length, [attendance])
+  const progressPct = useMemo(() => membership ? Math.min(100, Math.max(0, ((totalDays - Math.max(0, daysLeft)) / totalDays) * 100)) : 0, [membership, totalDays, daysLeft])
+
+  if (isAdherent) {
+    return <MobileHome />
+  }
 
   if (loading) {
     return (
@@ -208,7 +210,7 @@ export default function DashboardPage() {
             </span>
           </h1>
           <p className="text-lg text-[#B8C0CC] mt-2 max-w-xl">
-            Pr\u00eat \u00e0 d\u00e9passer tes limites aujourd'hui\u202f?
+            Pr\u00eat \u00e0 d\u00e9passer tes limites aujourd&apos;hui\u202f?
           </p>
 
           <div className="flex flex-wrap gap-3 mt-5">
@@ -360,7 +362,7 @@ export default function DashboardPage() {
             </h2>
             <p className="text-[#B8C0CC] text-sm max-w-lg mx-auto mb-6">
               Chaque s\u00e9ance compte. Chaque effort te rapproche de ton objectif. 
-              L'\u00e9chec n'est pas une option.
+              L&apos;\u00e9chec n&apos;est pas une option.
             </p>
             <div className="flex items-center justify-center gap-3">
               <button

@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useCallback, useState } from "react"
+import Image from "next/image"
 import { motion, AnimatePresence } from "framer-motion"
 import { X, ChevronLeft, ChevronRight } from "lucide-react"
 
@@ -87,13 +88,15 @@ export default function Lightbox({ images, index, isOpen, onClose, onIndexChange
             initial={{ opacity: 0, scale: 0.85 }}
             animate={{ opacity: loaded ? 1 : 0.3, scale: 1 }}
             transition={{ duration: 0.3 }}
-            className="max-w-[90vw] max-h-[85vh] flex items-center justify-center"
+            className="max-w-[90vw] max-h-[85vh] w-full h-full relative flex items-center justify-center"
             onClick={(e) => e.stopPropagation()}
           >
-            <img
+            <Image
               src={images[index]?.src}
               alt={images[index]?.alt}
-              className="max-w-full max-h-[85vh] object-contain rounded-lg"
+              fill
+              className="object-contain rounded-lg"
+              sizes="90vw"
               onLoad={() => setLoaded(true)}
             />
           </motion.div>

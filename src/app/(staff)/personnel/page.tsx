@@ -2,15 +2,16 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, Employee, Absence, PayrollRecord, ContractType, AbsenceType } from '@/lib/db/dexie-db';
+import { db, Employee, Absence, PayrollRecord, ContractType, AbsenceType, Coach, PinUser } from '@/lib/db/dexie-db';
 import { useAuth } from '@/lib/auth/context';
+import { logAudit } from '@/lib/audit';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import {
   Users, Calendar, DollarSign, Search, Plus, X, Edit, Trash2,
-  CheckCircle, XCircle, Ban, Clock, User, Phone, Mail, Briefcase,
-  Building2, MapPin, CreditCard, Shield, ChevronDown, ChevronRight,
-  ChevronLeft, AlertTriangle, RefreshCw, Download, FileText, Award,
-  Banknote, CalendarDays, UserCheck, Filter, ArrowUpDown, Hash, Stethoscope
+  CheckCircle, XCircle, User, Shield, ChevronDown, ChevronRight,
+  AlertTriangle, FileText, Award,
+  Banknote, UserCheck
 } from 'lucide-react';
 
 type Tab = 'employees' | 'absences' | 'payroll';
@@ -36,12 +37,12 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function PersonnelPage() {
-  const { role } = useAuth();
+  const { user, role } = useAuth();
   const router = useRouter();
 
   const [tab, setTab] = useState<Tab>('employees');
   const [search, setSearch] = useState('');
-  const [filterRole, setFilterRole] = useState<string>('all');
+  const [filterRole] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
 
   const employees = useLiveQuery(() => db.employees.toArray(), []);
@@ -49,7 +50,6 @@ export default function PersonnelPage() {
   const payrollRecords = useLiveQuery(() => db.payrollRecords.toArray(), []);
   const coaches = useLiveQuery(() => db.coaches.toArray(), []);
   const gymUsers = useLiveQuery(() => db.pinUsers.toArray(), []);
-  const payments = useLiveQuery(() => db.payments.toArray(), []);
 
   const [showEmployeeModal, setShowEmployeeModal] = useState(false);
   const [showAbsenceModal, setShowAbsenceModal] = useState(false);
@@ -71,8 +71,6 @@ export default function PersonnelPage() {
   const totalPayroll = useMemo(() => employees?.reduce((s, e) => s + (e.baseSalary || 0), 0) || 0, [employees]);
 
   const pendingAbsences = useMemo(() => absences?.filter(a => a.status === 'pending').length || 0, [absences]);
-
-  const genderLabel = (g: string) => g === 'male' ? 'Homme' : g === 'female' ? 'Femme' : 'Autre';
 
   const filteredEmployees = useMemo(() => {
     let list = employees || [];
@@ -111,25 +109,26 @@ export default function PersonnelPage() {
 
   const getCoachName = (coachId?: number) => coaches?.find(c => c.id === coachId)?.name;
   const getEmployeeName = (empId: number) => employees?.find(e => e.id === empId)?.name || 'N/A';
-  const getEmployeeAbsences = (empId: number) => absences?.filter(a => a.employeeId === empId) || [];
-  const getEmployeePayroll = (empId: number) => payrollRecords?.filter(p => p.employeeId === empId) || [];
-
-  const positions = useMemo(() => [...new Set(employees?.map(e => e.position).filter(Boolean))], [employees]);
-
   const handleSaveEmployee = async (data: Partial<Employee>) => {
     try {
+      const performer = (user as { username?: string })?.username || 'unknown';
+      const perfRole = role || 'unknown';
       const now = new Date();
       if (editingEmployee && data.id) {
         await db.employees.update(data.id, { ...data, updatedAt: now });
+        logAudit({ action: 'personnel_edit', newValue: data.name, oldValue: editingEmployee.name }, performer, perfRole);
         notify('success', 'Employé modifié');
       } else {
-        await db.employees.add({
-          ...data as any,
+         
+        const id = await db.employees.add({
+          ...data,
+          name: data.name!,
           isActive: true,
           createdAt: now,
           updatedAt: now,
           syncStatus: 'pending',
-        });
+        } as Employee);
+        logAudit({ action: 'personnel_create', memberId: id as number, newValue: data.name }, performer, perfRole);
         notify('success', 'Employé ajouté');
       }
       setShowEmployeeModal(false);
@@ -141,20 +140,25 @@ export default function PersonnelPage() {
 
   const handleDeleteEmployee = async (id: number) => {
     if (!confirm('Supprimer cet employé ?')) return;
+    const emp = employees?.find(e => e.id === id);
     await db.employees.delete(id);
+    logAudit({ action: 'personnel_delete', newValue: emp?.name }, (user as { username?: string })?.username || 'unknown', role || 'unknown');
     notify('success', 'Employé supprimé');
   };
 
   const handleSaveAbsence = async (data: Partial<Absence>) => {
     try {
       const now = new Date();
+       
       await db.absences.add({
-        ...data as any,
+        ...data,
+        employeeId: data.employeeId!,
         status: 'pending',
         createdAt: now,
         updatedAt: now,
         syncStatus: 'pending',
-      });
+      } as Absence);
+      logAudit({ action: 'absence_create', newValue: `${data.type} (${data.employeeId})` }, (user as { username?: string })?.username || 'unknown', role || 'unknown');
       notify('success', 'Absence ajoutée');
       setShowAbsenceModal(false);
     } catch {
@@ -164,6 +168,7 @@ export default function PersonnelPage() {
 
   const handleAbsenceAction = async (id: number, status: 'approved' | 'rejected') => {
     await db.absences.update(id, { status, updatedAt: new Date() });
+    logAudit({ action: status === 'approved' ? 'absence_approve' : 'absence_reject', reason: `Absence #${id}` }, (user as { username?: string })?.username || 'unknown', role || 'unknown');
     notify('success', status === 'approved' ? 'Absence approuvée' : 'Absence refusée');
   };
 
@@ -209,6 +214,7 @@ export default function PersonnelPage() {
       });
       count++;
     }
+    logAudit({ action: 'payroll_generate', newValue: `${count} fiches - ${selectedMonth}` }, (user as { username?: string })?.username || 'unknown', role || 'unknown');
     notify('success', `${count} fiche(s) de paie générée(s)`);
   };
 
@@ -222,12 +228,13 @@ export default function PersonnelPage() {
     await db.payments.add({
       memberId: record.employeeId,
       amount: record.netSalary,
-      type: 'subscription' as any,
-      mode: 'cash' as any,
+      type: 'subscription',
+      mode: 'cash',
       date: new Date(),
       description: `Salaire ${record.period} - ${emp?.name || 'N/A'}`,
       createdAt: new Date(),
-    } as any);
+    });
+    logAudit({ action: 'payroll_mark_paid', newValue: `${record.netSalary} DA - ${emp?.name || 'N/A'} (${record.period})` }, (user as { username?: string })?.username || 'unknown', role || 'unknown');
     notify('success', `Paie marquée payée : ${record.netSalary.toLocaleString()} DA`);
   };
 
@@ -539,7 +546,7 @@ function StatCard({ icon, label, value, color, bg }: { icon: React.ReactNode; la
 }
 
 function EmployeeRow({ employee, coachName, gymUser, isExpanded, onToggle, onEdit, onDelete }: {
-  employee: Employee; coachName?: string; gymUser?: any; isExpanded: boolean;
+  employee: Employee; coachName?: string; gymUser?: PinUser; isExpanded: boolean;
   onToggle: () => void; onEdit: () => void; onDelete: () => void;
 }) {
   return (
@@ -548,7 +555,7 @@ function EmployeeRow({ employee, coachName, gymUser, isExpanded, onToggle, onEdi
         <div className="flex items-center px-5 py-3 cursor-pointer" onClick={onToggle}>
           <div className="flex-1 flex items-center gap-4">
             <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center overflow-hidden flex-shrink-0">
-              {employee.photo ? <img src={employee.photo} alt="" className="w-full h-full object-cover" /> : <User className="w-5 h-5 text-gray-500" />}
+              {employee.photo ? <Image src={employee.photo} alt="" width={40} height={40} className="w-full h-full object-cover" unoptimized /> : <User className="w-5 h-5 text-gray-500" />}
             </div>
             <div className="min-w-0">
               <p className="text-white font-medium text-sm truncate">{employee.name}</p>
@@ -592,7 +599,7 @@ function EmployeeRow({ employee, coachName, gymUser, isExpanded, onToggle, onEdi
 }
 
 function EmployeeFormModal({ employee, coaches, onClose, onSave }: {
-  employee: Employee | null; coaches: any[]; onClose: () => void;
+  employee: Employee | null; coaches: Coach[]; onClose: () => void;
   onSave: (data: Partial<Employee>) => Promise<void>;
 }) {
   const [form, setForm] = useState<Partial<Employee>>(employee || {
@@ -675,7 +682,7 @@ function EmployeeFormModal({ employee, coaches, onClose, onSave }: {
             </div>
             <div>
               <label className="block text-sm text-gray-400 mb-1">Genre</label>
-              <select value={form.gender} onChange={e => setForm({...form, gender: e.target.value as any})}
+              <select value={form.gender} onChange={e => setForm({...form, gender: e.target.value as 'male' | 'female' | 'other'})}
                 className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm">
                 <option value="male">Homme</option>
                 <option value="female">Femme</option>

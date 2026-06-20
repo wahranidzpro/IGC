@@ -7,7 +7,7 @@ import { mapRow, mapRows } from "@/lib/utils/transform"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import {
-  Users, Calendar, ClipboardList, MessageSquare,
+  Users, Calendar, ClipboardList,
   Clock, AlertCircle, RefreshCw,
   Dumbbell, Plus, FileText, MessageCircle, TrendingUp,
 } from "lucide-react"
@@ -20,6 +20,7 @@ export default function CoachDashboard() {
   const { user } = useAuth()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [, setCoachData] = useState<{ id: string; speciality: string | null; bio: string | null; phone: string | null } | null>(null)
   const [stats, setStats] = useState({
     totalMembers: 0,
     activeMembers: 0,
@@ -27,12 +28,12 @@ export default function CoachDashboard() {
     programsCount: 0,
     unreadMessages: 0,
   })
-  const [coachData, setCoachData] = useState<{ id: string; speciality: string | null; bio: string | null; phone: string | null } | null>(null)
+
   const [upcomingSessions, setUpcomingSessions] = useState<Schedule[]>([])
   const [recentMembers, setRecentMembers] = useState<{ id: string; name: string; avatar: string | null; status: string; inGym: boolean }[]>([])
 
   useEffect(() => {
-    if (!user) { setLoading(false); return }
+    if (!user) { const t = setTimeout(() => setLoading(false), 0); return () => clearTimeout(t) }
     const uid = user?.id as string
     const supabase = createClient()
 
@@ -139,7 +140,6 @@ export default function CoachDashboard() {
     load()
   }, [user])
 
-  const inGymCount = useMemo(() => recentMembers.filter((m) => m.inGym).length, [recentMembers])
   const revenue = useMemo(() => {
     const val = stats.activeMembers * 500
     return `${val.toLocaleString("fr-FR")} DH`
@@ -220,7 +220,7 @@ export default function CoachDashboard() {
             <h1 className="text-2xl md:text-3xl font-black bg-gradient-to-r from-[#C89B3C] via-[#E0B85D] to-[#C89B3C] bg-clip-text text-transparent">
               Tableau de Bord Coach
             </h1>
-            <p className="text-sm text-[#A8B2C7] mt-1">Vue d'ensemble de votre activité</p>
+            <p className="text-sm text-[#A8B2C7] mt-1">Vue d&apos;ensemble de votre activité</p>
           </div>
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 shrink-0">
             <Calendar className="w-4 h-4 text-[#C89B3C]" />
@@ -283,8 +283,8 @@ export default function CoachDashboard() {
             </div>
             <CoachClientTable
               clients={clientData}
-              onViewClient={(id) => router.push(`/coach/members`)}
-              onMessage={(id) => router.push(`/coach/messages`)}
+               onViewClient={() => router.push(`/coach/members`)}
+               onMessage={() => router.push(`/coach/messages`)}
             />
           </div>
 

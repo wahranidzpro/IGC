@@ -50,7 +50,8 @@ export default function AttendancePage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!user) { setLoading(false); return }
+    let cancelled = false
+    if (!user) { const t = setTimeout(() => { if (!cancelled) setLoading(false) }, 0); return () => { clearTimeout(t); cancelled = true } }
     const uid = user?.id as string
     const supabase = createClient()
 
@@ -59,12 +60,12 @@ export default function AttendancePage() {
         const { data: mData } = await supabase.from("members").select("*").eq("profile_id", uid).maybeSingle()
         const m = mData ? mapRow<Member>(mData) : null
         const memberId = m?.id
-        if (!memberId) { setLoading(false); return }
+        if (!memberId) { if (!cancelled) setLoading(false); return }
 
         const { data: c } = await supabase.from("clubs").select("id, name")
         const map: Record<string, string> = {}
         if (c) (c as unknown as Club[]).forEach((cl) => { map[cl.id] = cl.name })
-        setClubMap(map)
+        if (!cancelled) setClubMap(map)
 
         const yearStart = new Date(new Date().getFullYear(), 0, 1).toISOString()
         const { data: a } = await supabase
@@ -73,14 +74,15 @@ export default function AttendancePage() {
           .eq("member_id", memberId)
           .gte("timestamp", yearStart)
           .order("timestamp", { ascending: false })
-        if (a) setAllAttendance(mapRows<Attendance>(a))
+        if (a && !cancelled) setAllAttendance(mapRows<Attendance>(a))
       } catch {
         logger.error('Erreur chargement présences')
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
     load()
+    return () => { cancelled = true }
   }, [user])
 
   const filtered = useMemo(() => {

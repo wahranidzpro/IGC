@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { Search, Eye, MessageCircle, ChevronRight } from "lucide-react"
+import Image from "next/image"
+import { Search, Eye, MessageCircle } from "lucide-react"
 
 interface ClientData {
   id: string | number
@@ -130,7 +131,7 @@ export function CoachClientTable({ clients, onViewClient, onMessage }: CoachClie
                       <td className="px-4 py-3">
                         <div className="w-9 h-9 rounded-full overflow-hidden bg-[rgba(200,155,60,0.1)] border border-[rgba(200,155,60,0.1)] flex items-center justify-center text-xs font-bold text-[#C89B3C] shrink-0">
                           {client.photo ? (
-                            <img src={client.photo} alt="" className="w-full h-full object-cover" />
+                            <Image src={client.photo} alt="" className="w-full h-full object-cover" unoptimized width={36} height={36} />
                           ) : (
                             `${client.firstName[0]}${client.lastName[0]}`
                           )}
@@ -222,7 +223,7 @@ export function CoachClientTable({ clients, onViewClient, onMessage }: CoachClie
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-10 h-10 rounded-full overflow-hidden bg-[rgba(200,155,60,0.1)] border border-[rgba(200,155,60,0.1)] flex items-center justify-center text-xs font-bold text-[#C89B3C] shrink-0">
                       {client.photo ? (
-                        <img src={client.photo} alt="" className="w-full h-full object-cover" />
+                        <Image src={client.photo} alt="" className="w-full h-full object-cover" unoptimized width={40} height={40} />
                       ) : (
                         `${client.firstName[0]}${client.lastName[0]}`
                       )}

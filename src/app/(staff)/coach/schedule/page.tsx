@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, useCallback } from "react"
 import { useAuth } from "@/lib/auth/context"
 import { createClient } from "@/lib/supabase/client"
 import { mapRow, mapRows } from "@/lib/utils/transform"
-import { Calendar, momentLocalizer, Views } from "react-big-calendar"
+import { Calendar, momentLocalizer } from "react-big-calendar"
 import moment from "moment"
 import "react-big-calendar/lib/css/react-big-calendar.css"
 import {
@@ -103,7 +103,10 @@ export default function SchedulePage() {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    if (!user) { setLoading(false); return }
+    if (!user) {
+      const t = setTimeout(() => setLoading(false))
+      return () => clearTimeout(t)
+    }
     const uid = user.id as string
     const supabase = createClient()
 
@@ -382,7 +385,7 @@ export default function SchedulePage() {
         <div className="flex items-center gap-2">
           <button onClick={goToToday}
             className="px-3 py-2 rounded-xl text-xs font-bold text-[#C89B3C] border border-[#C89B3C]/30 hover:bg-[#C89B3C]/10 transition-all">
-            Aujourd'hui
+            Aujourd&apos;hui
           </button>
           <div className="flex items-center gap-1">
             <button onClick={() => navigate(-1)} className="p-2 rounded-xl hover:bg-white/5 transition-colors text-white/60 hover:text-white">
@@ -431,7 +434,7 @@ export default function SchedulePage() {
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-white flex items-center gap-2">
               <Clock className="w-4 h-4 text-[#C89B3C]" />
-              Aujourd'hui
+              Aujourd&apos;hui
             </h3>
             <span className="text-[10px] font-bold text-white/30 px-2 py-0.5 rounded-full border border-white/10">
               {todayEvents.length} événement{todayEvents.length > 1 ? "s" : ""}
@@ -441,7 +444,7 @@ export default function SchedulePage() {
             {todayEvents.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-center">
                 <CalendarIcon className="w-8 h-8 text-white/10 mb-2" />
-                <p className="text-xs text-white/30">Aucun événement aujourd'hui</p>
+                <p className="text-xs text-white/30">Aucun événement aujourd&apos;hui</p>
               </div>
             ) : (
               todayEvents.map((evt) => (

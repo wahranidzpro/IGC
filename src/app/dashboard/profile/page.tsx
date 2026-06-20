@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/lib/auth/context"
+import { useAuth, type AuthUser } from "@/lib/auth/context"
 import { createClient } from "@/lib/supabase/client"
 import { mapRow } from "@/lib/utils/transform"
 import Image from "next/image"
 import {
   User, CreditCard, FileText, Settings, LogOut, ChevronRight, Camera,
 } from "lucide-react"
-import type { Profile, Member } from "@/types"
+import type { Profile } from "@/types"
 import BackButton from "@/components/dashboard/mobile/BackButton"
 
 const menuItems = [
@@ -25,7 +25,6 @@ export default function ProfilePage() {
   const { user, logout } = useAuth()
   const router = useRouter()
   const [profile, setProfile] = useState<Profile | null>(null)
-  const [member, setMember] = useState<Member | null>(null)
 
   useEffect(() => {
     if (!user) return
@@ -34,15 +33,13 @@ export default function ProfilePage() {
     async function load() {
       const { data: p } = await supabase.from("profiles").select("*").eq("id", uid).maybeSingle()
       if (p) setProfile(mapRow<Profile>(p))
-      const { data: m } = await supabase.from("members").select("*").eq("profile_id", uid).maybeSingle()
-      if (m) setMember(mapRow<Member>(m))
     }
     load()
   }, [user])
 
-  const firstName = profile?.firstName || (user && "name" in user ? (user as any).name : "Membre")
+  const firstName = profile?.firstName || (user && "name" in user ? (user as AuthUser).name : "Membre")
   const lastName = profile?.lastName || ""
-  const email = profile?.email || (user && "email" in user ? (user as any).email : "")
+  const email = profile?.email || (user && "email" in user ? (user as AuthUser).email : "")
   const phone = profile?.phone || ""
   const avatar = profile?.avatarUrl || ""
 
@@ -53,7 +50,7 @@ export default function ProfilePage() {
         <div className="relative mb-4">
           <div className="w-20 h-20 rounded-full overflow-hidden border-2" style={{ borderColor: "rgba(10,132,255,0.3)" }}>
             {avatar ? (
-              <Image src={avatar} alt="" width={80} height={80} className="object-cover w-full h-full" />
+              <Image src={avatar} alt="" width={80} height={80} className="object-cover w-full h-full" loading="lazy" />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-[#0A84FF] to-[#C89B3C] flex items-center justify-center">
                 <User className="w-8 h-8 text-white" />

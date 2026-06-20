@@ -133,7 +133,7 @@ export function MemberInfo({ member }: MemberInfoProps) {
           <div className="flex items-center gap-3 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl md:col-span-2">
             <Phone className="w-5 h-5 text-yellow-400 shrink-0" />
             <div>
-              <p className="text-xs text-yellow-400 font-medium">Contact d'urgence</p>
+              <p className="text-xs text-yellow-400 font-medium">Contact d&apos;urgence</p>
               <p className="text-white">{member.emergencyContactName} - {member.emergencyContactPhone}</p>
             </div>
           </div>

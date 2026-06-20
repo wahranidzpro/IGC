@@ -67,20 +67,20 @@ export async function GET(request: NextRequest) {
     supabase.from('staff_sessions').select('*', { count: 'exact', head: true }).gte('login_at', today),
   ]);
 
-  const formattedSessions = (sessions || []).map((s: any) => ({
-    id: s.id,
-    gym_user_id: s.gym_user_id,
-    username: s.username,
-    name: s.name,
-    role: s.role,
-    device_fingerprint: s.device_fingerprint,
-    device_info: s.device_info,
-    ip_address: s.ip_address,
-    login_at: s.login_at,
-    logout_at: s.logout_at,
-    last_heartbeat_at: s.last_heartbeat_at,
-    status: s.status,
-    duration: formatDuration(s.login_at, s.logout_at || s.last_heartbeat_at, s.status),
+  const formattedSessions = (sessions || []).map((s: { [key: string]: unknown }) => ({
+    id: s.id as number,
+    gym_user_id: s.gym_user_id as number,
+    username: s.username as string,
+    name: s.name as string,
+    role: s.role as string,
+    device_fingerprint: s.device_fingerprint as string,
+    device_info: s.device_info as string,
+    ip_address: s.ip_address as string,
+    login_at: s.login_at as string,
+    logout_at: s.logout_at as string | null,
+    last_heartbeat_at: s.last_heartbeat_at as string | null,
+    status: s.status as string,
+    duration: formatDuration(s.login_at as string, (s.logout_at || s.last_heartbeat_at) as string | null, s.status as string),
   }));
 
   return NextResponse.json({

@@ -63,8 +63,6 @@ export function MemberStats({ memberId }: MemberStatsProps) {
     count: weeklyActivity[day] || 0,
   }));
 
-  const COLORS = ['#f97316', '#22c55e', '#3b82f6', '#a855f7'];
-
   return (
     <div className="bg-black/30 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
       <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">

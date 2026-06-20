@@ -2,7 +2,8 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useAuth } from "@/lib/auth/context"
+import { useAuth, type AuthUser } from "@/lib/auth/context"
+import type { Member } from "@/lib/db/dexie-db"
 import { cn } from "@/lib/utils"
 import {
   Home, Users, ClipboardList, Calendar, Apple, BarChart3, Star, Trophy,
@@ -34,7 +35,7 @@ interface CoachSidebarProps {
 export function CoachSidebar({ collapsed = false, onToggle }: CoachSidebarProps) {
   const pathname = usePathname()
   const { user, logout } = useAuth()
-  const coachName = user && 'name' in user ? (user as any).name : user && 'firstName' in user ? `${(user as any).firstName} ${(user as any).lastName}`.trim() : 'Coach'
+  const coachName = user && 'name' in user ? (user as AuthUser).name : user && 'firstName' in user ? `${(user as Member).firstName} ${(user as Member).lastName}`.trim() : 'Coach'
 
   const isActive = (href: string) =>
     href === "/coach" ? pathname === "/coach" : pathname.startsWith(href)

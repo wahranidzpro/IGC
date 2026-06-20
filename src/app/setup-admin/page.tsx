@@ -10,26 +10,29 @@ export default function SetupAdminPage() {
 
   useEffect(() => {
     if (status === "idle") {
-      setStatus("loading")
-      fetch("/api/setup-admin")
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.success) {
-            setStatus("done")
-            setMessage(data.message)
-          } else if (data.message?.includes("déjà admin")) {
-            setStatus("done")
-            setMessage(data.message)
-            setTimeout(() => router.push("/admin"), 1500)
-          } else {
+      const timer = setTimeout(() => {
+        setStatus("loading")
+        fetch("/api/setup-admin")
+          .then((r) => r.json())
+          .then((data) => {
+            if (data.success) {
+              setStatus("done")
+              setMessage(data.message)
+            } else if (data.message?.includes("déjà admin")) {
+              setStatus("done")
+              setMessage(data.message)
+              setTimeout(() => router.push("/admin"), 1500)
+            } else {
+              setStatus("error")
+              setMessage(data.error || "Erreur inconnue")
+            }
+          })
+          .catch((e) => {
             setStatus("error")
-            setMessage(data.error || "Erreur inconnue")
-          }
-        })
-        .catch((e) => {
-          setStatus("error")
-          setMessage(e.message)
-        })
+            setMessage(e.message)
+          })
+      }, 0)
+      return () => clearTimeout(timer)
     }
   }, [status, router])
 

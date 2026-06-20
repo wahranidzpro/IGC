@@ -33,20 +33,20 @@ export default function MembersPage() {
   const [filter, setFilter] = useState<"all" | "active" | "expired" | "new">("all")
   const [sort, setSort] = useState<"name" | "date" | "progress">("name")
   const [selectedMember, setSelectedMember] = useState<MemberWithProfile | null>(null)
+  const [, setDetailLoading] = useState(false)
   const [memberAttendance, setMemberAttendance] = useState<Attendance[]>([])
   const [memberPayments, setMemberPayments] = useState<Payment[]>([])
   const [memberProgress, setMemberProgress] = useState<ProgressLog[]>([])
-  const [detailLoading, setDetailLoading] = useState(false)
-
+  const [now] = useState(() => Date.now())
   useEffect(() => {
-    if (!user) { setLoading(false); return }
-    const uid = user?.id as string
     const supabase = createClient()
 
     async function load() {
+      if (!user) { setLoading(false); return }
+      const uid = user.id
       try {
-        const cRow = await supabase.from("coaches").select("id").eq("profile_id", uid).maybeSingle()
-          .then(r => mapRow<{ id: string }>(r.data))
+        const cRow = await supabase.from("coaches").select("id").eq("profile_id", uid as string).maybeSingle()
+          .then(r => mapRow<{ id: string }>(r.data as unknown as Record<string, unknown> | null))
         const coachId = cRow?.id
         if (!coachId) { setLoading(false); return }
 
@@ -128,7 +128,7 @@ export default function MembersPage() {
     const matchesFilter =
       filter === "all" ? true :
       filter === "active" ? m.status === "active" :
-      filter === "new" ? new Date(m.createdAt).getTime() > Date.now() - 30 * 24 * 60 * 60 * 1000 :
+      filter === "new" ? new Date(m.createdAt).getTime() > now - 30 * 24 * 60 * 60 * 1000 :
       m.status === "expired" || m.status === "inactive"
     return matchesSearch && matchesFilter
   })
@@ -162,7 +162,7 @@ export default function MembersPage() {
   }
 
   const getStatus = (m: MemberWithProfile) => {
-    const isNew = new Date(m.createdAt).getTime() > Date.now() - 30 * 24 * 60 * 60 * 1000
+    const isNew = new Date(m.createdAt).getTime() > now - 30 * 24 * 60 * 60 * 1000
     if (isNew) return statusConfig.new
     return statusConfig[m.status] || statusConfig.inactive
   }
@@ -383,7 +383,7 @@ export default function MembersPage() {
           { key: "all" as const, label: "Tous", count: members.length },
           { key: "active" as const, label: "Actifs", count: members.filter((m) => m.status === "active").length },
           { key: "expired" as const, label: "En attente", count: members.filter((m) => m.status === "expired" || m.status === "inactive").length },
-          { key: "new" as const, label: "Nouveaux", count: members.filter((m) => new Date(m.createdAt).getTime() > Date.now() - 30 * 24 * 60 * 60 * 1000).length },
+          { key: "new" as const, label: "Nouveaux", count: members.filter((m) => new Date(m.createdAt).getTime() > now - 30 * 24 * 60 * 60 * 1000).length },
         ].map((f) => (
           <button
             key={f.key}
@@ -419,7 +419,7 @@ export default function MembersPage() {
             const progress = calcProgress(m)
             const status = getStatus(m)
             const expDate = m.activeMembership?.endDate
-            const isExpiring = expDate && new Date(expDate).getTime() - Date.now() < 15 * 24 * 60 * 60 * 1000
+            const isExpiring = expDate && new Date(expDate).getTime() - now < 15 * 24 * 60 * 60 * 1000
 
             return (
               <div

@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { ArrowLeft, Radio, Monitor, Wifi, Terminal, ArrowRight, Cpu, CheckCircle, Shield, Smartphone, Key } from 'lucide-react';
 import { useState } from 'react';
-import { logger } from "@/lib/logger"
 
 export default function RfidHardwarePage() {
   const [tab, setTab] = useState<'usb' | 'esp32'>('usb');
@@ -109,7 +108,7 @@ export default function RfidHardwarePage() {
                 <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-sm">1</div>
                 <h3 className="text-lg font-semibold text-white">Brancher le lecteur USB</h3>
               </div>
-              <p className="text-sm text-gray-400">Connectez le lecteur RFID sur un port USB libre. Le voyant du lecteur doit s'allumer (rouge ou bleu selon le modèle).</p>
+              <p className="text-sm text-gray-400">Connectez le lecteur RFID sur un port USB libre. Le voyant du lecteur doit s&apos;allumer (rouge ou bleu selon le modèle).</p>
             </div>
 
             <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
@@ -125,7 +124,7 @@ export default function RfidHardwarePage() {
                 <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-sm">3</div>
                 <h3 className="text-lg font-semibold text-white">Mode clavier émulé</h3>
               </div>
-              <p className="text-sm text-gray-400">Le lecteur se comporte comme un clavier. Quand un badge est scanné, le code RFID est tapé automatiquement comme du texte, suivi d'un <strong className="text-white">Entrée</strong>.</p>
+              <p className="text-sm text-gray-400">Le lecteur se comporte comme un clavier. Quand un badge est scanné, le code RFID est tapé automatiquement comme du texte, suivi d&apos;un <strong className="text-white">Entrée</strong>.</p>
               <code className="block mt-2 px-4 py-2 bg-gray-800 rounded-lg text-sm text-green-300 font-mono w-fit">0005123456 (suivi de ↵)</code>
             </div>
 
@@ -151,7 +150,7 @@ export default function RfidHardwarePage() {
                 <Terminal className="w-5 h-5 text-green-400" />
                 <h3 className="text-lg font-semibold text-white">Script de test (Node.js)</h3>
               </div>
-              <p className="text-sm text-gray-400 mb-3">Script minimal qui lit le code depuis stdin (lecture badge) et l'envoie à l'API :</p>
+              <p className="text-sm text-gray-400 mb-3">Script minimal qui lit le code depuis stdin (lecture badge) et l&apos;envoie à l&apos;API :</p>
               <pre className="bg-gray-950 border border-gray-800 rounded-xl p-4 text-sm font-mono text-gray-300 overflow-x-auto">
 {`const http = require('http');
 
@@ -240,7 +239,7 @@ COM/NO ────── Serrure magnétique 12V`}
             <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 font-bold text-sm">1</div>
-                <h3 className="text-lg font-semibold text-white">Câbler l'ESP32 selon le schéma</h3>
+                <h3 className="text-lg font-semibold text-white">Câbler l&apos;ESP32 selon le schéma</h3>
               </div>
               <p className="text-sm text-gray-400">Suivez le schéma ci-dessus. Utilisez des fils Dupont femelle-femelle. Vérifiez deux fois les connexions avant de mettre sous tension.</p>
             </div>
@@ -280,7 +279,7 @@ const char* API_KEY = "VOTRE_CLE_API";`}
               </pre>
               <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 text-xs text-yellow-300">
                 <p className="font-medium mb-1">⚠ Sécurité</p>
-                <p>Ne partagez jamais votre clé API. Utilisez des variables d'environnement et un fichier <code className="text-white">config.h</code> ignoré par git.</p>
+                <p>Ne partagez jamais votre clé API. Utilisez des variables d&apos;environnement et un fichier <code className="text-white">config.h</code> ignoré par git.</p>
               </div>
             </div>
 
@@ -289,7 +288,7 @@ const char* API_KEY = "VOTRE_CLE_API";`}
                 <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 font-bold text-sm">5</div>
                 <h3 className="text-lg font-semibold text-white">Téléverser le firmware</h3>
               </div>
-              <p className="text-sm text-gray-400">Connectez l'ESP32 en USB, sélectionnez le port COM et la carte "ESP32 Dev Module", puis cliquez sur <strong className="text-white">Téléverser</strong>. Ouvrez le moniteur série (115200 bauds) pour voir les logs.</p>
+              <p className="text-sm text-gray-400">Connectez l&apos;ESP32 en USB, sélectionnez le port COM et la carte &quot;ESP32 Dev Module&quot;, puis cliquez sur <strong className="text-white">Téléverser</strong>. Ouvrez le moniteur série (115200 bauds) pour voir les logs.</p>
             </div>
 
             <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
@@ -297,7 +296,7 @@ const char* API_KEY = "VOTRE_CLE_API";`}
                 <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 font-bold text-sm">6</div>
                 <h3 className="text-lg font-semibold text-white">Tester avec un badge</h3>
               </div>
-              <p className="text-sm text-gray-400">Présentez un badge. Le moniteur série doit afficher l'UID, le verdict (ACCÈS AUTORISÉ / REFUSÉ), et la LED/relais doit réagir.</p>
+              <p className="text-sm text-gray-400">Présentez un badge. Le moniteur série doit afficher l&apos;UID, le verdict (ACCÈS AUTORISÉ / REFUSÉ), et la LED/relais doit réagir.</p>
             </div>
 
             {/* Firmware complet */}
@@ -437,7 +436,7 @@ void loop() {
           <Key className="w-5 h-5 text-orange-400" />
           <h3 className="text-lg font-semibold text-white">Configuration de la clé API</h3>
         </div>
-        <p className="text-sm text-gray-400 mb-3">Ajoutez la variable d'environnement suivante dans votre fichier <code className="text-orange-400">.env.local</code> :</p>
+        <p className="text-sm text-gray-400 mb-3">Ajoutez la variable d&apos;environnement suivante dans votre fichier <code className="text-orange-400">.env.local</code> :</p>
         <code className="block px-4 py-2 bg-gray-800 rounded-lg text-sm text-green-300 font-mono w-fit mb-3">RFID_API_KEY=ma_cle_api_secrete</code>
         <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-3 text-xs text-orange-300">
           <Shield className="w-4 h-4 inline mr-1" />
@@ -467,11 +466,11 @@ void loop() {
           </div>
           <div className="flex items-center gap-2">
             <input type="checkbox" className="accent-orange-500 w-4 h-4 rounded" />
-            <span>Porte s'ouvre (relais clique)</span>
+            <span>Porte s&apos;ouvre (relais clique)</span>
           </div>
           <div className="flex items-center gap-2">
             <input type="checkbox" className="accent-orange-500 w-4 h-4 rounded" />
-            <span>Historique visible dans les <Link href="/turnstiles/logs" className="text-orange-400 hover:text-orange-300">journaux d'accès</Link></span>
+            <span>Historique visible dans les <Link href="/turnstiles/logs" className="text-orange-400 hover:text-orange-300">journaux d&apos;accès</Link></span>
           </div>
         </div>
       </div>

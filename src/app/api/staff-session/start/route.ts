@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { verifyAuthenticated } from '@/lib/api-auth';
+import { withCsrf } from '@/lib/api-middleware';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -18,7 +19,7 @@ function getClientIp(request: NextRequest): string | null {
   return null;
 }
 
-export async function POST(request: NextRequest) {
+async function handlePost(request: NextRequest) {
   const auth = await verifyAuthenticated(request);
   if (!auth.authorized) {
     return NextResponse.json({ error: auth.error || 'Not authenticated' }, { status: 401 });
@@ -106,3 +107,5 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({ sessionId: newSession.id, previousClosed });
 }
+
+export const POST = withCsrf(handlePost);

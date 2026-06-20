@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import bcrypt from 'bcryptjs';
 import { verifyAdmin, verifyAuthenticated } from '@/lib/api-auth';
+import { withCsrf } from '@/lib/api-middleware';
+import { checkRateLimit } from '@/lib/rate-limiter';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -31,7 +33,12 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ users: data || [] });
 }
 
-export async function POST(request: NextRequest) {
+async function handlePost(request: NextRequest) {
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+  if (!checkRateLimit(`users:${ip}`, 30, 60000)) {
+    return NextResponse.json({ error: 'Trop de requêtes. Réessayez plus tard.' }, { status: 429 });
+  }
+
   const auth = await verifyAdmin(request);
   if (!auth.authorized) return NextResponse.json({ error: auth.error }, { status: 401 });
 
@@ -61,7 +68,7 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({ user: data }, { status: 201 });
 }
 
-export async function PATCH(request: NextRequest) {
+async function handlePatch(request: NextRequest) {
   const supabase = getSupabase(true);
   if (!supabase) return NextResponse.json({ error: 'Supabase not configured' }, { status: 503 });
 
@@ -132,7 +139,7 @@ export async function PATCH(request: NextRequest) {
 
   if (!id && !username) return NextResponse.json({ error: 'id or username required' }, { status: 400 });
 
-  const updates: Record<string, any> = { updated_at: new Date().toISOString() };
+  const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (username !== undefined) updates.username = username;
   if (password) {
     console.log('[PATCH] admin: hashing password');
@@ -145,7 +152,7 @@ export async function PATCH(request: NextRequest) {
   if (is_locked !== undefined) updates.is_locked = is_locked;
 
   console.log('[PATCH] admin: updating gym_users', id || username);
-  const { data: updated, error } = await (supabase.from('gym_users') as any)
+  const { data: updated, error } = await supabase.from('gym_users')
     .update(updates)
     .eq(id ? 'id' : 'username', id || username)
     .select('id, username, role, name')
@@ -195,7 +202,7 @@ export async function PATCH(request: NextRequest) {
   return NextResponse.json({ user: updated });
 }
 
-export async function DELETE(request: NextRequest) {
+async function handleDelete(request: NextRequest) {
   const auth = await verifyAdmin(request);
   if (!auth.authorized) return NextResponse.json({ error: auth.error }, { status: 401 });
 
@@ -208,7 +215,7 @@ export async function DELETE(request: NextRequest) {
 
   if (!id && !username) return NextResponse.json({ error: 'id or username required' }, { status: 400 });
 
-  const { error } = await (supabase.from('gym_users') as any)
+  const { error } = await supabase.from('gym_users')
     .delete()
     .eq(id ? 'id' : 'username', id || username);
 
@@ -216,3 +223,7 @@ export async function DELETE(request: NextRequest) {
 
   return NextResponse.json({ success: true });
 }
+
+export const POST = withCsrf(handlePost);
+export const PATCH = withCsrf(handlePatch);
+export const DELETE = withCsrf(handleDelete);

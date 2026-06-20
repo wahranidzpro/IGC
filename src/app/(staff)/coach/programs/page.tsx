@@ -20,6 +20,7 @@ export default function ProgramsPage() {
   const [error, setError] = useState<string | null>(null)
   const [programs, setPrograms] = useState<WorkoutProgram[]>([])
   const [coachId, setCoachId] = useState<string | null>(null)
+  const [, setMemberProfiles] = useState<Record<string, string>>({})
   const [members, setMembers] = useState<MemberOption[]>([])
 
   const [showForm, setShowForm] = useState(false)
@@ -31,16 +32,15 @@ export default function ProgramsPage() {
   })
   const [saving, setSaving] = useState(false)
   const [viewDetail, setViewDetail] = useState<WorkoutProgram | null>(null)
-  const [memberProfiles, setMemberProfiles] = useState<Record<string, string>>({})
   const [filter, setFilter] = useState<FilterType>("Tous")
 
   useEffect(() => {
-    if (!user) { setLoading(false); return }
-    const uid = user?.id as string
     const supabase = createClient()
 
     async function load() {
       try {
+        if (!user) { setLoading(false); return }
+        const uid = user.id as string
         const { data: cData } = await supabase.from("coaches").select("*").eq("profile_id", uid).maybeSingle()
         const cId = (cData as { id?: string } | null)?.id
         if (!cId) { setLoading(false); return }
@@ -359,7 +359,7 @@ export default function ProgramsPage() {
           <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-[#C89B3C] to-[#D4AF37] bg-clip-text text-transparent">
             Programmes
           </h1>
-          <p className="text-sm text-white/40 mt-1">Créez et gérez vos programmes d'entraînement</p>
+          <p className="text-sm text-white/40 mt-1">Créez et gérez vos programmes d&apos;entraînement</p>
         </div>
         {coachId && <button onClick={() => setShowForm(true)} className="flex items-center gap-2 bg-gradient-to-r from-[#C89B3C] to-[#D4AF37] text-black px-5 py-2.5 rounded-xl text-sm font-bold hover:opacity-90 transition-all shadow-lg shadow-[#C89B3C]/20">
           <Plus className="w-4 h-4" /> Créer un Programme

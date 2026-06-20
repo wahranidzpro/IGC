@@ -3,12 +3,11 @@
 import { useEffect, useState } from "react"
 import { useAuth } from "@/lib/auth/context"
 import { createClient } from "@/lib/supabase/client"
-import { mapRow, mapRows } from "@/lib/utils/transform"
-import { cn } from "@/lib/utils"
+import { mapRow } from "@/lib/utils/transform"
 import Image from "next/image"
 import {
   User, Mail, Phone, Award, BookOpen, Save, AlertCircle, RefreshCw,
-  Camera, Star, Users,
+  Camera,
 } from "lucide-react"
 import type { Coach, Profile } from "@/types"
 
@@ -30,7 +29,7 @@ export default function CoachProfilePage() {
   })
 
   useEffect(() => {
-    if (!user) { setLoading(false); return }
+    if (!user) { setTimeout(() => setLoading(false)); return }
     const uid = user?.id as string
     const supabase = createClient()
 

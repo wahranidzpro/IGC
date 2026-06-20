@@ -1,39 +1,44 @@
 import { useEffect, useRef } from 'react';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from './client';
+import type { Database } from './database.types';
 import { db } from '../db/dexie-db';
 import { ENTITY_REGISTRY } from '../sync/registry';
 import { logger } from '../logger';
 
 function subscribeEntity(
-  supabase: any,
+  sb: SupabaseClient<Database>,
   entityName: string
 ) {
   const config = ENTITY_REGISTRY[entityName];
   if (!config) return null;
 
-  const channel = supabase
+  const channel = sb
     .channel(`${config.supabaseTable}_changes`)
     .on(
       'postgres_changes',
       { event: '*', schema: 'public', table: config.supabaseTable },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       async (payload: any) => {
         const eventType = payload.eventType;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const newRecord = payload.new as any;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const oldRecord = payload.old as any;
 
         if (eventType === 'DELETE' && oldRecord?.local_id) {
-          await (config.dexieTable as any).delete(oldRecord.local_id);
+          await config.dexieTable.delete(oldRecord.local_id);
           logger.info(`Realtime sync: ${entityName} ${oldRecord.local_id} deleted`);
           return;
         }
 
         if (newRecord?.local_id) {
-          const existing = await (config.dexieTable as any).get(newRecord.local_id);
+          const existing = await config.dexieTable.get(newRecord.local_id);
           const localItem = config.fromCloudRecord(newRecord);
           if (existing) {
-            await (config.dexieTable as any).update(newRecord.local_id, localItem);
+            await config.dexieTable.update(newRecord.local_id, localItem);
           } else {
-            await (config.dexieTable as any).add(localItem);
+            await config.dexieTable.add(localItem);
           }
           logger.info(`Realtime sync: ${entityName} ${newRecord.local_id} ${eventType}`);
         }
@@ -47,12 +52,12 @@ function subscribeEntity(
 }
 
 export function useRealtimeSync() {
-  const channelsRef = useRef<any[]>([]);
+  const channelsRef = useRef<ReturnType<SupabaseClient<Database>['channel']>[]>([]);
 
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) return;
 
-    const channels: any[] = [];
+    const channels: ReturnType<SupabaseClient<Database>['channel']>[] = [];
 
     // Members (specialized due to complex field mapping)
     const memberChannel = supabase
@@ -60,9 +65,12 @@ export function useRealtimeSync() {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'synced_members' },
-        async (payload) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        async (payload: any) => {
           const eventType = payload.eventType;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const newRecord = payload.new as any;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const oldRecord = payload.old as any;
 
           if (eventType === 'DELETE' && oldRecord?.local_id) {
@@ -91,8 +99,8 @@ export function useRealtimeSync() {
               balanceDue: newRecord.balance_due || 0,
               discount: newRecord.discount || 0,
               advance: newRecord.advance || 0,
-              subscriptionType: (newRecord.subscription_type || 'free_session') as any,
-              subscriptionDuration: (newRecord.subscription_duration || '') as any,
+              subscriptionType: newRecord.subscription_type || 'free_session',
+              subscriptionDuration: newRecord.subscription_duration || '',
               status: (newRecord.status || 'active') as 'active' | 'inactive' | 'expired',
               fidelityPoints: newRecord.fidelity_points || 0,
               rfidCode: newRecord.rfid_code || '',
@@ -132,9 +140,12 @@ export function useRealtimeSync() {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'synced_payments' },
-        async (payload) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        async (payload: any) => {
           const eventType = payload.eventType;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const newRecord = payload.new as any;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const oldRecord = payload.old as any;
 
           if (eventType === 'DELETE' && oldRecord?.local_id) {
@@ -148,8 +159,8 @@ export function useRealtimeSync() {
               id: newRecord.local_id,
               memberId: newRecord.member_id ?? 0,
               amount: Number(newRecord.amount) || 0,
-              type: (newRecord.type || 'subscription') as any,
-              mode: (newRecord.mode || 'cash') as any,
+              type: newRecord.type || 'subscription',
+              mode: newRecord.mode || 'cash',
               date: new Date(newRecord.date || newRecord.created_at || Date.now()),
               description: newRecord.notes || '',
               createdAt: new Date(newRecord.created_at || Date.now()),
@@ -172,9 +183,12 @@ export function useRealtimeSync() {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'synced_checkins' },
-        async (payload) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        async (payload: any) => {
           const eventType = payload.eventType;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const newRecord = payload.new as any;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const oldRecord = payload.old as any;
 
           if (eventType === 'DELETE' && oldRecord?.local_id) {
@@ -188,7 +202,7 @@ export function useRealtimeSync() {
               id: newRecord.local_id,
               memberId: newRecord.member_id ?? 0,
               timestamp: new Date(newRecord.timestamp || Date.now()),
-              type: (newRecord.type || 'checkin') as any,
+              type: newRecord.type || 'checkin',
             };
             if (existing) {
               await db.checkins.update(newRecord.local_id, checkinData);
@@ -208,9 +222,12 @@ export function useRealtimeSync() {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'synced_points_ledger' },
-        async (payload) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        async (payload: any) => {
           const eventType = payload.eventType;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const newRecord = payload.new as any;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const oldRecord = payload.old as any;
 
           if (eventType === 'DELETE' && oldRecord?.local_id) {
@@ -225,7 +242,7 @@ export function useRealtimeSync() {
               memberId: newRecord.member_id ?? 0,
               memberName: newRecord.member_name || '',
               points: newRecord.points || 0,
-              type: (newRecord.type || 'earn') as any,
+              type: newRecord.type || 'earn',
               reason: newRecord.reason || '',
               referenceId: newRecord.reference_id,
               balanceAfter: newRecord.balance_after || 0,
@@ -248,9 +265,12 @@ export function useRealtimeSync() {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'gym_users' },
-        async (payload) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        async (payload: any) => {
           const eventType = payload.eventType;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const newRecord = payload.new as any;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const oldRecord = payload.old as any;
 
           if (eventType === 'DELETE' && oldRecord?.username) {
@@ -268,7 +288,7 @@ export function useRealtimeSync() {
               username: newRecord.username,
               password: newRecord.password_hash,
               pin: newRecord.pin,
-              role: newRecord.role as any,
+              role: newRecord.role,
               name: newRecord.name,
               phone: newRecord.phone,
               isLocked: newRecord.is_locked || false,
@@ -290,8 +310,10 @@ export function useRealtimeSync() {
 
     channels.push(memberChannel, userChannel, paymentChannel, checkinChannel, pointsChannel);
 
-    // Subscribe to generic entities
+    // Subscribe to generic entities (skip those with dedicated channels)
+    const excluded = new Set(['members', 'payments', 'checkins', 'pointsLedger']);
     for (const entityName of Object.keys(ENTITY_REGISTRY)) {
+      if (excluded.has(entityName)) continue;
       const ch = subscribeEntity(supabase, entityName);
       if (ch) channels.push(ch);
     }

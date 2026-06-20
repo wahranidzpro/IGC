@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+import { success, error } from '@/lib/api-response';
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 
@@ -8,7 +8,7 @@ export async function POST(request: Request) {
     const { token, deviceId } = body
 
     if (!token || typeof token !== "string") {
-      return NextResponse.json({ access: "refused", reason: "TOKEN_REQUIRED" }, { status: 400 })
+      return error('Token requis', 400, 'TOKEN_REQUIRED')
     }
 
     const cookieStore = await cookies()
@@ -35,15 +35,15 @@ export async function POST(request: Request) {
       .maybeSingle()
 
     if (findError || !qrToken) {
-      return NextResponse.json({ access: "refused", reason: "TOKEN_NOT_FOUND" })
+      return error('Token introuvable', 404, 'TOKEN_NOT_FOUND')
     }
 
     if (qrToken.isUsed) {
-      return NextResponse.json({ access: "refused", reason: "TOKEN_ALREADY_USED" })
+      return error('Token déjà utilisé', 410, 'TOKEN_ALREADY_USED')
     }
 
     if (new Date(qrToken.expiresAt) < new Date()) {
-      return NextResponse.json({ access: "refused", reason: "TOKEN_EXPIRED" })
+      return error('Token expiré', 410, 'TOKEN_EXPIRED')
     }
 
     const { data: member } = await supabase
@@ -53,11 +53,11 @@ export async function POST(request: Request) {
       .maybeSingle()
 
     if (!member) {
-      return NextResponse.json({ access: "refused", reason: "MEMBER_NOT_FOUND" })
+      return error('Membre introuvable', 404, 'MEMBER_NOT_FOUND')
     }
 
     if (member.status !== "active") {
-      return NextResponse.json({ access: "refused", reason: "MEMBER_NOT_ACTIVE", memberId: qrToken.memberId })
+      return error('Membre non actif', 403, 'MEMBER_NOT_ACTIVE')
     }
 
     const now = new Date().toISOString()
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
       .eq("id", qrToken.id)
 
     if (updateError) {
-      return NextResponse.json({ access: "refused", reason: "TOKEN_UPDATE_FAILED" }, { status: 500 })
+      return error('Échec mise à jour token', 500, 'TOKEN_UPDATE_FAILED')
     }
 
     const { error: attendanceError } = await supabase
@@ -83,15 +83,11 @@ export async function POST(request: Request) {
       })
 
     if (attendanceError) {
-      return NextResponse.json({ access: "refused", reason: "ATTENDANCE_LOG_FAILED" }, { status: 500 })
+      return error('Échec enregistrement présence', 500, 'ATTENDANCE_LOG_FAILED')
     }
 
-    return NextResponse.json({
-      access: "granted",
-      memberId: qrToken.memberId,
-      timestamp: now,
-    })
+    return success({ access: "granted", memberId: qrToken.memberId, timestamp: now })
   } catch {
-    return NextResponse.json({ access: "refused", reason: "INTERNAL_ERROR" }, { status: 500 })
+    return error('Erreur interne', 500, 'INTERNAL_ERROR')
   }
 }

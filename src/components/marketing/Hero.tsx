@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, Fragment } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { ArrowRight, Play } from "lucide-react"
 
 interface HeroProps {
@@ -199,7 +200,7 @@ export default function Hero({
                     }}
                   >
                     {isFace ? (
-                      <img src="/logo-transparent.png" alt="Infinity Gym Center" className="w-full h-full object-contain" style={{ transform: "scale(1.15)" }} />
+                      <Image src="/logo-transparent.png" alt="Infinity Gym Center" fill className="object-contain" style={{ transform: "scale(1.15)" }} />
                     ) : null}
                   </div>
                 )

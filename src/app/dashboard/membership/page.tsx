@@ -21,24 +21,32 @@ export default function MembershipPage() {
   const { user } = useAuth()
   const [membership, setMembership] = useState<Membership | null>(null)
   const [loading, setLoading] = useState(true)
+  const [daysLeft, setDaysLeft] = useState(0)
 
   useEffect(() => {
-    if (!user) { setLoading(false); return }
-    const uid = user?.id as string
     const supabase = createClient()
     async function load() {
-      const { data: m } = await supabase.from("members").select("id").eq("profile_id", uid).maybeSingle()
-      const memberId = (m as { id?: string } | null)?.id
-      if (memberId) {
-        const { data: ms } = await supabase.from("memberships").select("*").eq("member_id", memberId).eq("status", "active").maybeSingle()
-        if (ms) setMembership(mapRow<Membership>(ms))
+      try {
+        if (!user) { setLoading(false); return }
+        const uid = user.id as string
+        const { data: m } = await supabase.from("members").select("id").eq("profile_id", uid).maybeSingle()
+        const memberId = (m as { id?: string } | null)?.id
+        if (memberId) {
+          const { data: ms } = await supabase.from("memberships").select("*").eq("member_id", memberId).eq("status", "active").maybeSingle()
+          if (ms) {
+            const typed = mapRow<Membership>(ms)
+            setMembership(typed)
+            if (typed) {
+              setDaysLeft(Math.ceil((new Date(typed.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+            }
+          }
+        }
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     }
     load()
   }, [user])
-
-  const daysLeft = membership ? Math.ceil((new Date(membership.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 0
 
   if (loading) {
     return (

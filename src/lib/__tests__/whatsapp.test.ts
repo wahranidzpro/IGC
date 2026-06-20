@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect } from 'vitest'
 
 // Test the formatPhone function inline (import won't work in jsdom-less env)

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
+import Image from "next/image"
 import { motion } from "framer-motion"
 
 import { photos } from "@/lib/galerie/mockData"
@@ -58,10 +59,11 @@ export default function GaleriePhotos({ categoryFilter }: GaleriePhotosProps) {
                   onClick={() => setLightboxIndex(filtered.indexOf(photo))}
                   className="group relative rounded-2xl overflow-hidden border border-white/5 w-full"
                 >
-                  <img
+                  <Image
                     src={photo.src}
                     alt={photo.alt}
-                    loading="lazy"
+                    width={600}
+                    height={ci === 1 ? 400 : 300}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     style={{ minHeight: ci === 1 ? "280px" : "220px" }}
                   />
@@ -86,7 +88,7 @@ export default function GaleriePhotos({ categoryFilter }: GaleriePhotosProps) {
               onClick={() => setLightboxIndex(i)}
               className="group relative rounded-xl overflow-hidden aspect-square"
             >
-              <img src={photo.src} alt={photo.alt} loading="lazy" className="w-full h-full object-cover" />
+              <Image src={photo.src} alt={photo.alt} width={300} height={300} className="w-full h-full object-cover" />
             </motion.button>
           ))}
         </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { ShieldAlert, RefreshCw, AlertTriangle, XCircle } from 'lucide-react';
-import { useAuth } from '@/lib/auth/context';
+import { useAuth, type AuthUser } from '@/lib/auth/context';
 
 export default function AccessDenied() {
   const { accessStatus, checkAccess, logout, user } = useAuth();
@@ -37,11 +37,11 @@ export default function AccessDenied() {
           {user && 'name' in user && (
             <div className="flex items-center gap-3 pt-2 border-t border-gray-700/50">
               <div className="w-8 h-8 rounded-full bg-orange-500/20 flex items-center justify-center">
-                <span className="text-xs font-bold text-orange-400">{(user as any).name?.charAt(0) || '?'}</span>
+                <span className="text-xs font-bold text-orange-400">{(user as AuthUser).name?.charAt(0) || '?'}</span>
               </div>
               <div>
                 <p className="text-xs text-gray-500">Connecté en tant que</p>
-                <p className="text-sm text-white font-medium">{(user as any).name}</p>
+                <p className="text-sm text-white font-medium">{(user as AuthUser).name}</p>
               </div>
             </div>
           )}

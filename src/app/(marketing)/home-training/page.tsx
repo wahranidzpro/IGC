@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { useEffect, useRef } from "react"
 import Link from "next/link"
 import { ArrowRight, Dumbbell, Monitor, Clock, Target, CheckCircle, Star, Users } from "lucide-react"
@@ -74,8 +75,8 @@ export default function HomeTrainingPage() {
             </div>
             <div className="hidden lg:block">
               <div className="relative">
-                <div className="aspect-[4/3] rounded-2xl bg-gradient-to-br from-zinc-800 to-zinc-900 border border-zinc-700 overflow-hidden shadow-2xl">
-                  <img src="https://images.unsplash.com/photo-1534258936925-c58bed479fcb?w=800&h=600&fit=crop" alt="Home Training" className="w-full h-full object-cover opacity-60" />
+                <div className="aspect-[4/3] relative rounded-2xl bg-gradient-to-br from-zinc-800 to-zinc-900 border border-zinc-700 overflow-hidden shadow-2xl">
+                  <Image src="https://images.unsplash.com/photo-1534258936925-c58bed479fcb?w=800&h=600&fit=crop" alt="Home Training" fill className="object-cover opacity-60" />
                 </div>
                 <div className="absolute -bottom-4 -left-4 bg-zinc-900 border border-zinc-700 rounded-xl p-4 shadow-xl">
                   <div className="flex items-center gap-3">

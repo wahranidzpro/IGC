@@ -22,7 +22,7 @@ export default function ConnectionBanner() {
   }, []);
 
   useEffect(() => {
-    setOnline(navigator.onLine);
+    const init = setTimeout(() => setOnline(navigator.onLine), 0);
     const goOnline = () => {
       setOnline(true);
       show('Connecté — synchronisation...');
@@ -31,7 +31,7 @@ export default function ConnectionBanner() {
     const goOffline = () => { setOnline(false); show('Déconnecté — mode hors ligne'); };
     window.addEventListener('online', goOnline);
     window.addEventListener('offline', goOffline);
-    return () => { window.removeEventListener('online', goOnline); window.removeEventListener('offline', goOffline); clearTimers(); };
+    return () => { clearTimeout(init); window.removeEventListener('online', goOnline); window.removeEventListener('offline', goOffline); clearTimers(); };
   }, [show]);
 
   if (!visible) return null;

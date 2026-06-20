@@ -33,6 +33,12 @@ const sampleDeviceHistory: Device[] = [
   { name: "Windows Desktop", type: "laptop", browser: "Edge 124", ip: "41.200.x.x", lastActive: "Lun 10 09:15", status: "offline" },
 ]
 
+function DeviceIcon({ type }: { type: string }) {
+  if (type === "smartphone") return <Smartphone className="w-4 h-4" />
+  if (type === "tablet") return <Monitor className="w-4 h-4" />
+  return <Laptop className="w-4 h-4" />
+}
+
 export default function SettingsPage() {
   const { logout } = useAuth()
   const [passwordForm, setPasswordForm] = useState({ current: "", newPass: "", confirm: "" })
@@ -85,12 +91,6 @@ export default function SettingsPage() {
     } finally {
       setPasswordSaving(false)
     }
-  }
-
-  const DeviceIcon = ({ type }: { type: string }) => {
-    if (type === "smartphone") return <Smartphone className="w-4 h-4" />
-    if (type === "tablet") return <Monitor className="w-4 h-4" />
-    return <Laptop className="w-4 h-4" />
   }
 
   if (loading) {

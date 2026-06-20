@@ -39,7 +39,7 @@ const menuSections = [
 
 export default function PlusPage() {
   const router = useRouter()
-  const { logout, user } = useAuth()
+  const { logout } = useAuth()
 
   return (
     <div

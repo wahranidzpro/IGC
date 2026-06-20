@@ -101,7 +101,7 @@ export default function RecoveryCard({ username, password, pin, recoveryCode, on
             onClick={onConfirm}
             className="w-full py-3 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-xl hover:from-green-600 hover:to-green-700 transition-all"
           >
-            Accéder à l'application
+            Accéder à l&apos;application
           </button>
         </div>
       </div>
@@ -128,7 +128,7 @@ export default function RecoveryCard({ username, password, pin, recoveryCode, on
           <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl">
             <p className="text-sm text-yellow-400">
               <strong>Important :</strong> Imprimez cette carte et gardez-la en lieu sûr.
-              Ces informations ne seront affichées qu'une seule fois.
+              Ces informations ne seront affichées qu&apos;une seule fois.
             </p>
           </div>
 
@@ -196,7 +196,7 @@ export default function RecoveryCard({ username, password, pin, recoveryCode, on
 
             {/* Recovery Code */}
             <div className="p-4 bg-orange-500/10 border border-orange-500/30 rounded-xl">
-              <label className="block text-xs font-medium text-orange-400 mb-2">Code de Récupération d'Urgence</label>
+              <label className="block text-xs font-medium text-orange-400 mb-2">Code de Récupération d&apos;Urgence</label>
               <div className="flex items-center gap-2">
                 <div className="flex-1 px-4 py-3 bg-gray-800 border border-orange-500/50 rounded-xl text-orange-400 font-mono text-lg tracking-wider text-center">
                   {showRecovery ? recoveryCode : '••••-••••-••••-••••'}
@@ -233,7 +233,7 @@ export default function RecoveryCard({ username, password, pin, recoveryCode, on
               onClick={() => setConfirmed(true)}
               className="flex-1 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all"
             >
-              J'ai sauvegardé
+              J&apos;ai sauvegardé
             </button>
           </div>
         </div>

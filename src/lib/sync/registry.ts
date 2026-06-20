@@ -1,17 +1,20 @@
 import { db } from '@/lib/db/dexie-db';
-import type { Product, Program, SubscriptionPlan, Sale, Employee, Absence, PayrollRecord, Coach, Expense, PrivateSession, GymEvent, EventRegistration, Reward, ProductCategory, WhatsAppCampaign } from '@/lib/db/dexie-db';
+import type { Table } from 'dexie';
+import type { Product, Program, SubscriptionPlan, Sale, Employee, Absence, PayrollRecord, Coach, Expense, PrivateSession, GymEvent, EventRegistration, Reward, ProductCategory, WhatsAppCampaign, Member, Payment, CheckIn, PointsLedger, PinUser } from '@/lib/db/dexie-db';
 
 export interface SyncEntityConfig<T> {
-  dexieTable: any;
+  dexieTable: Table<T, number>;
   supabaseTable: string;
   rpcName: string;
-  toCloudRecord: (item: Partial<T> & { id?: number }) => Record<string, any>;
+  toCloudRecord: (item: Partial<T> & { id?: number }) => Record<string, unknown>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   fromCloudRecord: (record: any) => T;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const ENTITY_REGISTRY: Record<string, SyncEntityConfig<any>> = {
   products: {
-    dexieTable: db.products as any,
+    dexieTable: db.products,
     supabaseTable: 'synced_products',
     rpcName: 'upsert_synced_product',
     toCloudRecord: (item: Partial<Product> & { id?: number }) => ({
@@ -23,7 +26,7 @@ export const ENTITY_REGISTRY: Record<string, SyncEntityConfig<any>> = {
       p_stock: item.stock ?? 0,
       p_photo: item.photo || '',
     }),
-    fromCloudRecord: (r: any): Product => ({
+    fromCloudRecord: (r): Product => ({
       id: r.local_id,
       barcode: r.barcode || '',
       name: r.name || '',
@@ -36,7 +39,7 @@ export const ENTITY_REGISTRY: Record<string, SyncEntityConfig<any>> = {
   },
 
   programs: {
-    dexieTable: db.programs as any,
+    dexieTable: db.programs,
     supabaseTable: 'synced_programs',
     rpcName: 'upsert_synced_program',
     toCloudRecord: (item: Partial<Program> & { id?: number }) => ({
@@ -46,7 +49,7 @@ export const ENTITY_REGISTRY: Record<string, SyncEntityConfig<any>> = {
       p_price: item.price ?? 0,
       p_is_active: item.isActive ?? true,
     }),
-    fromCloudRecord: (r: any): Program => ({
+    fromCloudRecord: (r): Program => ({
       id: r.local_id,
       name: r.name || '',
       description: r.description || '',
@@ -57,7 +60,7 @@ export const ENTITY_REGISTRY: Record<string, SyncEntityConfig<any>> = {
   },
 
   sales: {
-    dexieTable: db.sales as any,
+    dexieTable: db.sales,
     supabaseTable: 'synced_sales',
     rpcName: 'upsert_synced_sale',
     toCloudRecord: (item: Partial<Sale> & { id?: number }) => ({
@@ -68,7 +71,7 @@ export const ENTITY_REGISTRY: Record<string, SyncEntityConfig<any>> = {
       p_change_amount: item.change ?? 0,
       p_payment_mode: item.paymentMode || 'cash',
     }),
-    fromCloudRecord: (r: any): Sale => ({
+    fromCloudRecord: (r): Sale => ({
       id: r.local_id,
       items: JSON.parse(r.items_json || '[]'),
       total: Number(r.total) || 0,
@@ -82,7 +85,7 @@ export const ENTITY_REGISTRY: Record<string, SyncEntityConfig<any>> = {
   },
 
   employees: {
-    dexieTable: db.employees as any,
+    dexieTable: db.employees,
     supabaseTable: 'synced_employees',
     rpcName: 'upsert_synced_employee',
     toCloudRecord: (item: Partial<Employee> & { id?: number }) => ({
@@ -108,7 +111,7 @@ export const ENTITY_REGISTRY: Record<string, SyncEntityConfig<any>> = {
       p_photo: item.photo || '',
       p_is_active: item.isActive ?? true,
     }),
-    fromCloudRecord: (r: any): Employee => ({
+    fromCloudRecord: (r): Employee => ({
       id: r.local_id,
       gymUserId: r.gym_user_id || undefined,
       coachId: r.coach_id || undefined,
@@ -137,7 +140,7 @@ export const ENTITY_REGISTRY: Record<string, SyncEntityConfig<any>> = {
   },
 
   absences: {
-    dexieTable: db.absences as any,
+    dexieTable: db.absences ,
     supabaseTable: 'synced_absences',
     rpcName: 'upsert_synced_absence',
     toCloudRecord: (item: Partial<Absence> & { id?: number }) => ({
@@ -150,7 +153,7 @@ export const ENTITY_REGISTRY: Record<string, SyncEntityConfig<any>> = {
       p_status: item.status || 'pending',
       p_approved_by: item.approvedBy || null,
     }),
-    fromCloudRecord: (r: any): Absence => ({
+    fromCloudRecord: (r): Absence => ({
       id: r.local_id,
       employeeId: r.employee_id ?? 0,
       type: r.type || 'other',
@@ -166,7 +169,7 @@ export const ENTITY_REGISTRY: Record<string, SyncEntityConfig<any>> = {
   },
 
   payrollRecords: {
-    dexieTable: db.payrollRecords as any,
+    dexieTable: db.payrollRecords ,
     supabaseTable: 'synced_payroll',
     rpcName: 'upsert_synced_payroll',
     toCloudRecord: (item: Partial<PayrollRecord> & { id?: number }) => ({
@@ -182,7 +185,7 @@ export const ENTITY_REGISTRY: Record<string, SyncEntityConfig<any>> = {
       p_paid_at: item.paidAt || null,
       p_notes: item.notes || '',
     }),
-    fromCloudRecord: (r: any): PayrollRecord => ({
+    fromCloudRecord: (r): PayrollRecord => ({
       id: r.local_id,
       employeeId: r.employee_id ?? 0,
       period: r.period || '',
@@ -201,7 +204,7 @@ export const ENTITY_REGISTRY: Record<string, SyncEntityConfig<any>> = {
   },
 
   subscriptionPlans: {
-    dexieTable: db.subscriptionPlans as any,
+    dexieTable: db.subscriptionPlans ,
     supabaseTable: 'synced_subscription_plans',
     rpcName: 'upsert_synced_subscription_plan',
     toCloudRecord: (item: Partial<SubscriptionPlan> & { id?: number }) => ({
@@ -215,7 +218,7 @@ export const ENTITY_REGISTRY: Record<string, SyncEntityConfig<any>> = {
       p_program_id: item.programId ?? 0,
       p_is_active: item.isActive ?? true,
     }),
-    fromCloudRecord: (r: any): SubscriptionPlan => ({
+    fromCloudRecord: (r): SubscriptionPlan => ({
       id: r.local_id,
       name: r.name || '',
       type: r.type || 'subscription',
@@ -230,7 +233,7 @@ export const ENTITY_REGISTRY: Record<string, SyncEntityConfig<any>> = {
   },
 
   coaches: {
-    dexieTable: db.coaches as any,
+    dexieTable: db.coaches ,
     supabaseTable: 'synced_coaches',
     rpcName: 'upsert_synced_coach',
     toCloudRecord: (item: Partial<Coach> & { id?: number }) => ({
@@ -241,7 +244,7 @@ export const ENTITY_REGISTRY: Record<string, SyncEntityConfig<any>> = {
       p_program_ids: JSON.stringify(item.programIds || []),
       p_is_active: item.isActive ?? true,
     }),
-    fromCloudRecord: (r: any): Coach => ({
+    fromCloudRecord: (r): Coach => ({
       id: r.local_id,
       name: r.name || '',
       phone: r.phone || '',
@@ -254,7 +257,7 @@ export const ENTITY_REGISTRY: Record<string, SyncEntityConfig<any>> = {
   },
 
   expenses: {
-    dexieTable: db.expenses as any,
+    dexieTable: db.expenses ,
     supabaseTable: 'synced_expenses',
     rpcName: 'upsert_synced_expense',
     toCloudRecord: (item: Partial<Expense> & { id?: number }) => ({
@@ -264,7 +267,7 @@ export const ENTITY_REGISTRY: Record<string, SyncEntityConfig<any>> = {
       p_date: item.date ? new Date(item.date).toISOString() : new Date().toISOString(),
       p_description: item.description || '',
     }),
-    fromCloudRecord: (r: any): Expense => ({
+    fromCloudRecord: (r): Expense => ({
       id: r.local_id,
       category: r.category || '',
       amount: Number(r.amount) || 0,
@@ -276,7 +279,7 @@ export const ENTITY_REGISTRY: Record<string, SyncEntityConfig<any>> = {
   },
 
   privateSessions: {
-    dexieTable: db.privateSessions as any,
+    dexieTable: db.privateSessions ,
     supabaseTable: 'synced_private_sessions',
     rpcName: 'upsert_synced_private_session',
     toCloudRecord: (item: Partial<PrivateSession> & { id?: number }) => ({
@@ -291,7 +294,7 @@ export const ENTITY_REGISTRY: Record<string, SyncEntityConfig<any>> = {
       p_price: item.price ?? 0,
       p_status: item.status || 'pending',
     }),
-    fromCloudRecord: (r: any): PrivateSession => ({
+    fromCloudRecord: (r): PrivateSession => ({
       id: r.local_id,
       memberId: r.member_id ?? 0,
       memberName: r.member_name || '',
@@ -308,7 +311,7 @@ export const ENTITY_REGISTRY: Record<string, SyncEntityConfig<any>> = {
   },
 
   events: {
-    dexieTable: db.events as any,
+    dexieTable: db.events ,
     supabaseTable: 'synced_events',
     rpcName: 'upsert_synced_event',
     toCloudRecord: (item: Partial<GymEvent> & { id?: number }) => ({
@@ -323,7 +326,7 @@ export const ENTITY_REGISTRY: Record<string, SyncEntityConfig<any>> = {
       p_status: item.status || 'open',
       p_description: item.description || '',
     }),
-    fromCloudRecord: (r: any): GymEvent => ({
+    fromCloudRecord: (r): GymEvent => ({
       id: r.local_id,
       name: r.name || '',
       type: r.type || 'event',
@@ -341,7 +344,7 @@ export const ENTITY_REGISTRY: Record<string, SyncEntityConfig<any>> = {
   },
 
   eventRegistrations: {
-    dexieTable: db.eventRegistrations as any,
+    dexieTable: db.eventRegistrations ,
     supabaseTable: 'synced_event_registrations',
     rpcName: 'upsert_synced_event_registration',
     toCloudRecord: (item: Partial<EventRegistration> & { id?: number }) => ({
@@ -355,7 +358,7 @@ export const ENTITY_REGISTRY: Record<string, SyncEntityConfig<any>> = {
       p_registered_at: item.registeredAt ? item.registeredAt.toISOString() : new Date().toISOString(),
       p_checked_in_at: item.checkedInAt ? item.checkedInAt.toISOString() : null,
     }),
-    fromCloudRecord: (r: any): EventRegistration => ({
+    fromCloudRecord: (r): EventRegistration => ({
       id: r.local_id,
       eventId: r.event_id ?? 0,
       eventName: r.event_name || '',
@@ -371,7 +374,7 @@ export const ENTITY_REGISTRY: Record<string, SyncEntityConfig<any>> = {
   },
 
   rewards: {
-    dexieTable: db.rewards as any,
+    dexieTable: db.rewards ,
     supabaseTable: 'synced_rewards',
     rpcName: 'upsert_synced_reward',
     toCloudRecord: (item: Partial<Reward> & { id?: number }) => ({
@@ -382,7 +385,7 @@ export const ENTITY_REGISTRY: Record<string, SyncEntityConfig<any>> = {
       p_stock: item.stock ?? 0,
       p_image: item.image || '',
     }),
-    fromCloudRecord: (r: any): Reward => ({
+    fromCloudRecord: (r): Reward => ({
       id: r.local_id,
       name: r.name || '',
       description: r.description || '',
@@ -395,14 +398,14 @@ export const ENTITY_REGISTRY: Record<string, SyncEntityConfig<any>> = {
   },
 
   productCategories: {
-    dexieTable: db.productCategories as any,
+    dexieTable: db.productCategories ,
     supabaseTable: 'synced_product_categories',
     rpcName: 'upsert_synced_product_category',
     toCloudRecord: (item: Partial<ProductCategory> & { id?: number }) => ({
       p_local_id: item.id,
       p_name: item.name || '',
     }),
-    fromCloudRecord: (r: any): ProductCategory => ({
+    fromCloudRecord: (r): ProductCategory => ({
       id: r.local_id,
       name: r.name || '',
       createdAt: new Date(r.created_at || Date.now()),
@@ -410,7 +413,7 @@ export const ENTITY_REGISTRY: Record<string, SyncEntityConfig<any>> = {
   },
 
   whatsappCampaigns: {
-    dexieTable: db.whatsappCampaigns as any,
+    dexieTable: db.whatsappCampaigns ,
     supabaseTable: 'synced_whatsapp_campaigns',
     rpcName: 'upsert_synced_whatsapp_campaign',
     toCloudRecord: (item: Partial<WhatsAppCampaign> & { id?: number }) => ({
@@ -422,7 +425,7 @@ export const ENTITY_REGISTRY: Record<string, SyncEntityConfig<any>> = {
       p_message: item.message || '',
       p_status: item.status || 'sent',
     }),
-    fromCloudRecord: (r: any): WhatsAppCampaign => ({
+    fromCloudRecord: (r): WhatsAppCampaign => ({
       id: r.local_id,
       template: r.template || '',
       memberId: r.member_id ?? 0,
@@ -430,6 +433,194 @@ export const ENTITY_REGISTRY: Record<string, SyncEntityConfig<any>> = {
       phone: r.phone || '',
       message: r.message || '',
       status: r.status || 'sent',
+      createdAt: new Date(r.created_at || Date.now()),
+      syncStatus: 'synced',
+    }),
+  },
+
+  members: {
+    dexieTable: db.members,
+    supabaseTable: 'synced_members',
+    rpcName: 'upsert_synced_member',
+    toCloudRecord: (item: Partial<Member> & { id?: number }) => ({
+      p_local_id: item.id,
+      p_phone: item.phone || '',
+      p_first_name: item.firstName || '',
+      p_last_name: item.lastName || '',
+      p_birth_date: item.birthDate || '',
+      p_address: item.address || '',
+      p_gender: item.gender || 'other',
+      p_blood_type: item.bloodType || '',
+      p_photo: item.photo || '',
+      p_coach_id: item.coachId ?? null,
+      p_program_id: item.programId ?? null,
+      p_sessions_left: item.sessionsLeft ?? 0,
+      p_program_amount: item.programAmount ?? 0,
+      p_amount_paid: item.amountPaid ?? 0,
+      p_balance_due: item.balanceDue ?? 0,
+      p_discount: item.discount ?? 0,
+      p_advance: item.advance ?? 0,
+      p_subscription_type: item.subscriptionType || 'free_session',
+      p_subscription_duration: item.subscriptionDuration || '',
+      p_status: item.status || 'active',
+      p_fidelity_points: item.fidelityPoints ?? 0,
+      p_rfid_code: item.rfidCode || '',
+      p_is_blocked: item.isBlocked ?? false,
+      p_block_reason: item.blockReason || null,
+      p_block_date: item.blockDate ? item.blockDate.toISOString() : null,
+      p_blocked_until: item.blockedUntil ? item.blockedUntil.toISOString() : null,
+      p_email: item.email || null,
+      p_emergency_contact_name: item.emergencyContactName || null,
+      p_emergency_contact_phone: item.emergencyContactPhone || null,
+      p_allergies: item.allergies || null,
+      p_weight: item.weight ?? null,
+      p_weight_current: item.weightCurrent ?? null,
+      p_height: item.height ?? null,
+      p_fitness_goal: item.fitnessGoal || null,
+      p_experience_level: item.experienceLevel || null,
+      p_referred_by: item.referredBy ?? 0,
+    }),
+    fromCloudRecord: (r): Member => ({
+      id: r.local_id,
+      phone: r.phone || '',
+      firstName: r.first_name || '',
+      lastName: r.last_name || '',
+      birthDate: r.birth_date || '',
+      address: r.address || '',
+      gender: r.gender || 'other',
+      bloodType: r.blood_type || '',
+      photo: r.photo || '',
+      coachId: r.coach_id ?? undefined,
+      programId: r.program_id ?? undefined,
+      sessionsLeft: r.sessions_left || 0,
+      programAmount: r.program_amount || 0,
+      amountPaid: r.amount_paid || 0,
+      balanceDue: r.balance_due || 0,
+      discount: r.discount || 0,
+      advance: r.advance || 0,
+      subscriptionType: r.subscription_type || 'free_session',
+      subscriptionDuration: r.subscription_duration || '',
+      status: r.status || 'active',
+      fidelityPoints: r.fidelity_points || 0,
+      rfidCode: r.rfid_code || '',
+      isBlocked: r.is_blocked ?? false,
+      blockReason: r.block_reason || null,
+      blockDate: r.block_date ? new Date(r.block_date) : undefined,
+      blockedUntil: r.blocked_until ? new Date(r.blocked_until) : undefined,
+      email: r.email || undefined,
+      emergencyContactName: r.emergency_contact_name || undefined,
+      emergencyContactPhone: r.emergency_contact_phone || undefined,
+      allergies: r.allergies || undefined,
+      weight: r.weight ?? undefined,
+      weightCurrent: r.weight_current ?? undefined,
+      height: r.height ?? undefined,
+      fitnessGoal: r.fitness_goal || undefined,
+      experienceLevel: r.experience_level || undefined,
+      referredBy: r.referred_by || undefined,
+      createdAt: new Date(r.created_at || Date.now()),
+      updatedAt: new Date(r.updated_at || Date.now()),
+      syncStatus: 'synced',
+    }),
+  },
+
+  payments: {
+    dexieTable: db.payments,
+    supabaseTable: 'synced_payments',
+    rpcName: '',
+    toCloudRecord: (item: Partial<Payment> & { id?: number }) => ({
+      local_id: item.id,
+      member_id: item.memberId,
+      amount: item.amount,
+      type: item.type,
+      mode: item.mode,
+      date: item.date ? new Date(item.date).toISOString() : new Date().toISOString(),
+      notes: item.description,
+      created_at: item.createdAt ? new Date(item.createdAt).toISOString() : new Date().toISOString(),
+    }),
+    fromCloudRecord: (r): Payment => ({
+      id: r.local_id,
+      memberId: r.member_id,
+      amount: Number(r.amount) || 0,
+      type: r.type || 'subscription',
+      mode: r.mode || 'cash',
+      date: new Date(r.date || r.created_at || Date.now()),
+      description: r.notes || '',
+      createdAt: new Date(r.created_at || Date.now()),
+      syncStatus: 'synced',
+    }),
+  },
+
+  checkins: {
+    dexieTable: db.checkins,
+    supabaseTable: 'synced_checkins',
+    rpcName: '',
+    toCloudRecord: (item: Partial<CheckIn> & { id?: number }) => ({
+      local_id: item.id,
+      member_id: item.memberId,
+      timestamp: item.timestamp ? new Date(item.timestamp).toISOString() : new Date().toISOString(),
+      type: item.type,
+    }),
+    fromCloudRecord: (r): CheckIn => ({
+      id: r.local_id,
+      memberId: r.member_id,
+      timestamp: new Date(r.timestamp || r.created_at || Date.now()),
+      type: r.type || 'checkin',
+      syncStatus: 'synced',
+    }),
+  },
+
+  pointsLedger: {
+    dexieTable: db.pointsLedger,
+    supabaseTable: 'synced_points_ledger',
+    rpcName: '',
+    toCloudRecord: (item: Partial<PointsLedger> & { id?: number }) => ({
+      local_id: item.id,
+      member_id: item.memberId,
+      points: item.points,
+      type: item.type,
+      reference_id: item.referenceId,
+      created_at: item.createdAt ? new Date(item.createdAt).toISOString() : new Date().toISOString(),
+    }),
+    fromCloudRecord: (r): PointsLedger => ({
+      id: r.local_id,
+      memberId: r.member_id,
+      memberName: r.member_name || '',
+      points: Number(r.points) || 0,
+      type: r.type || 'earn',
+      reason: r.reason || '',
+      referenceId: r.reference_id || undefined,
+      referenceType: r.reference_type || undefined,
+      balanceAfter: Number(r.balance_after) || 0,
+      createdAt: new Date(r.created_at || Date.now()),
+      syncStatus: 'synced',
+    }),
+  },
+
+  pinUsers: {
+    dexieTable: db.pinUsers,
+    supabaseTable: 'synced_pin_users',
+    rpcName: '',
+    toCloudRecord: (item: Partial<PinUser> & { id?: number }) => ({
+      local_id: item.id,
+      username: item.username || '',
+      password: item.password || '',
+      role: item.role,
+      name: item.name || '',
+      phone: item.phone || null,
+      is_locked: item.isLocked || false,
+      pin: item.pin || '',
+      created_at: item.createdAt ? new Date(item.createdAt).toISOString() : new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }),
+    fromCloudRecord: (r): PinUser => ({
+      id: r.local_id,
+      username: r.username || '',
+      password: r.password || '',
+      pin: r.pin || '',
+      role: r.role || 'reception',
+      name: r.name || '',
+      phone: r.phone || undefined,
+      isLocked: r.is_locked || false,
       createdAt: new Date(r.created_at || Date.now()),
       syncStatus: 'synced',
     }),

@@ -44,7 +44,7 @@ interface AdherentSidebarProps {
 export function AdherentSidebar({ collapsed = false, onToggle }: AdherentSidebarProps) {
   const pathname = usePathname()
   const { user, logout } = useAuth()
-  const memberName = user && 'name' in user ? (user as any).name : user && 'firstName' in user ? `${(user as any).firstName} ${(user as any).lastName}`.trim() : 'Membre'
+  const memberName = user && 'name' in user ? (user as { name: string }).name : user && 'firstName' in user ? `${(user as { firstName: string; lastName: string }).firstName} ${(user as { firstName: string; lastName: string }).lastName}`.trim() : 'Membre'
 
   const isActive = (href: string) =>
     href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(href)

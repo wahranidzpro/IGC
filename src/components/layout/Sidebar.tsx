@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { useAuth } from "@/lib/auth/context"
 import { useLanguage } from "@/lib/context/language-context"
@@ -8,10 +9,10 @@ import { useState } from "react"
 import {
   Home, LogOut, Users, Settings, CreditCard, TrendingDown,
   Package, UserCheck, ClipboardList, MessageSquare,
-  Building2, ChevronDown, Trophy, Star, UserPlus, Calendar,
-  Wrench, Box, Languages, Bot, Database, BarChart3, DoorOpen, Wifi,
+  Building2, ChevronDown, Trophy, UserPlus, Calendar,
+  Wrench, Box, Languages, Database, BarChart3, DoorOpen, Wifi,
   Activity, ShoppingCart, QrCode, Dumbbell, Fingerprint, Gift, ShoppingBag,
-  ChevronLeft, ChevronRight, Infinity, Clock,
+  ChevronLeft, ChevronRight, Clock,
 } from "lucide-react"
 
 interface NavItem {
@@ -123,7 +124,7 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
   const pathname = usePathname()
-  const { user, role, logout } = useAuth()
+  const { role, logout } = useAuth()
   const { t, lang, setLang } = useLanguage()
   const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {}
@@ -167,11 +168,13 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
             <div className={`relative rounded-2xl flex items-center justify-center overflow-hidden transition-all duration-500 ${collapsed ? "w-11 h-11" : "w-[52px] h-[52px]"} group-hover:scale-105`}>
               {/* Gold gradient overlay for logo */}
               <div className="absolute inset-0 bg-gradient-to-br from-[#C89B3C]/20 to-[#E0B85D]/5 rounded-2xl" />
-              <img
+              <Image
                 src="/logo-transparent.png"
                 alt="IGC"
-                className="w-full h-full object-contain relative z-10 drop-shadow-[0_0_20px_rgba(200,155,60,0.3)]"
+                fill
+                className="object-contain relative z-10 drop-shadow-[0_0_20px_rgba(200,155,60,0.3)]"
                 style={{ filter: "brightness(1) contrast(1.1) drop-shadow(0 0 8px rgba(200,155,60,0.4))" }}
+                sizes="52px"
               />
             </div>
             {!collapsed && (

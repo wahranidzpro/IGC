@@ -3,8 +3,8 @@
 import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { getTurnstile, createTurnstile, updateTurnstile, Turnstile } from '@/lib/supabase/turnstile-service';
-import { ArrowLeft, Save, Loader2, Wifi, Monitor } from 'lucide-react';
+import { getTurnstile, createTurnstile, updateTurnstile } from '@/lib/supabase/turnstile-service';
+import { ArrowLeft, Save, Loader2, Wifi } from 'lucide-react';
 
 const DEVICE_TYPES = ['ZKTeco', 'Hikvision', 'Dahua', 'HTTP_GENERIC'] as const;
 const DIRECTIONS = ['entry', 'exit', 'bidirectional'] as const;
@@ -38,7 +38,6 @@ function AddTurnstileContent() {
 
   useEffect(() => {
     if (editId) {
-      setLoading(true);
       getTurnstile(parseInt(editId, 10))
         .then(t => {
           setForm({
@@ -67,8 +66,8 @@ function AddTurnstileContent() {
         await createTurnstile(form);
       }
       router.push('/turnstiles');
-    } catch (err: any) {
-      setError(err.message || 'Erreur lors de l\'enregistrement');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Erreur lors de l\'enregistrement');
     } finally {
       setSaving(false);
     }
@@ -132,15 +131,15 @@ function AddTurnstileContent() {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1.5">Type d'appareil</label>
-            <select value={form.device_type} onChange={e => setForm(f => ({ ...f, device_type: e.target.value as any }))}
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">Type d&apos;appareil</label>
+            <select value={form.device_type} onChange={e => setForm(f => ({ ...f, device_type: e.target.value as typeof DEVICE_TYPES[number] }))}
               className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white focus:outline-none focus:border-blue-500">
               {DEVICE_TYPES.map(dt => <option key={dt} value={dt}>{dt === 'HTTP_GENERIC' ? 'HTTP Générique' : dt}</option>)}
             </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1.5">Direction</label>
-            <select value={form.direction} onChange={e => setForm(f => ({ ...f, direction: e.target.value as any }))}
+            <select value={form.direction} onChange={e => setForm(f => ({ ...f, direction: e.target.value as typeof DIRECTIONS[number] }))}
               className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white focus:outline-none focus:border-blue-500">
               {DIRECTIONS.map(d => <option key={d} value={d}>{d === 'entry' ? 'Entrée' : d === 'exit' ? 'Sortie' : 'Bidirectionnel'}</option>)}
             </select>

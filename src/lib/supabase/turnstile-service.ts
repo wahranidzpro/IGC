@@ -28,7 +28,7 @@ export interface AccessLog {
   status?: string;
   method?: string;
   reason?: string;
-  raw_payload?: any;
+  raw_payload?: unknown;
   rfid_uid?: string;
   turnstile_name?: string;
   timestamp: string;
@@ -62,6 +62,7 @@ export async function getTurnstile(id: number | string) {
 
 export async function createTurnstile(t: Omit<Turnstile, 'id' | 'created_at' | 'last_heartbeat'>) {
   const s = getClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (s.from('turnstiles') as any).insert([t]).select().single();
   if (error) throw error;
   return data as Turnstile;
@@ -69,6 +70,7 @@ export async function createTurnstile(t: Omit<Turnstile, 'id' | 'created_at' | '
 
 export async function updateTurnstile(id: number, updates: Partial<Turnstile>) {
   const s = getClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (s.from('turnstiles') as any).update(updates).eq('id', id).select().single();
   if (error) throw error;
   return data as Turnstile;
@@ -100,7 +102,7 @@ export async function getAccessLogsForMember(memberId: number, limit = 50) {
     .order('timestamp', { ascending: false })
     .limit(limit);
   if (error) throw error;
-  return (data || []).map((r: any) => ({ ...r, turnstile_name: r.turnstile?.name })) as AccessLog[];
+  return (data || []).map((r: AccessLog & { turnstile?: { name: string } }) => ({ ...r, turnstile_name: r.turnstile?.name })) as AccessLog[];
 }
 
 export function subscribeToAccessLogs(
@@ -168,6 +170,7 @@ export async function getPendingSyncItems() {
 
 export async function markSyncDone(id: string) {
   const s = getClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (s.from('sync_queue') as any).update({ status: 'processed', processed_at: new Date().toISOString() }).eq('id', id);
   if (error) throw error;
 }

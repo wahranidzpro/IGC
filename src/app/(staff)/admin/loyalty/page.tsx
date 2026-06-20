@@ -4,12 +4,13 @@ import { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db/dexie-db';
 import { useAuth } from '@/lib/auth/context';
+import { logAudit } from '@/lib/audit';
 import { useRouter } from 'next/navigation';
 import { Gift, Settings, Save, TrendingUp, TrendingDown, Users, Search, ArrowLeft, ArrowRight } from 'lucide-react';
-import { getLoyaltyConfig, saveLoyaltyConfig, getMemberPointsHistory, type LoyaltyConfig } from '@/lib/loyalty';
+import { getLoyaltyConfig, saveLoyaltyConfig, type LoyaltyConfig } from '@/lib/loyalty';
 
 export default function LoyaltyPage() {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const router = useRouter();
   const [config, setConfig] = useState<LoyaltyConfig>({
     earnRateDzd: 100,
@@ -24,6 +25,7 @@ export default function LoyaltyPage() {
     earlyPaymentMinAmount: 5000,
     earlyPaymentBonusPercent: 10,
     earlyPaymentMinMonths: 3,
+    posDiscountMaxPercent: 30,
   });
   const [saved, setSaved] = useState(false);
   const [activeTab, setActiveTab] = useState<'settings' | 'ledger'>('settings');
@@ -36,12 +38,12 @@ export default function LoyaltyPage() {
   }, []);
 
   const allLedger = useLiveQuery(() => db.pointsLedger.orderBy('createdAt').reverse().toArray(), []);
+  const members = useLiveQuery(() => db.members.toArray(), []);
 
   if (role !== 'admin') {
     router.push('/');
     return null;
   }
-  const members = useLiveQuery(() => db.members.toArray(), []);
 
   const filteredLedger = allLedger?.filter(entry => {
     if (!ledgerSearch) return true;
@@ -54,6 +56,8 @@ export default function LoyaltyPage() {
 
   const handleSave = async () => {
     await saveLoyaltyConfig(config);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await logAudit({ action: 'settings_change', newValue: 'Configuration fidélité mise à jour' }, (user as any)?.username || 'unknown', role || 'unknown');
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -61,7 +65,7 @@ export default function LoyaltyPage() {
   const totalPoints = members?.reduce((sum, m) => sum + (m.fidelityPoints || 0), 0) || 0;
   const membersWithPoints = members?.filter(m => (m.fidelityPoints || 0) > 0).length || 0;
 
-  const getMemberName = (id: number) => members?.find(m => m.id === id)?.firstName + ' ' + (members?.find(m => m.id === id)?.lastName || '');
+
 
   return (
     <div className="space-y-6">
@@ -161,8 +165,8 @@ export default function LoyaltyPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 rounded-lg" style={{ background: 'var(--input-bg)' }}>
                 <div>
-                  <p className="font-medium" style={{ color: 'var(--text)' }}>Activer l'echange de points</p>
-                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Permettre aux membres d'utiliser leurs points</p>
+                  <p className="font-medium" style={{ color: 'var(--text)' }}>Activer l&apos;echange de points</p>
+                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Permettre aux membres d&apos;utiliser leurs points</p>
                 </div>
                 <button
                   onClick={() => setConfig({ ...config, redemptionEnabled: !config.redemptionEnabled })}

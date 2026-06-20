@@ -4,12 +4,15 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db/dexie-db';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
+import { useAuth } from '@/lib/auth/context';
+import { logAudit } from '@/lib/audit';
 import {
   Settings, Phone, Mail, Globe, Save, Loader2, Users,
-  DollarSign, Clock, Image, Link, Sun,
+  DollarSign, Clock, Image as ImageIcon, Sun,
   MapPin, Building2, CheckCircle2, AlertCircle, Upload,
-  Camera, MessageCircle, Music2, Video, X, Eye
+  Camera, MessageCircle, Music2, X, Eye
 } from 'lucide-react';
+import Image from 'next/image';
 
 const CURRENCIES = [
   { value: 'DA', label: 'DA - Dinar Algérien' },
@@ -109,7 +112,51 @@ function parseOpeningHours(value: string): OpeningHours {
   }
 }
 
+function SectionCard({ title, icon: Icon, iconColor, children }: { title: string; icon: React.ComponentType<{ className?: string }>; iconColor: string; children: React.ReactNode }) {
+  return (
+    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-800">
+        <div className={`w-10 h-10 rounded-lg ${iconColor} flex items-center justify-center`}>
+          <Icon className="w-5 h-5" />
+        </div>
+        <h3 className="text-lg font-semibold text-white">{title}</h3>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function FieldLabel({ icon: Icon, children }: { icon: React.ComponentType<{ className?: string }>; children: React.ReactNode }) {
+  return (
+    <label className="block text-sm font-medium text-gray-400 mb-2">
+      <span className="flex items-center gap-2">
+        <Icon className="w-4 h-4" />
+        {children}
+      </span>
+    </label>
+  );
+}
+
+function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <input
+      {...props}
+      className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder:text-gray-600 focus:outline-none focus:border-orange-500 transition-colors"
+    />
+  );
+}
+
+function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
+  return (
+    <select
+      {...props}
+      className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white focus:outline-none focus:border-orange-500 transition-colors"
+    />
+  );
+}
+
 export default function GeneralSettingsPage() {
+  const { user, role } = useAuth();
   const settingsRecords = useLiveQuery(() => db.settings.toArray(), []);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -130,22 +177,24 @@ export default function GeneralSettingsPage() {
     const hoursRaw = getSetting('club_hours');
     const hours = hoursRaw ? parseOpeningHours(hoursRaw) : DEFAULT_OPENING_HOURS;
 
-    setFormData({
-      name: getSetting('club_name') || DEFAULTS.name,
-      phone: getSetting('club_phone') || DEFAULTS.phone,
-      email: getSetting('club_email') || DEFAULTS.email,
-      website: getSetting('club_website') || DEFAULTS.website,
-      address: getSetting('club_address') || DEFAULTS.address,
-      capacity: Number(getSetting('club_capacity')) || DEFAULTS.capacity,
-      currency: getSetting('club_currency') || DEFAULTS.currency,
-      timezone: getSetting('club_timezone') || DEFAULTS.timezone,
-      logo: getSetting('club_logo') || '',
-      openingHours: hours,
-      instagram: getSetting('club_instagram') || '',
-      facebook: getSetting('club_facebook') || '',
-      tiktok: getSetting('club_tiktok') || '',
+    Promise.resolve().then(() => {
+      setFormData({
+        name: getSetting('club_name') || DEFAULTS.name,
+        phone: getSetting('club_phone') || DEFAULTS.phone,
+        email: getSetting('club_email') || DEFAULTS.email,
+        website: getSetting('club_website') || DEFAULTS.website,
+        address: getSetting('club_address') || DEFAULTS.address,
+        capacity: Number(getSetting('club_capacity')) || DEFAULTS.capacity,
+        currency: getSetting('club_currency') || DEFAULTS.currency,
+        timezone: getSetting('club_timezone') || DEFAULTS.timezone,
+        logo: getSetting('club_logo') || '',
+        openingHours: hours,
+        instagram: getSetting('club_instagram') || '',
+        facebook: getSetting('club_facebook') || '',
+        tiktok: getSetting('club_tiktok') || '',
+      });
+      setLogoPreview(getSetting('club_logo') || '');
     });
-    setLogoPreview(getSetting('club_logo') || '');
   }, [settingsRecords, getSetting]);
 
   useEffect(() => {
@@ -153,10 +202,10 @@ export default function GeneralSettingsPage() {
     const client = supabase;
     const fetchFromCloud = async () => {
       try {
-        const { data } = await (client.from('synced_club_info') as any)
-          .select('*')
-          .single()
-          .catch(() => ({ data: null }));
+        const q = client.from('synced_club_info') as unknown as {
+          select(cols: string): { single(): Promise<{ data: Record<string, string> | null }> };
+        };
+        const { data } = await q.select('*').single().catch(() => ({ data: null }));
         if (data) {
           setFormData(prev => ({
             ...prev,
@@ -253,54 +302,24 @@ export default function GeneralSettingsPage() {
             club_facebook: formData.facebook,
             club_tiktok: formData.tiktok,
           };
-          await (supabase.from('synced_club_info') as any).upsert(payload, { onConflict: 'id' });
+          const q2 = supabase.from('synced_club_info') as unknown as {
+            upsert(payload: Record<string, string>, opts: { onConflict: string }): Promise<unknown>;
+          };
+          await q2.upsert(payload, { onConflict: 'id' });
           setSynced(true);
         } catch {}
       }
 
+      logAudit({ action: 'settings_change', newValue: `Club: ${formData.name}` }, (user as { username?: string })?.username || 'unknown', role || 'unknown');
+
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
-    } catch (err) {
+    } catch {
       setSaveError('Erreur lors de la sauvegarde');
     } finally {
       setSaving(false);
     }
   };
-
-  const SectionCard = ({ title, icon: Icon, iconColor, children }: { title: string; icon: any; iconColor: string; children: React.ReactNode }) => (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-800">
-        <div className={`w-10 h-10 rounded-lg ${iconColor} flex items-center justify-center`}>
-          <Icon className="w-5 h-5" />
-        </div>
-        <h3 className="text-lg font-semibold text-white">{title}</h3>
-      </div>
-      {children}
-    </div>
-  );
-
-  const FieldLabel = ({ icon: Icon, children }: { icon: any; children: React.ReactNode }) => (
-    <label className="block text-sm font-medium text-gray-400 mb-2">
-      <span className="flex items-center gap-2">
-        <Icon className="w-4 h-4" />
-        {children}
-      </span>
-    </label>
-  );
-
-  const Input = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
-    <input
-      {...props}
-      className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder:text-gray-600 focus:outline-none focus:border-orange-500 transition-colors"
-    />
-  );
-
-  const Select = (props: React.SelectHTMLAttributes<HTMLSelectElement>) => (
-    <select
-      {...props}
-      className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white focus:outline-none focus:border-orange-500 transition-colors"
-    />
-  );
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto pb-12">
@@ -416,13 +435,13 @@ export default function GeneralSettingsPage() {
       <SectionCard title="Apparence" icon={Sun} iconColor="bg-yellow-500/20">
         <div className="space-y-5">
           <div>
-            <FieldLabel icon={Image}>Logo du Club</FieldLabel>
+            <FieldLabel icon={ImageIcon}>Logo du Club</FieldLabel>
             <div className="flex items-start gap-4">
               <div className="w-24 h-24 rounded-xl bg-gray-800 border border-gray-700 flex items-center justify-center overflow-hidden shrink-0">
                 {logoPreview ? (
-                  <img src={logoPreview} alt="Logo preview" className="w-full h-full object-contain" />
+                  <Image src={logoPreview} alt="Logo preview" width={96} height={96} className="w-full h-full object-contain" />
                 ) : (
-                  <Image className="w-8 h-8 text-gray-600" />
+                  <ImageIcon className="w-8 h-8 text-gray-600" aria-hidden="true" />
                 )}
               </div>
               <div className="flex-1">
@@ -552,7 +571,7 @@ export default function GeneralSettingsPage() {
         <div className="bg-gray-950 rounded-2xl border border-gray-800 overflow-hidden max-w-sm mx-auto">
           <div className="bg-gradient-to-b from-orange-600 to-orange-700 p-6 text-center">
             {logoPreview ? (
-              <img src={logoPreview} alt="Logo" className="w-20 h-20 object-contain mx-auto mb-3 rounded-xl bg-white/10 p-2" />
+              <Image src={logoPreview} alt="Logo" width={80} height={80} className="w-20 h-20 object-contain mx-auto mb-3 rounded-xl bg-white/10 p-2" />
             ) : (
               <div className="w-20 h-20 rounded-xl bg-white/10 flex items-center justify-center mx-auto mb-3">
                 <Building2 className="w-10 h-10 text-white/60" />

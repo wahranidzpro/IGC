@@ -1,9 +1,9 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, Member } from '@/lib/db/dexie-db';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, AreaChart, Area } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Line, AreaChart, Area } from 'recharts';
 import * as XLSX from 'xlsx';
 import { Download, Clock, Calendar, TrendingUp, ShoppingCart, Award, Zap, DoorOpen, DollarSign, AlertTriangle } from 'lucide-react';
 
@@ -11,12 +11,6 @@ interface MemberHabitsProps {
   member: Member;
 }
 
-interface SessionPair {
-  date: string;
-  checkin: Date;
-  checkout: Date | null;
-  durationMinutes: number;
-}
 
 const DAYS_FR = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
 const SLOTS = [
@@ -34,6 +28,8 @@ export function MemberHabits({ member }: MemberHabitsProps) {
 
   const allPayments = useLiveQuery(() =>
     db.payments.where('memberId').equals(member.id!).reverse().toArray(), [member.id]);
+
+  const [now] = useState(() => Date.now());
 
   // --- Pair checkin/checkout by date ---
   const sessions = useMemo(() => {
@@ -137,7 +133,7 @@ export function MemberHabits({ member }: MemberHabitsProps) {
     const total = allPayments.reduce((s, p) => s + p.amount, 0);
     const products = allPayments.filter(p => p.type === 'product').length;
     const subscriptions = allPayments.filter(p => p.type === 'subscription').length;
-    const monthsActive = Math.max(1, Math.ceil((Date.now() - new Date(member.createdAt).getTime()) / (30 * 86400000)));
+    const monthsActive = Math.max(1, Math.ceil((now - new Date(member.createdAt).getTime()) / (30 * 86400000)));
     return {
       total,
       count: allPayments.length,
@@ -145,7 +141,7 @@ export function MemberHabits({ member }: MemberHabitsProps) {
       subscriptions,
       avgPerMonth: Math.round(total / monthsActive),
     };
-  }, [allPayments, member.createdAt]);
+  }, [allPayments, member.createdAt, now]);
 
   // --- Top produits achetés ---
   const topProducts = useMemo(() => {
@@ -274,7 +270,8 @@ export function MemberHabits({ member }: MemberHabitsProps) {
                     <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                     <XAxis dataKey="mois" tick={{ fill: '#9ca3af', fontSize: 9 }} tickFormatter={(v) => { const [y, m] = v.split('-'); return `${m}/${y.slice(2)}`; }} />
                     <YAxis tick={{ fill: '#9ca3af', fontSize: 9 }} />
-                    <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px' }} formatter={(v: any, n: any) => [n === 'sessions' ? `${v} sessions` : `${Number(v).toFixed(1)}h`, n === 'sessions' ? 'Sessions' : 'Heures']} />
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                    <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px' }} formatter={(v: unknown, n: unknown) => [n === 'sessions' ? `${v} sessions` : `${Number(v).toFixed(1)}h`, n === 'sessions' ? 'Sessions' : 'Heures'] as any} />
                     <Area type="monotone" dataKey="sessions" stroke="#f97316" fill="url(#trendGradient)" strokeWidth={2} />
                     <Line type="monotone" dataKey="heures" stroke="#3b82f6" strokeWidth={1.5} dot={false} strokeDasharray="4 2" />
                   </AreaChart>
@@ -320,7 +317,8 @@ export function MemberHabits({ member }: MemberHabitsProps) {
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                   <XAxis dataKey="label" tick={{ fill: '#9ca3af', fontSize: 9 }} />
                   <YAxis tick={{ fill: '#9ca3af', fontSize: 9 }} />
-                  <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px' }} formatter={(v: any) => [formatDuration(Number(v) || 0), 'Durée']} />
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                  <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px' }} formatter={(v: unknown) => [formatDuration(Number(v) || 0), 'Durée'] as any} />
                   <Bar dataKey="duree" fill="#f97316" radius={[3, 3, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>

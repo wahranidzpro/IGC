@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db/dexie-db';
-import { Sparkles, Droplets, Package, Wrench, Calendar, TrendingUp, TrendingDown, DollarSign, ShoppingBag, BarChart3, PieChart, Plus, X, Edit, Save, Box, Monitor, ClipboardList, Printer, Tag, Trash2 } from 'lucide-react';
+import { useAuth } from '@/lib/auth/context';
+import { logAudit } from '@/lib/audit';
+import { Sparkles, Droplets, Package, Wrench, Calendar, TrendingUp, TrendingDown, DollarSign, ShoppingBag, Plus, X, Edit, Save, Tag, Trash2, BarChart3, PieChart, Box, Printer } from 'lucide-react';
 
 interface PurchaseRecord {
   id: number;
@@ -102,13 +104,13 @@ const CATEGORIES = {
 };
 
 export default function ConsumablesPage() {
+  const { role, user } = useAuth();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'history' | 'analysis' | 'inventory'>('dashboard');
   const [invSubTab, setInvSubTab] = useState<'products' | 'consumables' | 'equipment' | 'office'>('products');
-  const [selectedMonth, setSelectedMonth] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editData, setEditData] = useState<PurchaseRecord | null>(null);
-  const [equipment, setEquipment] = useState(INITIAL_EQUIPMENT);
+  const [equipment] = useState(INITIAL_EQUIPMENT);
   const [officeSupplies, setOfficeSupplies] = useState<OfficeSupply[]>(INITIAL_OFFICE);
   const [officeEdit, setOfficeEdit] = useState<number | null>(null);
   const [officeEditData, setOfficeEditData] = useState<OfficeSupply | null>(null);
@@ -205,7 +207,6 @@ export default function ConsumablesPage() {
   };
 
   const totalSpent = purchaseHistory.reduce((sum, p) => sum + p.total, 0);
-  const avgMonthly = totalSpent / 5; // 5 months
   
   const categoryTotals = purchaseHistory.reduce((acc, p) => {
     acc[p.category] = (acc[p.category] || 0) + p.total;
@@ -252,7 +253,7 @@ export default function ConsumablesPage() {
         ].map(tab => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
+            onClick={() => setActiveTab(tab.id as 'dashboard' | 'history' | 'analysis' | 'inventory')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all ${
               activeTab === tab.id 
                 ? 'bg-orange-500 text-white' 
@@ -576,7 +577,7 @@ export default function ConsumablesPage() {
               { id: 'equipment', label: 'Matériels', icon: Wrench },
               { id: 'office', label: 'Bureautique', icon: Printer },
             ].map(st => (
-              <button key={st.id} onClick={() => setInvSubTab(st.id as any)}
+              <button key={st.id} onClick={() => setInvSubTab(st.id as 'products' | 'consumables' | 'equipment' | 'office')}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                   invSubTab === st.id ? 'bg-emerald-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
                 }`}>
@@ -954,6 +955,8 @@ export default function ConsumablesPage() {
                   <button onClick={async () => {
                     if (confirm(`Supprimer la catégorie "${cat.name}" ?`)) {
                       await db.productCategories.delete(cat.id!);
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      await logAudit({ action: 'product_category_delete', newValue: `Catégorie "${cat.name}" supprimée` }, (user as any)?.username || 'unknown', role || 'unknown');
                     }
                   }} className="text-red-400 hover:text-red-300 text-xs">
                     <Trash2 className="w-3.5 h-3.5 inline mr-1" /> Supprimer
@@ -982,6 +985,8 @@ export default function ConsumablesPage() {
             <button onClick={async () => {
               if (!catForm.name) return;
               await db.productCategories.add({ name: catForm.name, createdAt: new Date() });
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              await logAudit({ action: 'product_category_create', newValue: `Catégorie "${catForm.name}" créée` }, (user as any)?.username || 'unknown', role || 'unknown');
               setShowCategoryModal(false);
             }} disabled={!catForm.name} className="w-full mt-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-orange-700 disabled:opacity-50">Créer</button>
           </div>

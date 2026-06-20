@@ -20,6 +20,13 @@ const mealIcons: Record<string, LucideIcon> = { breakfast: Sunrise, lunch: Sun, 
 
 const emptyItem = { name: "", portion: "" }
 
+const initMeals = () => [
+    { id: "breakfast", name: "Petit-déjeuner", time: "07:30", calories: 0, protein: 0, carbs: 0, fat: 0, items: [{ ...emptyItem }] },
+    { id: "lunch", name: "Déjeuner", time: "12:30", calories: 0, protein: 0, carbs: 0, fat: 0, items: [{ ...emptyItem }] },
+    { id: "snack", name: "Collation", time: "16:00", calories: 0, protein: 0, carbs: 0, fat: 0, items: [{ ...emptyItem }] },
+    { id: "dinner", name: "Dîner", time: "20:00", calories: 0, protein: 0, carbs: 0, fat: 0, items: [{ ...emptyItem }] },
+  ]
+
 function MealIcon({ id }: { id: string }) {
   const nameToId: Record<string, string> = {
     "Petit-déjeuner": "breakfast",
@@ -75,29 +82,15 @@ export default function NutritionPage() {
   const [saving, setSaving] = useState(false)
   const [viewDetail, setViewDetail] = useState<NutritionProgram | null>(null)
 
-  const initMeals = () => [
-    { id: "breakfast", name: "Petit-déjeuner", time: "07:30", calories: 0, protein: 0, carbs: 0, fat: 0, items: [{ ...emptyItem }] },
-    { id: "lunch", name: "Déjeuner", time: "12:30", calories: 0, protein: 0, carbs: 0, fat: 0, items: [{ ...emptyItem }] },
-    { id: "snack", name: "Collation", time: "16:00", calories: 0, protein: 0, carbs: 0, fat: 0, items: [{ ...emptyItem }] },
-    { id: "dinner", name: "Dîner", time: "20:00", calories: 0, protein: 0, carbs: 0, fat: 0, items: [{ ...emptyItem }] },
-  ]
-
   useEffect(() => {
-    if (!formData.meals.length && showForm) {
-      setFormData((f) => ({ ...f, meals: initMeals() }))
-    }
-  }, [showForm, formData.meals.length])
-
-  useEffect(() => {
-    if (!user) { setLoading(false); return }
-    const uid = user?.id as string
     const supabase = createClient()
-
     async function load() {
       try {
-        const { data: cData } = await supabase.from("coaches").select("*").eq("profile_id", uid).maybeSingle()
-        const cId = (cData as { id?: string } | null)?.id
-        if (!cId) { setLoading(false); return }
+        if (!user) return
+        const uid = user.id
+        const { data: cData } = await supabase.from("coaches").select("*").eq("profile_id", uid as string).maybeSingle()
+        const cId = mapRow<{ id: string }>(cData as unknown as Record<string, unknown> | null)?.id
+        if (!cId) return
         setCoachId(cId)
 
         const [progRes, mcRes, pRes] = await Promise.all([
@@ -206,7 +199,7 @@ export default function NutritionPage() {
     setFormData({
       name: `${p.name} (copie)`,
       description: p.description || "",
-      meals: [],
+      meals: initMeals(),
       assignedTo: [],
     })
     setShowForm(true)
@@ -492,7 +485,7 @@ export default function NutritionPage() {
           </h1>
           <p className="text-sm text-white/40 mt-1">Plans alimentaires et suivi nutritionnel</p>
         </div>
-        {coachId && <button onClick={() => setShowForm(true)} className="flex items-center gap-2 bg-gradient-to-r from-[#C89B3C] to-[#D4AF37] text-black px-5 py-2.5 rounded-xl text-sm font-bold hover:opacity-90 transition-all shadow-lg shadow-[#C89B3C]/20">
+        {coachId && <button onClick={() => { setFormData((f) => f.meals.length ? f : { ...f, meals: initMeals() }); setShowForm(true); }} className="flex items-center gap-2 bg-gradient-to-r from-[#C89B3C] to-[#D4AF37] text-black px-5 py-2.5 rounded-xl text-sm font-bold hover:opacity-90 transition-all shadow-lg shadow-[#C89B3C]/20">
           <Plus className="w-4 h-4" /> Créer un Plan
         </button>}
       </div>

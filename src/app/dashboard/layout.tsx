@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import Image from "next/image"
 import { useAuth } from "@/lib/auth/context"
@@ -12,7 +12,7 @@ import NotificationBadge from "@/components/dashboard/mobile/NotificationBadge"
 import { createBrowserClient } from "@supabase/ssr"
 import {
   LayoutDashboard, Dumbbell, MessageSquare, Bell, User,
-  Menu, X, Bot, CalendarDays, QrCode, Grid3x3, CreditCard,
+  Menu, X, Bot, QrCode, Grid3x3,
 } from "lucide-react"
 
 const bottomNavItems = [
@@ -40,16 +40,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [collapsed, setCollapsed] = useState(false)
   const [qrMode, setQrMode] = useState(false)
   const [memberId, setMemberId] = useState<string | undefined>()
-  const supabase = createBrowserClient(
+  const supabase = useMemo(() => createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  ), [])
 
   useEffect(() => {
     if (!loading && !user) router.push("/login")
   }, [user, loading, router])
 
-  useEffect(() => { setSidebarOpen(false) }, [pathname])
+  useEffect(() => {
+    const id = setTimeout(() => setSidebarOpen(false), 0);
+    return () => clearTimeout(id);
+  }, [pathname])
 
   useEffect(() => {
     document.body.classList.add('dashboard-active')
@@ -77,8 +80,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           table: "profiles",
           filter: `id=eq.${user?.id}`,
         },
-        (payload: any) => {
-          const profile = payload.new as any
+        (payload: { new: Record<string, unknown> }) => {
+          const profile = payload.new
           if (profile.device_fingerprint === null && profile.device_locked === false) {
             logout()
           }
@@ -87,17 +90,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [user, logout])
+  }, [user, logout, supabase])
 
   useEffect(() => {
-    if (!user) return
-    const uid = user?.id as string
-    async function load() {
-      const { data: m } = await supabase.from("members").select("id").eq("profile_id", uid).maybeSingle()
+    const u = user
+    if (!u) return
+    (async () => {
+      const { data: m } = await supabase.from("members").select("id").eq("profile_id", u.id).maybeSingle()
       if (m) setMemberId((m as { id: string }).id)
-    }
-    load()
-  }, [user])
+    })()
+  }, [user, supabase])
 
   if (!user) return null
   if (accessStatus && accessStatus.granted === false) {

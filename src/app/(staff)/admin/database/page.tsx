@@ -2,15 +2,16 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, Member, Coach, Program, CheckIn } from '@/lib/db/dexie-db';
+import { db, Member, CheckIn } from '@/lib/db/dexie-db';
 import { useAuth } from '@/lib/auth/context';
 import {
-  Database, Search, Filter, User, Phone, Mail, MapPin, Activity, Fingerprint, Clock,
+  Database, Search, User, Phone, Mail, MapPin, Fingerprint, Clock,
   ChevronDown, ChevronRight, Shield, AlertTriangle, CheckCircle, XCircle, RefreshCw,
-  Users, ShoppingCart, BarChart3, Package, DollarSign, Dumbbell, Calendar,
-  ChevronLeft, CreditCard, Hash, Syringe,
-  Ruler, Weight, Target, FileText, Star, Award
+  Users, ShoppingCart, BarChart3, Package, DollarSign,
+  ChevronLeft, Syringe,
+  Ruler, Weight, Target, FileText, Award
 } from 'lucide-react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { formatPhoneDisplay } from '@/lib/whatsapp';
 
@@ -210,19 +211,6 @@ export default function AdminDatabasePage() {
     return new Date(Math.max(...cin.map(c => c.timestamp.getTime())));
   }
 
-  if (role !== 'admin') {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-center text-gray-400">
-          <Shield className="w-16 h-16 mx-auto mb-4 text-red-400" />
-          <h2 className="text-2xl font-bold text-white mb-2">Accès refusé</h2>
-          <p>Seuls les administrateurs peuvent accéder à cette page.</p>
-          <button onClick={() => router.push('/')} className="mt-4 px-4 py-2 bg-orange-600 text-white rounded-lg">Retour</button>
-        </div>
-      </div>
-    );
-  }
-
   // --- AUDIT ---
   const doAudit = useCallback(async () => {
     setLoading(true);
@@ -337,7 +325,7 @@ export default function AdminDatabasePage() {
       const productSales: Record<number, { name: string; qty: number; revenue: number }> = {};
       let totalRevenue = 0;
       let totalItems = 0;
-      let totalTransactions = weekSales.length;
+      const totalTransactions = weekSales.length;
 
       for (const sale of weekSales) {
         totalRevenue += sale.total;
@@ -387,6 +375,19 @@ export default function AdminDatabasePage() {
     }
     setLoading(false);
   }, []);
+
+  if (role !== 'admin') {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-center text-gray-400">
+          <Shield className="w-16 h-16 mx-auto mb-4 text-red-400" />
+          <h2 className="text-2xl font-bold text-white mb-2">Accès refusé</h2>
+          <p>Seuls les administrateurs peuvent accéder à cette page.</p>
+          <button onClick={() => router.push('/')} className="mt-4 px-4 py-2 bg-orange-600 text-white rounded-lg">Retour</button>
+        </div>
+      </div>
+    );
+  }
 
   const tabContent = (tab: Tab) => {
     switch (tab) {
@@ -484,7 +485,7 @@ export default function AdminDatabasePage() {
                                 <div className="flex items-center gap-3">
                                   <div className="w-9 h-9 rounded-full bg-gray-800 overflow-hidden flex-shrink-0 border border-gray-700">
                                     {m.photo ? (
-                                      <img src={m.photo} alt="" className="w-full h-full object-cover" />
+                                      <Image src={m.photo} alt="" width={36} height={36} className="w-full h-full object-cover" unoptimized />
                                     ) : (
                                       <User className="w-full h-full p-2 text-gray-500" />
                                     )}
@@ -562,7 +563,7 @@ export default function AdminDatabasePage() {
                                           <div className="flex items-center gap-4">
                                             <div className="w-14 h-14 rounded-full bg-gray-800 overflow-hidden border border-gray-700 flex-shrink-0">
                                               {m.photo ? (
-                                                <img src={m.photo} alt="" className="w-full h-full object-cover" />
+                                                <Image src={m.photo} alt="" width={56} height={56} className="w-full h-full object-cover" unoptimized />
                                               ) : (
                                                 <User className="w-full h-full p-3 text-gray-500" />
                                               )}
@@ -631,7 +632,7 @@ export default function AdminDatabasePage() {
                                           {/* Emergency contact */}
                                           {(m.emergencyContactName || m.emergencyContactPhone) && (
                                             <div className="bg-gray-800/60 rounded-lg p-3 border border-gray-700/50">
-                                              <p className="text-xs font-medium text-gray-500 mb-1.5">Contact d'urgence</p>
+                                              <p className="text-xs font-medium text-gray-500 mb-1.5">Contact d&apos;urgence</p>
                                               {m.emergencyContactName && <p className="text-sm text-gray-300">{m.emergencyContactName}</p>}
                                               {m.emergencyContactPhone && (
                                                 <p className="text-sm text-gray-400 flex items-center gap-1.5 mt-0.5">
@@ -906,13 +907,13 @@ export default function AdminDatabasePage() {
       case 'audit':
         return (
           <div className="space-y-4">
-            <p className="text-gray-400">Analyse complète de la cohérence et de l'intégrité de la base de données.</p>
+            <p className="text-gray-400">Analyse complète de la cohérence et de l&apos;intégrité de la base de données.</p>
             <button
               onClick={doAudit}
               disabled={loading}
               className="flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 disabled:opacity-50 transition-all cursor-pointer"
             >
-              <Search className="w-5 h-5" /> {loading ? 'Analyse...' : 'Lancer l\'audit complet'}
+              <Search className="w-5 h-5" /> {loading ? 'Analyse...' : "Lancer l'audit complet"}
             </button>
 
             {auditResults.length > 0 && (
@@ -946,8 +947,9 @@ export default function AdminDatabasePage() {
               <div className="flex gap-3">
                 <button onClick={async () => {
                   const tables = ['members', 'payments', 'sales', 'products', 'coaches', 'programs', 'subscriptionPlans', 'checkins', 'expenses', 'events', 'eventRegistrations', 'rewards', 'productCategories', 'whatsappCampaigns'];
-                  const data: Record<string, any> = {};
+                  const data: Record<string, unknown> = {};
                   for (const table of tables) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const arr = await (db as any)[table]?.toArray();
                     if (arr) data[table] = arr;
                   }
@@ -965,6 +967,7 @@ export default function AdminDatabasePage() {
                   const { exportToXlsx } = await import('@/components/ui/ImportExportButtons');
                   const tables = ['members', 'payments', 'sales', 'products', 'coaches', 'programs', 'subscriptionPlans', 'whatsappCampaigns'];
                   for (const table of tables) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const arr = await (db as any)[table]?.toArray();
                     if (arr && arr.length > 0) exportToXlsx(arr, `infinity-gym-${table}`);
                   }
@@ -986,7 +989,9 @@ export default function AdminDatabasePage() {
                     const data = JSON.parse(text);
                     let count = 0;
                     for (const [table, rows] of Object.entries(data)) {
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
                       if (Array.isArray(rows) && rows.length > 0 && (db as any)[table]) {
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         await (db as any)[table].bulkAdd(rows);
                         count += rows.length;
                       }
@@ -1005,7 +1010,8 @@ export default function AdminDatabasePage() {
               <div className="flex flex-wrap gap-2">
                 {['members', 'payments', 'sales', 'products', 'coaches', 'checkins', 'expenses', 'whatsappCampaigns'].map(table => (
                   <button key={table} onClick={async () => {
-                    const arr: any[] = await (db as any)[table]?.toArray() || [];
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+const arr: any[] = await (db as any)[table]?.toArray() || [];
                     if (arr.length === 0) return;
                     const headers = Object.keys(arr[0]).filter(k => k !== 'id');
                     const csv = [headers.join(','), ...arr.map(row => headers.map(h => `"${String(row[h] || '').replace(/"/g, '""')}"`).join(','))].join('\n');

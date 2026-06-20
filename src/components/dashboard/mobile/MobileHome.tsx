@@ -6,13 +6,14 @@ import { useAuth } from "@/lib/auth/context"
 import { createClient } from "@/lib/supabase/client"
 import { mapRow, mapRows } from "@/lib/utils/transform"
 import type { Profile, Member, Membership, Attendance, Schedule } from "@/types"
-import { genderThemes, type Gender } from "./theme"
+import { type Gender } from "./theme"
 import HeroBanner from "./HeroBanner"
 import CarteAbonnement from "./CarteAbonnement"
 import ActionsRapides from "./ActionsRapides"
 import ProchainCours from "./ProchainCours"
 import BlocProgrès from "./BlocProgrès"
 import SuggestionExercice from "./SuggestionExercice"
+import { LazySection } from "./LazySection"
 
 const sectionAnim = {
   initial: { opacity: 0, y: 24 },
@@ -116,12 +117,10 @@ export default function MobileHome() {
     }
   }, [member?.id])
 
-  const gender: Gender = (member?.gender as Gender) || (profile ? "male" : "other") || "other"
-  const theme = genderThemes[gender] || genderThemes.other
-
-  const firstName = profile?.firstName || (user && "firstName" in user ? (user as any).firstName : null) || "Karim"
+  const gender: Gender = (member?.gender as Gender) || "other"
+  const firstName = profile?.firstName || "Athlète"
   const daysLeft = membership
-    ? Math.ceil((new Date(membership.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    ? Math.ceil((new Date(membership.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
     : 0
   const totalDays = membership
     ? Math.ceil((new Date(membership.endDate).getTime() - new Date(membership.startDate).getTime()) / (1000 * 60 * 60 * 24))
@@ -189,22 +188,28 @@ export default function MobileHome() {
         <ActionsRapides />
       </motion.div>
 
-      <motion.div variants={sectionAnim} transition={{ duration: 0.4 }}>
-        <SuggestionExercice gender={gender} />
-      </motion.div>
+      <LazySection>
+        <motion.div variants={sectionAnim} transition={{ duration: 0.4 }}>
+          <SuggestionExercice gender={gender} />
+        </motion.div>
+      </LazySection>
 
-      <motion.div variants={sectionAnim} transition={{ duration: 0.4 }}>
-        <ProchainCours gender={gender} course={courseData} />
-      </motion.div>
+      <LazySection>
+        <motion.div variants={sectionAnim} transition={{ duration: 0.4 }}>
+          <ProchainCours gender={gender} course={courseData} />
+        </motion.div>
+      </LazySection>
 
-      <motion.div variants={sectionAnim} transition={{ duration: 0.4 }}>
-        <BlocProgrès
-          gender={gender}
-          sessionsThisMonth={entryCount}
-          progressPct={Math.round(progressPct)}
-          goalsCount={member?.fitnessGoal ? 3 : 0}
-        />
-      </motion.div>
+      <LazySection>
+        <motion.div variants={sectionAnim} transition={{ duration: 0.4 }}>
+          <BlocProgrès
+            gender={gender}
+            sessionsThisMonth={entryCount}
+            progressPct={Math.round(progressPct)}
+            goalsCount={member?.fitnessGoal ? 3 : 0}
+          />
+        </motion.div>
+      </LazySection>
 
       <div className="h-24" />
     </motion.div>

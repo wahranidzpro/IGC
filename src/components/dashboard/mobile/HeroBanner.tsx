@@ -1,16 +1,11 @@
 "use client"
 
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { motion } from "framer-motion"
 import { Sparkles, Award, ChevronRight, Sun, Moon, Sunrise } from "lucide-react"
-import type { Gender } from "./theme"
-
-const heroImages: Record<Gender, string> = {
-  male: "/images/athlete-male.jpg",
-  female: "/images/athlete-female.jpg",
-  other: "/images/hero-home.jpg",
-}
+import { genderThemes, type Gender } from "./theme"
 
 interface HeroBannerProps {
   firstName: string
@@ -34,10 +29,11 @@ const fadeUp = {
 
 export default function HeroBanner({ firstName, gender, membershipActive, planName, daysLeft }: HeroBannerProps) {
   const router = useRouter()
-  const heroImage = heroImages[gender] || heroImages.other
+  const theme = genderThemes[gender]
   const isMale = gender === "male"
   const greeting = getGreeting()
   const GreetIcon = greeting.icon
+  const [imgError, setImgError] = useState(false)
 
   return (
     <motion.div
@@ -154,7 +150,7 @@ export default function HeroBanner({ firstName, gender, membershipActive, planNa
               </div>
               <div>
                 <p className="text-xs font-bold text-white">{planName || "Premium"}</p>
-                <p className="text-[9px] text-gray-400">J-{daysLeft} • Valide jusqu'au prochain renouvellement</p>
+                <p className="text-[9px] text-gray-400">J-{daysLeft} • Valide jusqu&apos;au prochain renouvellement</p>
               </div>
             </div>
             <ChevronRight className="w-4 h-4 text-white/30" />
@@ -169,17 +165,20 @@ export default function HeroBanner({ firstName, gender, membershipActive, planNa
         transition={{ delay: 0.2, duration: 0.6 }}
       >
         <div className="relative w-full h-full">
-          <Image
-            src={heroImage}
-            alt=""
-            fill
-            className="object-cover object-center"
-            style={{
-              maskImage: "linear-gradient(to left, black 45%, transparent 100%)",
-              WebkitMaskImage: "linear-gradient(to left, black 45%, transparent 100%)",
-            }}
-            priority
-          />
+          {!imgError && (
+            <Image
+              src={theme.bannerImg}
+              alt=""
+              fill
+              className="object-cover object-center"
+              style={{
+                maskImage: "linear-gradient(to left, black 45%, transparent 100%)",
+                WebkitMaskImage: "linear-gradient(to left, black 45%, transparent 100%)",
+              }}
+              priority
+              onError={() => setImgError(true)}
+            />
+          )}
         </div>
       </motion.div>
     </motion.div>

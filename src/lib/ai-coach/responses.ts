@@ -49,7 +49,7 @@ export function needsCoachRedirect(topic: string, message: string): boolean {
   return false
 }
 
-export function getCoachResponse(message: string, context?: MemberContext, lang?: string): string {
+export function getCoachResponse(message: string, context?: MemberContext): string {
   const topic = detectTopic(message)
   const responder = coachResponses[topic]
 

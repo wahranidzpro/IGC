@@ -2,9 +2,10 @@
 
 import { useEffect, useState, useMemo } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { mapRow, mapRows } from "@/lib/utils/transform"
+import { mapRows } from "@/lib/utils/transform"
 import AdminStatsCard from "@/components/admin/AdminStatsCard"
 import { Receipt, UserCheck, Calendar, DollarSign, TrendingUp, CreditCard, Search, RefreshCw } from "lucide-react"
+import PaginationControls from "@/components/ui/PaginationControls"
 
 interface MembershipRow {
   id: string
@@ -34,6 +35,8 @@ export default function AdminAbonnementsPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
+  const PAGE_SIZE = 20
+  const [page, setPage] = useState(1)
 
   useEffect(() => {
     async function load() {
@@ -68,6 +71,15 @@ export default function AdminAbonnementsPage() {
     if (statusFilter !== "all") list = list.filter(m => m.status === statusFilter)
     return list
   }, [memberships, search, statusFilter])
+
+  useEffect(() => { setTimeout(() => setPage(1)) }, [search, statusFilter])
+
+  const paginated = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE
+    return filtered.slice(start, start + PAGE_SIZE)
+  }, [filtered, page])
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
 
   if (loading) {
     return (
@@ -143,7 +155,7 @@ export default function AdminAbonnementsPage() {
               <div className="col-span-2 text-right">Montant</div>
             </div>
 
-            {filtered.map((ms) => {
+            {paginated.map((ms) => {
               const st = STATUS_STYLES[ms.status] || STATUS_STYLES.pending
               return (
                 <div key={ms.id} className="grid grid-cols-1 lg:grid-cols-12 gap-3 px-6 py-4 items-center hover:bg-[rgba(255,255,255,0.02)] transition-colors border-b border-[rgba(255,255,255,0.04)] last:border-0">
@@ -195,6 +207,7 @@ export default function AdminAbonnementsPage() {
                 </div>
               )
             })}
+            <PaginationControls currentPage={page} totalPages={totalPages} onPageChange={setPage} />
           </div>
         )}
       </div>

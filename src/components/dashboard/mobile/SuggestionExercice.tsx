@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useMemo } from "react"
+import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { Dumbbell, Zap, ChevronRight, Loader2, Sparkles } from "lucide-react"
@@ -53,7 +54,10 @@ export default function SuggestionExercice({ gender }: SuggestionExerciceProps) 
   const primary = gender === "male" ? "#0A84FF" : gender === "female" ? "#10B981" : "#7C3AED"
 
   const todaysWorkout = useMemo(() => getTodaysWorkout(), [])
-  const suggested = todaysWorkout.exercises[Math.floor(Math.random() * todaysWorkout.exercises.length)]
+  const [suggested] = useState(() => {
+    const idx = Math.floor(Math.random() * todaysWorkout.exercises.length)
+    return todaysWorkout.exercises[idx]
+  })
 
   const [gifUrl, setGifUrl] = useState<string | null | undefined>(undefined)
   const [gifLoading, setGifLoading] = useState(true)
@@ -96,7 +100,7 @@ export default function SuggestionExercice({ gender }: SuggestionExerciceProps) 
                 <Loader2 className="w-6 h-6 text-gray-500 animate-spin" />
               </div>
             ) : gifUrl ? (
-              <img src={gifUrl} alt={suggested.name} className="w-full h-full object-cover" loading="lazy" />
+              <Image src={gifUrl} alt={suggested.name} className="w-full h-full object-cover" loading="lazy" width={160} height={160} />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center">
                 <Dumbbell className="w-8 h-8 text-gray-600" />

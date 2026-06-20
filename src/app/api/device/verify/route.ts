@@ -1,17 +1,29 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
+import { verifyAuthenticated } from "@/lib/api-auth"
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   let body;
   try {
     body = await request.json()
   } catch {
     return NextResponse.json({ allowed: false, reason: "DONNEES_INVALIDES" }, { status: 400 })
   }
-  const { profileId, email, fingerprint } = body
+  let { profileId, email, fingerprint } = body
 
-  if ((!profileId && !email) || !fingerprint) {
+  if (!fingerprint) {
+    return NextResponse.json({ allowed: false, reason: "DONNEES_MANQUANTES" }, { status: 400 })
+  }
+
+  if (!profileId && !email) {
+    const auth = await verifyAuthenticated(request)
+    if (auth.authorized) {
+      profileId = auth.profileId
+    }
+  }
+
+  if (!profileId && !email) {
     return NextResponse.json({ allowed: false, reason: "DONNEES_MANQUANTES" }, { status: 400 })
   }
 

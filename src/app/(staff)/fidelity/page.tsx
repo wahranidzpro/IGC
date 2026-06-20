@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useRouter } from 'next/navigation';
 import { db } from '@/lib/db/dexie-db';
-import { Star, Gift, TrendingUp, Users, Plus, Search, X, Settings, Award } from 'lucide-react';
+import { Star, Gift, TrendingUp, Users, Search, X, Settings, Award } from 'lucide-react';
+import PaginationControls from '@/components/ui/PaginationControls';
 import { formatPhoneDisplay } from '@/lib/whatsapp';
-import { adjustPoints, getLoyaltyConfig, calculatePointsValue, calculatePointsEarned, type LoyaltyConfig } from '@/lib/loyalty';
+import { adjustPoints, calculatePointsValue, type LoyaltyConfig } from '@/lib/loyalty';
 
 export default function FidelityPage() {
   const router = useRouter();
@@ -15,23 +16,35 @@ export default function FidelityPage() {
   const [selectedMember, setSelectedMember] = useState<{ id: number; name: string } | null>(null);
   const [pointsAmount, setPointsAmount] = useState(0);
   const [pointsReason, setPointsReason] = useState('');
-  const [config, setConfig] = useState<LoyaltyConfig>({
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 20;
+  const [config] = useState<LoyaltyConfig>({
     earnRateDzd: 100, earnRatePoints: 1, redemptionEnabled: true,
     redemptionRatePoints: 100, redemptionRateDzd: 10, redemptionMaxPercent: 50,
     posRedemptionEnabled: true, subscriptionRedemptionEnabled: true,
     earlyPaymentBonusEnabled: false, earlyPaymentMinAmount: 5000,
-    earlyPaymentBonusPercent: 10, earlyPaymentMinMonths: 3,
+    earlyPaymentBonusPercent: 10, earlyPaymentMinMonths: 3, posDiscountMaxPercent: 30,
   });
 
-  const members = useLiveQuery(() => db.members.toArray(), []);
+  const members = useLiveQuery(() => db.members.limit(500).toArray(), []);
+  const memberCount = useLiveQuery(() => db.members.count(), []) || 0;
 
-  const filteredMembers = members?.filter(m =>
-    `${m.firstName} ${m.lastName}`.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredMembers = useMemo(() => {
+    if (!members) return [];
+    return members.filter(m =>
+      `${m.firstName} ${m.lastName}`.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [members, searchQuery]);
 
   const totalPoints = members?.reduce((sum, m) => sum + (m.fidelityPoints || 0), 0) || 0;
-  const avgPoints = members?.length ? totalPoints / members.length : 0;
+  const avgPoints = memberCount ? totalPoints / memberCount : 0;
   const membersWithPoints = members?.filter(m => (m.fidelityPoints || 0) > 0).length || 0;
+
+  const totalPages = useMemo(() => Math.max(1, Math.ceil(filteredMembers.length / PAGE_SIZE)), [filteredMembers.length]);
+  const paginatedMembers = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredMembers.slice(start, start + PAGE_SIZE);
+  }, [filteredMembers, currentPage, PAGE_SIZE]);
 
   const getTier = (points: number) => {
     if (points >= 500) return { name: 'Or', color: 'text-yellow-400', bg: 'bg-yellow-500/20' };
@@ -145,7 +158,7 @@ export default function FidelityPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredMembers?.slice(0, 20).map((member) => {
+              {paginatedMembers.map((member) => {
                 const tier = getTier(member.fidelityPoints || 0);
                 const pointValue = calculatePointsValue(member.fidelityPoints || 0, config);
                 return (
@@ -183,6 +196,7 @@ export default function FidelityPage() {
               })}
             </tbody>
           </table>
+          <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
         </div>
       </div>
 

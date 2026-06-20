@@ -3,9 +3,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db/dexie-db';
+import { useAuth } from '@/lib/auth/context';
+import { logAudit } from '@/lib/audit';
 import { Fragment } from 'react';
 import {
-  DollarSign, Percent, TrendingUp, Users,
+  DollarSign, Percent, TrendingUp,
   Search, ChevronDown, ChevronUp, Calendar,
   Check, Save, Clock,
   ShoppingBag, Dumbbell, UserPlus,
@@ -55,6 +57,7 @@ const MONTHS_FR = [
 ];
 
 export default function CommissionsPage() {
+  const { role, user } = useAuth();
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'paid' | 'pending'>('all');
@@ -98,7 +101,7 @@ export default function CommissionsPage() {
   );
 
   const commissionPayments = useMemo(() =>
-    monthPayments.filter(p => (p as any).type === 'commission'),
+    monthPayments.filter(p => (p as unknown as Record<string, unknown>).type === 'commission'),
     [monthPayments]
   );
 
@@ -151,7 +154,7 @@ export default function CommissionsPage() {
       const paidIds = paidItemsByCoach.get(cid) || new Set();
 
       const productPayments = monthPayments.filter(p =>
-        (p as any).type === 'product' && coachMemberIds.has(p.memberId)
+        (p as unknown as Record<string, unknown>).type === 'product' && coachMemberIds.has(p.memberId)
       );
       const productSalesTotal = productPayments.reduce((s, p) => s + p.amount, 0);
       const productCommission = productSalesTotal * (rates.productSales / 100);
@@ -252,10 +255,13 @@ export default function CommissionsPage() {
     const existing = await db.settings.where('key').equals('commission_rates').first();
     const value = JSON.stringify(rates);
     if (existing) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await db.settings.update(existing.id!, { value } as any);
     } else {
       await db.settings.add({ key: 'commission_rates', value });
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await logAudit({ action: 'settings_change', newValue: `Taux commissions: ${JSON.stringify(rates)}` }, (user as any)?.username || 'unknown', role || 'unknown');
     setRatesSaved(true);
     setTimeout(() => setRatesSaved(false), 2000);
   };
@@ -271,7 +277,9 @@ export default function CommissionsPage() {
       date: new Date(),
       description: JSON.stringify({ month: selectedMonth, items: itemIds }),
       createdAt: new Date(),
-    } as any);
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await logAudit({ action: 'payment_create', newValue: `Commission coach #${coachId} - ${total} DZD` }, (user as any)?.username || 'unknown', role || 'unknown');
   };
 
   const handlePayItem = async (coachId: number, item: CommissionItem) => {
@@ -282,6 +290,7 @@ export default function CommissionsPage() {
         const desc = JSON.parse(ep.description || '{}');
         if (desc.month === selectedMonth && Array.isArray(desc.items)) {
           desc.items.push(item.id);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           await db.payments.update(ep.id!, { description: JSON.stringify(desc) } as any);
           updated = true;
           break;
@@ -297,8 +306,10 @@ export default function CommissionsPage() {
         date: new Date(),
         description: JSON.stringify({ month: selectedMonth, items: [item.id] }),
         createdAt: new Date(),
-      } as any);
+      });
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await logAudit({ action: 'payment_create', newValue: `Commission item #${item.id} - ${item.commission} DZD (coach #${coachId})` }, (user as any)?.username || 'unknown', role || 'unknown');
   };
 
   const typeIcon = (t: string) => {

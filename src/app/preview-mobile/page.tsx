@@ -1,9 +1,10 @@
 "use client"
 
-import { Bell, CreditCard, MessageSquare, Megaphone, Inbox } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
+import { Bell, CreditCard, MessageSquare, Megaphone } from "lucide-react"
 
 // ── Mock tabs like notifications ──
-const typeConfig: Record<string, { icon: any; color: string; bg: string }> = {
+const typeConfig: Record<string, { icon: LucideIcon; color: string; bg: string }> = {
   abonnement: { icon: CreditCard, color: "#C89B3C", bg: "rgba(200,155,60,0.1)" },
   coach: { icon: MessageSquare, color: "#0A84FF", bg: "rgba(10,132,255,0.1)" },
   promo: { icon: Megaphone, color: "#A855F7", bg: "rgba(168,85,247,0.1)" },
@@ -16,7 +17,7 @@ const mockNotifs = [
   { id: "3", title: "Promo été -20%", description: "Profitez de -20% sur tous les abonnements jusqu'au 31 août.", type: "promo", isRead: true, createdAt: new Date(Date.now() - 86400000).toISOString() },
 ]
 
-const mockSessionData = { sessions: 12, progress: 68, goals: 4 }
+
 const mockWeightData = [
   { week: "S-8", poids: 82.5 },
   { week: "S-6", poids: 81.0 },
@@ -87,16 +88,6 @@ const plusMenuSections = [
   },
 ]
 
-const schedule = [
-  { day: "Lun", has: true, active: false },
-  { day: "Mar", has: true, active: true },
-  { day: "Mer", has: true, active: false },
-  { day: "Jeu", has: false, active: false },
-  { day: "Ven", has: true, active: false },
-  { day: "Sam", has: true, active: false },
-  { day: "Dim", has: false, active: false },
-]
-
 const screens = [
   { id: "home", label: "Accueil" },
   { id: "profile", label: "Profil" },
@@ -152,7 +143,7 @@ export default function MobilePreview() {
                           <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Bonjour</span>
                         </div>
                         <h1 className="text-2xl font-black text-white leading-tight">Thomas</h1>
-                        <p className="text-xs text-gray-300 mt-1 font-medium">Repoussez vos limites aujourd'hui</p>
+                        <p className="text-xs text-gray-300 mt-1 font-medium">Repoussez vos limites aujourd&apos;hui</p>
                         <div className="flex flex-wrap gap-2 mt-3">
                           <span className="inline-flex items-center gap-1 text-[9px] font-bold px-2.5 py-1 rounded-full border" style={{ background: "rgba(0,136,255,0.12)", color: "#0088FF", borderColor: "rgba(0,136,255,0.25)" }}>
                             👑 Premium
@@ -179,7 +170,7 @@ export default function MobilePreview() {
                         </div>
                         <div>
                           <p className="text-xs font-bold text-white">Premium</p>
-                          <p className="text-[9px] text-gray-400">J-24 • Valide jusqu'au 05 juil. 2026</p>
+                          <p className="text-[9px] text-gray-400">J-24 • Valide jusqu&apos;au 05 juil. 2026</p>
                         </div>
                       </div>
                       <span className="text-white opacity-40 text-lg">›</span>
@@ -241,7 +232,7 @@ export default function MobilePreview() {
                     <div className="rounded-2xl border flex items-center p-3 gap-3" style={{ borderColor: "rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)" }}>
                       <div className="rounded-xl px-3 py-2 text-center min-w-[60px]" style={{ background: "rgba(10,132,255,0.15)" }}>
                         <p className="text-sm font-black text-white">09:00</p>
-                        <p className="text-[8px] font-bold" style={{ color: "#0A84FF" }}>AUJOURD'HUI</p>
+                        <p className="text-[8px] font-bold" style={{ color: "#0A84FF" }}>AUJOURD&apos;HUI</p>
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-bold text-white truncate">HIIT Intensif</p>
@@ -278,7 +269,7 @@ export default function MobilePreview() {
                 <>
                   <div className="pt-5 pb-2">
                     <h1 className="text-lg font-bold text-white">Programme sportif</h1>
-                    <p className="text-[10px] text-gray-400 mt-0.5">Plan d'entraînement personnalisé</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">Plan d&apos;entraînement personnalisé</p>
                   </div>
                   <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
                     {["Lundi", "Mercredi", "Vendredi", "Samedi"].map((d, i) => (
@@ -488,7 +479,7 @@ export default function MobilePreview() {
 
               {screen.id === "nutrition" && (
                 <>
-                  <div className="pt-6 pb-2"><h1 className="text-lg font-bold text-white">Nutrition</h1><p className="text-xs text-gray-400 mt-0.5">Aujourd'hui</p></div>
+                  <div className="pt-6 pb-2"><h1 className="text-lg font-bold text-white">Nutrition</h1><p className="text-xs text-gray-400 mt-0.5">Aujourd&apos;hui</p></div>
                   <div className="rounded-[20px] p-5 border mt-4 grid grid-cols-2 gap-4" style={{ background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.08)" }}>
                     {macros.map((m) => {
                       const pct = Math.round((parseInt(m.value.replace(/\s/g, "")) / parseInt(m.target)) * 100)

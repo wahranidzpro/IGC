@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { db, Member } from '@/lib/db/dexie-db';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
-import { canAccessApp, fetchAccessStatus } from '@/lib/auth/authorization';
+import { canAccessApp } from '@/lib/auth/authorization';
 import { logger } from '@/lib/logger';
 import bcrypt from 'bcryptjs';
 import { getDeviceFingerprint, getDeviceInfo } from '@/lib/device';
@@ -60,7 +60,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-function authLog(tag: string, msg: string, data?: any) {
+function authLog(tag: string, msg: string, data?: unknown) {
   const line = `[AUTH:${tag}] ${msg}${data ? ' ' + JSON.stringify(data).substring(0, 150) : ''}`;
   logger.info(line);
 }
@@ -89,6 +89,7 @@ async function fetchGymUserFromDB(supabaseUserId: string): Promise<{
 } | null> {
   if (!isSupabaseConfigured || !supabase) return null;
   try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await (supabase as any)
       .from('gym_users')
       .select('id, username, role, name, phone')
@@ -108,12 +109,14 @@ async function fetchGymUserFromDB(supabaseUserId: string): Promise<{
 async function resolveCoachId(username: string, phone?: string): Promise<string | undefined> {
   if (isSupabaseConfigured && supabase) {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: gu } = await (supabase as any)
         .from('gym_users')
         .select('id')
         .eq('username', username)
         .maybeSingle();
       if (gu?.id) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: coach } = await (supabase as any)
           .from('coaches')
           .select('id')
@@ -182,17 +185,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return false;
     }
   }, [user]);
-
-  useEffect(() => {
-    checkStructureLock();
-    initAuth();
-    return () => {
-      if (authSubscriptionRef.current?.data.subscription) {
-        authSubscriptionRef.current.data.subscription.unsubscribe();
-        authSubscriptionRef.current = null;
-      }
-    };
-  }, []);
 
   const initAuth = useCallback(async () => {
     authLog('INIT', 'Starting auth initialization...');
@@ -290,7 +282,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const checkStructureLock = useCallback(async (): Promise<boolean> => {
     if (isSupabaseConfigured && supabase) {
       try {
-        const { data: s } = await (supabase as any)
+        const { data: s } = await (supabase as unknown as import('@supabase/supabase-js').SupabaseClient)
           .from('settings')
           .select('value')
           .eq('key', 'structure_locked')
@@ -312,16 +304,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const initialMountedRef = useRef(false);
+  useEffect(() => {
+    if (!initialMountedRef.current) {
+      initialMountedRef.current = true;
+      checkStructureLock();
+      initAuth();
+    }
+    return () => {
+      if (authSubscriptionRef.current?.data.subscription) {
+        authSubscriptionRef.current.data.subscription.unsubscribe();
+        authSubscriptionRef.current = null;
+      }
+    };
+  }, [checkStructureLock, initAuth]);
+
   const loginAsAdherent = async (phone: string, password: string): Promise<{ success: boolean; error?: string }> => {
     const cleanPhone = phone.replace(/\D/g, '');
     try {
       if (isSupabaseConfigured && supabase) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: profile } = await (supabase as any)
           .from('profiles')
           .select('id, first_name, last_name, phone')
           .ilike('phone', `%${cleanPhone}`)
           .maybeSingle();
         if (profile) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const { data: gymUser } = await (supabase as any)
             .from('gym_users')
             .select('password_hash')
@@ -334,6 +343,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           } else {
             return { success: false, error: 'Mot de passe incorrect' };
           }
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const { data: memberRow } = await (supabase as any)
             .from('members')
             .select('id, status')
@@ -342,6 +352,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (memberRow && (memberRow.status === 'active' || memberRow.status === 'inactive')) {
             setIsAuthenticated(true);
             setRole('adherent');
+             
             setUser({
               id: memberRow.id,
               profileId: profile.id,
@@ -349,9 +360,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               lastName: profile.last_name,
               phone: profile.phone,
               status: memberRow.status,
-            } as any);
+            } as unknown as Member);
             setLoginMode('adherent');
-            await setServerCookie(profile.phone || profile.id || '', 'adherent');
+            await setServerCookie(profile.phone || profile.id || '', 'adherent', profile.id);
             return { success: true };
           }
           if (memberRow) {
@@ -525,7 +536,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     if (sessionId) {
       fetch('/api/staff-session/end', {
         method: 'POST',
@@ -549,7 +560,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     authLog('LOGOUT', 'User logged out');
-  };
+  }, [sessionId]);
 
   useEffect(() => {
     const isStaff = role && ['admin', 'reception', 'coach'].includes(role);
@@ -579,7 +590,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const interval = setInterval(sendHeartbeat, 30000);
 
     return () => clearInterval(interval);
-  }, [role, sessionId]);
+  }, [role, sessionId, logout]);
 
   if (!isInitialized) {
     return (

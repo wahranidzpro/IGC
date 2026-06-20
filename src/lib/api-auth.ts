@@ -27,8 +27,20 @@ export async function verifyAdmin(request: NextRequest): Promise<{ authorized: b
   return { authorized: false, error: 'Admin access required' };
 }
 
-export async function verifyAuthenticated(request: NextRequest): Promise<{ authorized: boolean; username?: string; role?: string; error?: string }> {
+export function verifyDeviceKey(request: NextRequest): { valid: boolean; error?: string } {
+  const key = request.headers.get('x-api-key');
+  if (!key) return { valid: false, error: 'Missing x-api-key header' };
+  if (key !== process.env.DEVICE_API_KEY) return { valid: false, error: 'Invalid API key' };
+  return { valid: true };
+}
+
+export async function verifyAuthenticated(request: NextRequest): Promise<{ authorized: boolean; username?: string; role?: string; profileId?: string; error?: string }> {
   const authData = await getCookieData(request);
   if (!authData?.username || !authData?.role) return { authorized: false, error: 'Not authenticated' };
-  return { authorized: true, username: authData.username as string, role: authData.role as string };
+  return {
+    authorized: true,
+    username: authData.username as string,
+    role: authData.role as string,
+    profileId: (authData.supabaseUserId as string) || undefined,
+  };
 }

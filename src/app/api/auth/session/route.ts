@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { signCookie, verifyCookie } from '@/lib/cookie-signature';
+import { withCsrf } from '@/lib/api-middleware';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || '';
@@ -82,7 +83,7 @@ async function getSupabaseClient() {
   return _supabaseClient;
 }
 
-export async function POST(request: NextRequest) {
+async function handlePost(request: NextRequest) {
   try {
     const body = await request.json();
     const { username, role, supabaseUserId } = body;
@@ -131,8 +132,11 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function DELETE(request: NextRequest) {
+async function handleDelete(request: NextRequest) {
   const response = NextResponse.json({ success: true });
   clearCookieHeader(response, request);
   return response;
 }
+
+export const POST = withCsrf(handlePost);
+export const DELETE = withCsrf(handleDelete);

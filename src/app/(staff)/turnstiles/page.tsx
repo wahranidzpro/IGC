@@ -1,47 +1,71 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getTurnstiles, updateTurnstile, deleteTurnstile, getActiveSessions, getDeviceHealth, Turnstile } from '@/lib/supabase/turnstile-service';
+import { getTurnstiles, updateTurnstile, deleteTurnstile, getActiveSessions, Turnstile } from '@/lib/supabase/turnstile-service';
 import { Plus, Settings, Wifi, WifiOff, DoorOpen, RefreshCw, Trash2, Edit, ToggleLeft, ToggleRight, Users, Activity, Loader2 } from 'lucide-react';
 
 export default function TurnstilesPage() {
-  const router = useRouter();
   const [turnstiles, setTurnstiles] = useState<Turnstile[]>([]);
-  const [activeSessions, setActiveSessions] = useState<any[]>([]);
-  const [deviceHealth, setDeviceHealth] = useState<any[]>([]);
+  const [activeSessions, setActiveSessions] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [now, setNow] = useState(0);
 
-  const fetchData = useCallback(async () => {
+  useEffect(() => {
+    const id2 = setTimeout(() => setNow(Date.now()), 0);
+    const id = setInterval(() => { setNow(Date.now()); }, 30000);
+    return () => { clearTimeout(id2); clearInterval(id); };
+  }, []);
+
+  useEffect(() => {
+    let ignore = false;
+    (async () => {
+      try {
+        const [t, s] = await Promise.all([
+          getTurnstiles(),
+          getActiveSessions().catch(() => []),
+        ]);
+        if (!ignore) {
+          setTurnstiles(t);
+          setActiveSessions(s);
+          setLoading(false);
+        }
+      } catch (err: unknown) {
+        if (!ignore) {
+          setError(err instanceof Error ? err.message : 'Erreur de chargement');
+          setTurnstiles([]);
+          setLoading(false);
+        }
+      }
+    })();
+    return () => { ignore = true; };
+  }, []);
+
+  const fetchData = async () => {
     setLoading(true);
     setError('');
     try {
-      const [t, s, h] = await Promise.all([
+      const [t, s] = await Promise.all([
         getTurnstiles(),
         getActiveSessions().catch(() => []),
-        getDeviceHealth().catch(() => []),
       ]);
       setTurnstiles(t);
       setActiveSessions(s);
-      setDeviceHealth(h);
-    } catch (err: any) {
-      setError(err.message || 'Erreur de chargement');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Erreur de chargement');
       setTurnstiles([]);
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  useEffect(() => { fetchData(); }, [fetchData]);
+  };
 
   const handleToggleActive = async (t: Turnstile) => {
     try {
       await updateTurnstile(t.id, { is_active: !t.is_active });
       fetchData();
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Erreur');
     }
   };
 
@@ -50,19 +74,14 @@ export default function TurnstilesPage() {
     try {
       await deleteTurnstile(id);
       fetchData();
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Erreur');
     }
-  };
-
-  const getLastHeartbeat = (deviceId: number) => {
-    const hb = deviceHealth.find((h: any) => h.turnstile_id === deviceId);
-    return hb ? new Date(hb.timestamp).toLocaleString('fr-FR') : null;
   };
 
   const isOnline = (t: Turnstile) => {
     if (!t.last_heartbeat) return false;
-    return Date.now() - new Date(t.last_heartbeat).getTime() < 30000;
+    return now - new Date(t.last_heartbeat).getTime() < 30000;
   };
 
   if (loading) {
@@ -83,7 +102,7 @@ export default function TurnstilesPage() {
             <DoorOpen className="w-6 h-6 text-blue-400" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-white">Contrôle d'accès</h2>
+            <h2 className="text-2xl font-bold text-white">Contrôle d&apos;accès</h2>
             <p className="text-gray-400 text-sm">Tourniquets · {activeSessions.length} personne(s) en salle · {turnstiles.filter(t => t.is_active).length} actif(s)</p>
           </div>
         </div>
@@ -112,7 +131,7 @@ export default function TurnstilesPage() {
           <p className="text-2xl font-bold text-blue-400 mt-1">{activeSessions.length}</p>
         </div>
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-          <p className="text-xs text-gray-500">Entrées aujourd'hui</p>
+          <p className="text-xs text-gray-500">Entrées aujourd&apos;hui</p>
           <p className="text-2xl font-bold text-orange-400 mt-1">-</p>
         </div>
       </div>
@@ -180,7 +199,7 @@ export default function TurnstilesPage() {
           <div className="flex items-center gap-3">
             <Activity className="w-5 h-5 text-orange-400" />
             <div>
-              <p className="text-sm font-semibold text-white">Journaux d'accès</p>
+              <p className="text-sm font-semibold text-white">Journaux d&apos;accès</p>
               <p className="text-xs text-gray-500">Historique en temps réel</p>
             </div>
           </div>

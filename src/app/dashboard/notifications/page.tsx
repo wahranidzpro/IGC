@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { logger } from "@/lib/logger"
 import { useAuth } from "@/lib/auth/context"
 import { createClient } from "@/lib/supabase/client"
-import { mapRow, mapRows } from "@/lib/utils/transform"
+import { mapRows } from "@/lib/utils/transform"
 import { Bell, CreditCard, MessageSquare, Megaphone, Inbox } from "lucide-react"
 import BackButton from "@/components/dashboard/mobile/BackButton"
 import type { Notification } from "@/types"
@@ -37,16 +37,18 @@ export default function NotificationsPage() {
   const [notifs, setNotifs] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState(0)
+  const [visibleCount, setVisibleCount] = useState(10)
 
   useEffect(() => {
-    if (!user) { setLoading(false); return }
-    const uid = user?.id as string
     const supabase = createClient()
     async function load() {
       try {
+        const u = user
+        if (!u) return
+        const uid = u.id as string
         const { data: mData } = await supabase.from("members").select("id").eq("profile_id", uid).maybeSingle()
         const memberId = (mData as { id?: string } | null)?.id
-        if (!memberId) { setLoading(false); return }
+        if (!memberId) return
         const { data: n } = await supabase.from("notifications").select("*").eq("member_id", memberId).order("created_at", { ascending: false }).limit(50)
         if (n) setNotifs(mapRows<Notification>(n as unknown as Record<string, unknown>[]))
       } catch (e) { logger.error('Notifications error', e) }
@@ -61,6 +63,8 @@ export default function NotificationsPage() {
     if (activeTab === 2) return n.type === "abonnement" || n.type === "system"
     return true
   })
+
+  const visibleItems = filtered.slice(0, visibleCount)
 
   if (loading) {
     return (
@@ -89,7 +93,7 @@ export default function NotificationsPage() {
             return (
               <button
                 key={t}
-                onClick={() => setActiveTab(i)}
+                onClick={() => { setActiveTab(i); setVisibleCount(10) }}
                 className="flex-1 py-2.5 text-xs font-bold transition-all duration-200 relative"
                 style={{
                   background: activeTab === i ? "rgba(10,132,255,0.15)" : "rgba(255,255,255,0.03)",
@@ -118,7 +122,7 @@ export default function NotificationsPage() {
             <p className="text-xs text-gray-400">Vous êtes à jour</p>
           </div>
         ) : (
-          filtered.map((n) => {
+          visibleItems.map((n) => {
             const cfg = typeConfig[n.type]
             return (
               <div
@@ -143,6 +147,15 @@ export default function NotificationsPage() {
               </div>
             )
           })
+        )}
+        {visibleCount < filtered.length && (
+          <button
+            onClick={() => setVisibleCount(prev => prev + 10)}
+            className="w-full py-3 rounded-2xl text-xs font-bold transition-all duration-200"
+            style={{ background: "rgba(10,132,255,0.1)", color: "#0A84FF", border: "1px solid rgba(10,132,255,0.2)" }}
+          >
+            Voir plus
+          </button>
         )}
       </div>
     </div>

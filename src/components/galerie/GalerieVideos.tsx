@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import { motion } from "framer-motion"
 import { Play, Eye, Clock } from "lucide-react"
 import { videos } from "@/lib/galerie/mockData"
@@ -50,11 +51,12 @@ export default function GalerieVideos({ categoryFilter }: GalerieVideosProps) {
               className="group relative rounded-2xl overflow-hidden bg-brand-black/40 border border-white/5 text-left w-full"
             >
               <div className="aspect-video relative overflow-hidden">
-                <img
+                <Image
                   src={video.thumbnail}
                   alt={video.title}
-                  loading="lazy"
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  fill
+                  className="object-cover transition-transform duration-500 group-hover:scale-110"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
                 <div className="absolute inset-0 flex items-center justify-center">

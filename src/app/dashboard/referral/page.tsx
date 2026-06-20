@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { UserPlus, Gift, Copy, Check, Share2, ChevronDown } from "lucide-react"
+import { Gift, Copy, Check, Share2 } from "lucide-react"
 
 export default function ReferralPage() {
   const [copied, setCopied] = useState(false)

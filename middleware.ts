@@ -2,6 +2,21 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { verifyCookie } from '@/lib/cookie-signature';
 
+const securityHeaders: Record<string, string> = {
+  'X-Frame-Options': 'DENY',
+  'X-Content-Type-Options': 'nosniff',
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+};
+
+function applySecurityHeaders(response: NextResponse): NextResponse {
+  for (const [key, value] of Object.entries(securityHeaders)) {
+    response.headers.set(key, value);
+  }
+  return response;
+}
+
 const protectedPaths = ['/admin', '/reception', '/members', '/payments', '/pos', '/checkin', '/products', '/coaches', '/programs', '/plans', '/notifications', '/settings', '/turnstiles', '/rfid', '/access', '/ai-coach', '/events', '/expenses', '/fidelity', '/commissions', '/private-coaching', '/consumables', '/equipment', '/finance', '/personnel', '/coach', '/dashboard'];
 
 const receptionAllowedPaths = ['/reception', '/checkin', '/members', '/payments', '/pos', '/products', '/coaches', '/programs', '/plans', '/notifications', '/turnstiles', '/access', '/events', '/expenses', '/fidelity', '/commissions', '/private-coaching', '/consumables', '/equipment'];
@@ -21,40 +36,40 @@ export async function middleware(request: NextRequest) {
 
   const isProtected = protectedPaths.some(p => pathname.startsWith(p));
   const isApiRoute = pathname.startsWith('/api/');
-  if (!isProtected && !isApiRoute) return NextResponse.next();
+  if (!isProtected && !isApiRoute) return applySecurityHeaders(NextResponse.next());
 
   // Public API routes that don't require auth
   const publicApiPaths = ['/api/auth/login', '/api/auth/logout', '/api/auth/session', '/api/setup-admin'];
-  if (isApiRoute && publicApiPaths.some(p => pathname.startsWith(p))) return NextResponse.next();
+  if (isApiRoute && publicApiPaths.some(p => pathname.startsWith(p))) return applySecurityHeaders(NextResponse.next());
 
   const authCookie = request.cookies.get('infinity-gym-auth');
   if (!authCookie?.value) {
     if (isApiRoute) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+      return applySecurityHeaders(NextResponse.json({ error: 'Not authenticated' }, { status: 401 }));
     }
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(loginUrl);
+    return applySecurityHeaders(NextResponse.redirect(loginUrl));
   }
 
   const authData = await verifyCookie(authCookie.value);
   if (!authData || !authData.role || !authData.username) {
     if (isApiRoute) {
-      return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
+      return applySecurityHeaders(NextResponse.json({ error: 'Invalid session' }, { status: 401 }));
     }
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(loginUrl);
+    return applySecurityHeaders(NextResponse.redirect(loginUrl));
   }
 
   if (!hasRoleAccess(authData.role as string, pathname)) {
     if (isApiRoute) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return applySecurityHeaders(NextResponse.json({ error: 'Forbidden' }, { status: 403 }));
     }
-    return NextResponse.redirect(new URL('/', request.url));
+    return applySecurityHeaders(NextResponse.redirect(new URL('/', request.url)));
   }
 
-  return NextResponse.next();
+  return applySecurityHeaders(NextResponse.next());
 }
 
 export const config = {

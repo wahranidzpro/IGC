@@ -7,9 +7,9 @@ import { enqueueAndProcess } from '@/lib/offline/queue';
 import { logAudit } from '@/lib/audit';
 import { useAuth } from '@/lib/auth/context';
 import type { AuditAction, OfflineQueueItem } from '@/lib/db/dexie-db';
-import { logger } from '@/lib/logger';
 
-function getUserName(user: any): string {
+
+function getUserName(user: { username?: string; email?: string; name?: string } | string | null | undefined): string {
   if (!user) return 'unknown';
   if (typeof user === 'string') return user;
   if (user.username) return user.username;
@@ -40,7 +40,8 @@ export function useAutoSave<T extends { id?: number }>({ entityName, onCreate, o
 
   const save = useCallback(async (data: Partial<T>): Promise<number | undefined> => {
     const now = new Date();
-    const item = { ...data, createdAt: now, version: 1 } as any;
+    const item = { ...data, createdAt: now, version: 1 };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const id = await (config?.dexieTable || (db as any)[entityName]).add(item);
 
     if (onCreate && user) {
@@ -52,8 +53,10 @@ export function useAutoSave<T extends { id?: number }>({ entityName, onCreate, o
   }, [entityName, config, onCreate, user, role, pushToCloud]);
 
   const update = useCallback(async (id: number, data: Partial<T>) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const oldItem = await (config?.dexieTable || (db as any)[entityName]).get(id);
-    const oldVersion = (oldItem as any)?.version || 0;
+    const oldVersion: number = (oldItem as { version?: number })?.version || 0;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (config?.dexieTable || (db as any)[entityName]).update(id, { ...data, version: oldVersion + 1, updatedAt: new Date() } as any);
 
     if (onUpdate && user) {
@@ -68,7 +71,9 @@ export function useAutoSave<T extends { id?: number }>({ entityName, onCreate, o
   }, [entityName, config, onUpdate, user, role, pushToCloud]);
 
   const remove = useCallback(async (id: number) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const oldItem = await (config?.dexieTable || (db as any)[entityName]).get(id);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (config?.dexieTable || (db as any)[entityName]).delete(id);
 
     if (onDelete && user) {

@@ -27,7 +27,7 @@ export default function PWAInstallPrompt() {
     if (!isAuthenticated) return;
     const dismissedSession = sessionStorage.getItem('pwa-dismissed');
     if (dismissedSession) {
-      setDismissed(true);
+      setTimeout(() => setDismissed(true), 0);
       return;
     }
 
@@ -35,10 +35,12 @@ export default function PWAInstallPrompt() {
     if (isInstalled) return;
 
     const ua = navigator.userAgent;
-    const ios = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
+    const ios = /iPad|iPhone|iPod/.test(ua) && !(window as unknown as { MSStream?: unknown }).MSStream;
     const samsung = /SamsungBrowser/i.test(ua);
-    setIsIOS(ios);
-    setIsSamsung(samsung);
+    setTimeout(() => {
+      setIsIOS(ios);
+      setIsSamsung(samsung);
+    }, 0);
 
     if (!ios) {
       const handler = (e: Event) => {
@@ -118,8 +120,8 @@ export default function PWAInstallPrompt() {
                 {isIOS ? <Apple className="w-5 h-5 text-orange-400" /> : <Smartphone className="w-5 h-5 text-orange-400" />}
               </div>
               <div className="min-w-0">
-                <h3 className="text-sm font-bold text-white leading-tight">INSTALLER L'APPLICATION</h3>
-                <p className="text-xs text-gray-400 mt-0.5">Acces rapide depuis votre ecran d'accueil</p>
+                <h3 className="text-sm font-bold text-white leading-tight">INSTALLER L&apos;APPLICATION</h3>
+                <p className="text-xs text-gray-400 mt-0.5">Acces rapide depuis votre ecran d&apos;accueil</p>
               </div>
             </div>
 
@@ -154,7 +156,7 @@ export default function PWAInstallPrompt() {
                     <line x1="12" y1="2" x2="12" y2="15" />
                   </svg>
                 </div>
-                <p className="text-xs text-orange-300">Partager → Sur l'ecran d'accueil</p>
+                <p className="text-xs text-orange-300">Partager → Sur l&apos;ecran d&apos;accueil</p>
               </div>
             )}
           </div>

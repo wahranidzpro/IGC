@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import Image from 'next/image';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useAuth } from '@/lib/auth/context';
 import { useLanguage } from '@/lib/context/language-context';
@@ -22,7 +23,7 @@ interface PinPadProps {
 
 export function PinPad({ onForgotPassword }: PinPadProps) {
   const { login, loginAsAdherent } = useAuth();
-  const { t, lang } = useLanguage();
+  const { t } = useLanguage();
   const [mode, setMode] = useState<LoginMode>('admin');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -30,7 +31,7 @@ export function PinPad({ onForgotPassword }: PinPadProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [animateTab, setAnimateTab] = useState(false);
+
 
   const clubInfo = useLiveQuery<ClubInfo>(async () => {
     const nameSetting = await db.settings.where('key').equals('gym_name').first();
@@ -43,10 +44,6 @@ export function PinPad({ onForgotPassword }: PinPadProps) {
       email: (emailSetting?.value as string) || 'contact@infinitygym.dz',
       website: (websiteSetting?.value as string) || 'www.infinitygym.dz',
     };
-  }, []);
-
-  useEffect(() => {
-    setAnimateTab(true);
   }, []);
 
   const handleAdminSubmit = async (e: React.FormEvent) => {
@@ -113,10 +110,12 @@ export function PinPad({ onForgotPassword }: PinPadProps) {
 
       {/* Background Logo */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-15">
-        <img 
-          src="/logo-transparent.png" 
-          alt="" 
-          className="w-[600px] h-[600px] object-contain"
+        <Image
+          src="/logo-transparent.png"
+          alt=""
+          fill
+          className="object-contain"
+          style={{ maxWidth: '600px', maxHeight: '600px', margin: 'auto' }}
         />
       </div>
 
@@ -127,7 +126,7 @@ export function PinPad({ onForgotPassword }: PinPadProps) {
           <div className="flex bg-black/20 backdrop-blur-sm rounded-2xl p-1.5 mb-6">
             <button
               type="button"
-              onClick={() => { setMode('admin'); setError(''); setAnimateTab(false); setTimeout(() => setAnimateTab(true), 10); }}
+              onClick={() => { setMode('admin'); setError(''); }}
               className={`flex-1 py-3 px-4 rounded-xl font-semibold text-sm transition-all duration-300 ${
                 mode === 'admin' 
                   ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/25' 
@@ -138,7 +137,7 @@ export function PinPad({ onForgotPassword }: PinPadProps) {
             </button>
             <button
               type="button"
-              onClick={() => { setMode('adherent'); setError(''); setAnimateTab(false); setTimeout(() => setAnimateTab(true), 10); }}
+              onClick={() => { setMode('adherent'); setError(''); }}
               className={`flex-1 py-3 px-4 rounded-xl font-semibold text-sm transition-all duration-300 ${
                 mode === 'adherent' 
                   ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/25' 

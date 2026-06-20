@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import Image from "next/image"
 import { motion, AnimatePresence } from "framer-motion"
 import { Dumbbell, Plus, Clock, Check, Play, ChevronRight, Flag, Zap, X, AlertCircle, RefreshCw, Loader2 } from "lucide-react"
 import { getExerciseGif } from "@/data/exercise-gifs"
@@ -110,11 +111,12 @@ function ExerciseGifThumb({ name, size = 80 }: { name: string; size?: number }) 
 
   return (
     <div className="shrink-0 rounded-xl overflow-hidden" style={{ width: size, height: size }}>
-      <img
+      <Image
         src={gifUrl}
         alt={name}
         className="w-full h-full object-cover"
-        loading="lazy"
+        width={size}
+        height={size}
       />
     </div>
   )
@@ -123,14 +125,23 @@ function ExerciseGifThumb({ name, size = 80 }: { name: string; size?: number }) 
 export default function WorkoutPage() {
   const [activeDay, setActiveDay] = useState(0)
   const [workouts, setWorkouts] = useState<WorkoutDay[] | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [loading] = useState(false)
+  const [error] = useState<string | null>(null)
   const [selectedExercise, setSelectedExercise] = useState<number | null>(null)
 
   useEffect(() => {
     const timer = setTimeout(() => setWorkouts(sampleWorkouts), 300)
     return () => clearTimeout(timer)
   }, [])
+
+  const toggleExercise = useCallback((index: number) => {
+    setWorkouts((prev) => {
+      if (!prev) return prev
+      const copy = prev.map((d) => ({ ...d, exercises: d.exercises.map((e) => ({ ...e })) }))
+      copy[activeDay].exercises[index].done = !copy[activeDay].exercises[index].done
+      return copy
+    })
+  }, [activeDay])
 
   if (loading) {
     return (
@@ -179,15 +190,6 @@ export default function WorkoutPage() {
   const total = current.exercises.length
   const done = current.exercises.filter((e) => e.done).length
   const progress = total > 0 ? Math.round((done / total) * 100) : 0
-
-  const toggleExercise = useCallback((index: number) => {
-    setWorkouts((prev) => {
-      if (!prev) return prev
-      const copy = prev.map((d) => ({ ...d, exercises: d.exercises.map((e) => ({ ...e })) }))
-      copy[activeDay].exercises[index].done = !copy[activeDay].exercises[index].done
-      return copy
-    })
-  }, [activeDay])
 
   const selectedEx = selectedExercise !== null ? current.exercises[selectedExercise] : null
 

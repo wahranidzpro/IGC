@@ -1,7 +1,12 @@
 import { db, AuditLog, AuditAction } from '@/lib/db/dexie-db';
 import { logger } from '@/lib/logger';
 
-const SUSPICIOUS_ACTIONS: AuditAction[] = ['member_delete', 'member_restore', 'early_unlock', 'manual_override', 'payment_refund', 'admin_recovery'];
+const SUSPICIOUS_ACTIONS: AuditAction[] = [
+  'member_delete', 'member_restore', 'early_unlock', 'manual_override',
+  'payment_refund', 'admin_recovery',
+  'personnel_delete', 'expense_delete', 'access_user_delete', 'access_user_lock',
+  'sale_delete',
+];
 
 interface AuditEntry {
   action: AuditAction;
@@ -61,6 +66,16 @@ export function detectSuspicious(log: AuditLog): string | null {
         return 'REMBOURSEMENT EFFECTUE';
       case 'admin_recovery':
         return 'RECUPERATION ADMIN';
+      case 'personnel_delete':
+        return 'SUPPRESSION EMPLOYE';
+      case 'expense_delete':
+        return 'SUPPRESSION DEPENSE';
+      case 'access_user_delete':
+        return 'SUPPRESSION UTILISATEUR';
+      case 'access_user_lock':
+        return 'VERROUILLAGE UTILISATEUR';
+      case 'sale_delete':
+        return 'SUPPRESSION VENTE';
       default:
         return 'ACTION SUSPECTE';
     }
@@ -98,4 +113,34 @@ export const ACTION_LABELS: Record<AuditAction, string> = {
   event_delete: 'SUPPRESSION EVENEMENT',
   event_register: 'INSCRIPTION EVENEMENT',
   event_cancel: 'ANNULATION EVENEMENT',
+  personnel_create: 'EMBAUCHE EMPLOYE',
+  personnel_edit: 'MODIFICATION EMPLOYE',
+  personnel_delete: 'SUPPRESSION EMPLOYE',
+  absence_create: 'ABSENCE ENREGISTREE',
+  absence_approve: 'ABSENCE APPROUVEE',
+  absence_reject: 'ABSENCE REFUSEE',
+  payroll_generate: 'GENERATION PAIE',
+  payroll_mark_paid: 'PAIE MARQUEE PAYEE',
+  expense_create: 'DEPENSE ENREGISTREE',
+  expense_delete: 'SUPPRESSION DEPENSE',
+  access_user_create: 'CREATION UTILISATEUR',
+  access_user_edit: 'MODIFICATION UTILISATEUR',
+  access_user_delete: 'SUPPRESSION UTILISATEUR',
+  access_user_lock: 'VERROUILLAGE UTILISATEUR',
+  checkin_manual: 'CHECK-IN MANUEL',
+  sale_create: 'VENTE ENREGISTREE',
+  sale_delete: 'SUPPRESSION VENTE',
+  coach_create: 'CREATION COACH',
+  coach_edit: 'MODIFICATION COACH',
+  coach_delete: 'SUPPRESSION COACH',
+  product_category_create: 'CREATION CATEGORIE PRODUIT',
+  product_category_delete: 'SUPPRESSION CATEGORIE PRODUIT',
+  reward_create: 'CREATION RECOMPENSE',
+  reward_edit: 'MODIFICATION RECOMPENSE',
+  reward_delete: 'SUPPRESSION RECOMPENSE',
+  session_create: 'CREATION SEANCE',
+  session_edit: 'MODIFICATION SEANCE',
+  session_delete: 'SUPPRESSION SEANCE',
+  session_status_change: 'CHANGEMENT STATUT SEANCE',
+  whatsapp_campaign_send: 'ENVOI CAMPAGNE WHATSAPP',
 };

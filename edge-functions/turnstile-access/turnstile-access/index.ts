@@ -172,7 +172,6 @@ serve(async (req) => {
     }
 
     // --- Antipassback check ---
-    let alreadyInside = false;
     if (allowed && device.direction === "entry") {
       const { data: existingSession } = await supabase
         .from("active_sessions")
@@ -186,7 +185,6 @@ serve(async (req) => {
         const elapsed = Date.now() - new Date(existingSession.entry_at).getTime();
         if (elapsed < antipassbackMs) {
           allowed = false;
-          alreadyInside = true;
           reason = "ANTIPASSBACK";
         }
       }

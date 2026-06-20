@@ -3,11 +3,13 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, PinUser } from '@/lib/db/dexie-db';
-import { createUserInCloud, updateUserInCloud, deleteUserFromCloud } from '@/lib/auth/context';
-import { Shield, Plus, X, Lock, Unlock, Trash2, Edit, Search, Users } from 'lucide-react';
+import { useAuth, createUserInCloud, updateUserInCloud, deleteUserFromCloud } from '@/lib/auth/context';
+import { logAudit } from '@/lib/audit';
+import { Shield, Plus, X, Lock, Unlock, Trash2, Edit, Search } from 'lucide-react';
 import { logger } from '@/lib/logger';
 
 export default function AccessSettingsPage() {
+  const { user: currentUser, role: currentRole } = useAuth();
   const [showAddModal, setShowAddModal] = useState(false);
   const [editUser, setEditUser] = useState<PinUser | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -66,6 +68,7 @@ export default function AccessSettingsPage() {
         phone: formData.username,
       });
 
+      logAudit({ action: 'access_user_create', newValue: formData.username }, (currentUser as { username?: string })?.username || 'unknown', currentRole || 'unknown');
       logger.info(`User created: ${formData.username}`);
     } catch (err) {
       logger.error('Failed to create user:', err);
@@ -81,17 +84,19 @@ export default function AccessSettingsPage() {
 
   const handleDeletePinUser = async (id: number, username: string) => {
     await db.pinUsers.delete(id);
+    logAudit({ action: 'access_user_delete', newValue: username }, (currentUser as { username?: string })?.username || 'unknown', currentRole || 'unknown');
     try { await deleteUserFromCloud(username); } catch {}
   };
 
-  const handleToggleLock = async (user: PinUser) => {
-    const newLocked = !user.isLocked;
-    await db.pinUsers.update(user.id!, { isLocked: newLocked });
-    try { await updateUserInCloud({ username: user.username, is_locked: newLocked }); } catch {}
+  const handleToggleLock = async (pinUser: PinUser) => {
+    const newLocked = !pinUser.isLocked;
+    await db.pinUsers.update(pinUser.id!, { isLocked: newLocked });
+    logAudit({ action: 'access_user_lock', newValue: `${pinUser.username} → ${newLocked ? 'verrouillé' : 'déverrouillé'}` }, (currentUser as { username?: string })?.username || 'unknown', currentRole || 'unknown');
+    try { await updateUserInCloud({ username: pinUser.username, is_locked: newLocked }); } catch {}
   };
 
   const openEditUser = (user: PinUser) => {
-    setFormData({ username: user.username, password: user.password, pin: user.pin, name: user.name, role: user.role as any, phone: user.phone || '', coachId: user.coachId });
+    setFormData({ username: user.username, password: user.password, pin: user.pin, name: user.name, role: user.role as 'admin' | 'reception' | 'coach' | 'adherent', phone: user.phone || '', coachId: user.coachId });
     setEditUser(user);
     setShowAddModal(true);
   };
@@ -120,6 +125,7 @@ export default function AccessSettingsPage() {
         phone: formData.username,
       });
 
+      logAudit({ action: 'access_user_edit', newValue: formData.username }, (currentUser as { username?: string })?.username || 'unknown', currentRole || 'unknown');
       logger.info(`User updated: ${formData.username}`);
     } catch (err) {
       logger.error('Failed to update user:', err);
@@ -289,7 +295,7 @@ export default function AccessSettingsPage() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">Téléphone (Nom d'utilisateur)</label>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Téléphone (Nom d&apos;utilisateur)</label>
                 <div className="relative">
                   <input
                     type="text"
@@ -327,7 +333,7 @@ export default function AccessSettingsPage() {
                   <label className="block text-sm font-medium text-gray-400 mb-2">Rôle</label>
                   <select
                     value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
+                    onChange={(e) => setFormData({ ...formData, role: e.target.value as 'admin' | 'reception' | 'coach' | 'adherent' })}
                     className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white focus:outline-none focus:border-orange-500"
                   >
                     <option value="adherent">Adhérent</option>

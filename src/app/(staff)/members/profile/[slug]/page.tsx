@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, Member } from '@/lib/db/dexie-db';
 import { MemberHeader } from '@/components/member/MemberHeader';
@@ -9,7 +9,6 @@ import { MemberInfo } from '@/components/member/MemberInfo';
 import { MemberSubscription } from '@/components/member/MemberSubscription';
 import { MemberPayments } from '@/components/member/MemberPayments';
 import { MemberCheckins } from '@/components/member/MemberCheckins';
-import { MemberCoach } from '@/components/member/MemberCoach';
 import { MemberStats } from '@/components/member/MemberStats';
 import { MemberHabits } from '@/components/member/MemberHabits';
 import { AIChatCoach } from '@/components/member/AIChatCoach';
@@ -38,7 +37,6 @@ function computeExpiryInfo(member: Member) {
 export default function MemberProfilePage() {
   const { logout, role } = useAuth();
   const params = useParams();
-  const router = useRouter();
   const nameSlug = params.slug as string;
   const [mounted, setMounted] = useState(false);
   const [showHabits, setShowHabits] = useState(false);
@@ -70,7 +68,8 @@ export default function MemberProfilePage() {
   const expiryInfo = member ? computeExpiryInfo(member) : null;
 
   useEffect(() => {
-    setMounted(true);
+    const t = setTimeout(() => setMounted(true), 0);
+    return () => clearTimeout(t);
   }, []);
 
   if (!mounted) {

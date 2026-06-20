@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth/context"
 import { cn } from "@/lib/utils"
 import {
   Trophy, Users, Calendar, Plus, Edit2, Medal, TrendingUp,
-  Flame, Target, X, Clock, Star, Award, Search, Filter, AlertCircle,
+  Flame, X, Clock, Filter, AlertCircle,
 } from "lucide-react"
 
 const DEMO_CHALLENGES = [
@@ -131,12 +131,10 @@ export default function ChallengesPage() {
     upcoming: "bg-blue-500/10 text-blue-400 border-blue-500/20",
   }
 
-  const typeIcons: Record<string, string> = {
-    Cardio: "🏃‍♂️", Fitness: "💪", Nutrition: "🥗", Poids: "🔥",
-  }
+  const [now] = useState(() => Date.now())
 
   const calcDaysRemaining = (endDate: string) => {
-    const diff = new Date(endDate).getTime() - Date.now()
+    const diff = new Date(endDate).getTime() - now
     return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)))
   }
 

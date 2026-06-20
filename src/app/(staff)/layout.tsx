@@ -14,10 +14,10 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
   const { user, role, loading, accessStatus } = useAuth()
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
-  const isCoachRoute = pathname?.startsWith('/coach')
-  const isPosRoute = pathname?.startsWith('/pos')
+  const isCoachRoute = pathname?.startsWith('/coach/') || pathname === '/coach'
+  const isPosRoute = pathname?.startsWith('/pos/') || pathname === '/pos'
 
-  useEffect(() => { setMobileOpen(false) }, [pathname])
+  useEffect(() => { const t = setTimeout(() => setMobileOpen(false), 0); return () => clearTimeout(t) }, [pathname])
 
   useEffect(() => {
     if (!loading && !user) router.push("/login")

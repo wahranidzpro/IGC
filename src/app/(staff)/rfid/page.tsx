@@ -5,6 +5,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db, Member } from '@/lib/db/dexie-db';
 import { useAuth } from '@/lib/auth/context';
 import { Fingerprint, Search, Shield, ShieldOff, Link, Unlink, Ban, CheckCircle, X, Clock, User, AlertTriangle, History, ArrowUpDown, Plus } from 'lucide-react';
+import Image from 'next/image';
 
 function formatDate(d: Date): string {
   const day = String(d.getDate()).padStart(2, '0');
@@ -30,7 +31,7 @@ function toDisplayDate(iso: string): string {
 }
 
 export default function RFIDPage() {
-  const { role, user } = useAuth();
+  useAuth();
   const [activeTab, setActiveTab] = useState<'active' | 'blocked' | 'associate'>('active');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
@@ -46,12 +47,11 @@ export default function RFIDPage() {
   const [rfidInput, setRfidInput] = useState('');
   const [associateSuccess, setAssociateSuccess] = useState<{ name: string; code: string } | null>(null);
   const rfidInputRef = useRef<HTMLInputElement>(null);
+  const [blockingMember, setBlockingMember] = useState<Member | null>(null);
   const [unblockConfirm, setUnblockConfirm] = useState<Member | null>(null);
 
   const allMembers = useLiveQuery(() => db.members.toArray(), []);
   const checkins = useLiveQuery(() => db.checkins.toArray(), []);
-  const allCoaches = useLiveQuery(() => db.coaches.toArray(), []);
-
   const membersWithRFID = allMembers?.filter(m => m.rfidCode && m.rfidCode.trim() !== '') || [];
   const blockedMembers = membersWithRFID.filter(m => m.isBlocked === true);
   const activeBadgeMembers = membersWithRFID.filter(m => !m.isBlocked);
@@ -91,22 +91,6 @@ export default function RFIDPage() {
     await db.members.update(member.id!, { rfidCode: '', updatedAt: new Date() });
     setShowDissociateModal(null);
   }, []);
-
-  const handleBlock = useCallback(async (member: Member) => {
-    if (!blockReason) return;
-    await db.members.update(member.id!, {
-      isBlocked: true,
-      blockReason,
-      blockDate: new Date(),
-      status: 'inactive',
-      updatedAt: new Date(),
-    });
-    setShowBlockModal(false);
-    setBlockingMember(null);
-    setBlockReason('');
-  }, [blockReason]);
-
-  const [blockingMember, setBlockingMember] = useState<Member | null>(null);
 
   const handleUnblock = useCallback(async (member: Member) => {
     await db.members.update(member.id!, {
@@ -220,7 +204,7 @@ export default function RFIDPage() {
               <Clock className="w-5 h-5 text-blue-400" />
             </div>
             <div>
-              <p className="text-xs text-gray-500 font-medium">Entrées Aujourd'hui</p>
+              <p className="text-xs text-gray-500 font-medium">Entrées Aujourd&apos;hui</p>
               <p className="text-xl font-bold text-blue-400">{todayCheckins}</p>
             </div>
           </div>
@@ -287,7 +271,7 @@ export default function RFIDPage() {
             </div>
             <select
               value={statusFilter}
-              onChange={e => setStatusFilter(e.target.value as any)}
+              onChange={e => setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')}
               className="px-4 py-3 bg-gray-900 border border-gray-800 rounded-xl text-white text-sm focus:outline-none focus:border-orange-500"
             >
               <option value="all">Tous les statuts</option>
@@ -330,7 +314,7 @@ export default function RFIDPage() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 bg-gray-800">
-                            {m.photo ? <img src={m.photo} alt="" className="w-full h-full object-cover" /> : <User className="w-full h-full p-1.5 text-gray-500" />}
+                            {m.photo ? <Image src={m.photo} alt="" width={32} height={32} className="w-full h-full object-cover" /> : <User className="w-full h-full p-1.5 text-gray-500" />}
                           </div>
                           <div>
                             <p className="text-sm font-medium text-white truncate max-w-[120px]">{m.firstName} {m.lastName}</p>
@@ -392,7 +376,7 @@ export default function RFIDPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-gray-800">
-                        {m.photo ? <img src={m.photo} alt="" className="w-full h-full object-cover" /> : <User className="w-full h-full p-2 text-gray-500" />}
+                        {m.photo ? <Image src={m.photo} alt="" width={40} height={40} className="w-full h-full object-cover" /> : <User className="w-full h-full p-2 text-gray-500" />}
                       </div>
                       <div>
                         <p className="text-sm font-medium text-white">{m.firstName} {m.lastName}</p>
@@ -485,7 +469,7 @@ export default function RFIDPage() {
                           className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-700 transition-colors ${selectedMember?.id === m.id ? 'bg-orange-500/10' : ''}`}
                         >
                           <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 bg-gray-700">
-                            {m.photo ? <img src={m.photo} alt="" className="w-full h-full object-cover" /> : <User className="w-full h-full p-1.5 text-gray-500" />}
+                            {m.photo ? <Image src={m.photo} alt="" width={32} height={32} className="w-full h-full object-cover" /> : <User className="w-full h-full p-1.5 text-gray-500" />}
                           </div>
                           <div>
                             <p className="text-sm font-medium text-white">{m.firstName} {m.lastName}</p>
@@ -500,7 +484,7 @@ export default function RFIDPage() {
                 {selectedMember && (
                   <div className="flex items-center gap-3 p-4 bg-orange-500/10 border border-orange-500/30 rounded-xl">
                     <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-gray-700">
-                      {selectedMember.photo ? <img src={selectedMember.photo} alt="" className="w-full h-full object-cover" /> : <User className="w-full h-full p-2 text-orange-400" />}
+                      {selectedMember.photo ? <Image src={selectedMember.photo} alt="" width={40} height={40} className="w-full h-full object-cover" /> : <User className="w-full h-full p-2 text-orange-400" />}
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-medium text-white">{selectedMember.firstName} {selectedMember.lastName}</p>
@@ -595,7 +579,7 @@ export default function RFIDPage() {
             </div>
             <div className="mb-4 flex items-center gap-3 p-3 bg-gray-800 rounded-xl">
               <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 bg-gray-700">
-                {blockingMember?.photo ? <img src={blockingMember.photo} alt="" className="w-full h-full object-cover" /> : <User className="w-full h-full p-1.5 text-gray-500" />}
+                {blockingMember?.photo ? <Image src={blockingMember.photo} alt="" width={32} height={32} className="w-full h-full object-cover" /> : <User className="w-full h-full p-1.5 text-gray-500" />}
               </div>
               <div>
                 <p className="text-sm font-medium text-white">{blockingMember?.firstName} {blockingMember?.lastName}</p>
@@ -648,10 +632,10 @@ export default function RFIDPage() {
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-gray-800">
-                  {showHistoryModal.photo ? <img src={showHistoryModal.photo} alt="" className="w-full h-full object-cover" /> : <User className="w-full h-full p-2 text-gray-500" />}
+                  {showHistoryModal.photo ? <Image src={showHistoryModal.photo} alt="" width={40} height={40} className="w-full h-full object-cover" /> : <User className="w-full h-full p-2 text-gray-500" />}
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-white">Historique d'accès</h3>
+                  <h3 className="text-lg font-semibold text-white">Historique d&apos;accès</h3>
                   <p className="text-sm text-gray-400">{showHistoryModal.firstName} {showHistoryModal.lastName}</p>
                 </div>
               </div>
@@ -660,7 +644,7 @@ export default function RFIDPage() {
             {memberCheckins.length === 0 ? (
               <div className="text-center py-8">
                 <History className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-                <p className="text-gray-500">Aucun historique d'accès</p>
+                <p className="text-gray-500">Aucun historique d&apos;accès</p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -782,7 +766,7 @@ export default function RFIDPage() {
                           className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-700 transition-colors ${selectedMember?.id === m.id ? 'bg-orange-500/10' : ''}`}
                         >
                           <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 bg-gray-700">
-                            {m.photo ? <img src={m.photo} alt="" className="w-full h-full object-cover" /> : <User className="w-full h-full p-1.5 text-gray-500" />}
+                            {m.photo ? <Image src={m.photo} alt="" width={32} height={32} className="w-full h-full object-cover" /> : <User className="w-full h-full p-1.5 text-gray-500" />}
                           </div>
                           <div>
                             <p className="text-sm font-medium text-white">{m.firstName} {m.lastName}</p>
@@ -797,7 +781,7 @@ export default function RFIDPage() {
                 {selectedMember && (
                   <div className="flex items-center gap-3 p-4 bg-orange-500/10 border border-orange-500/30 rounded-xl">
                     <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-gray-700">
-                      {selectedMember.photo ? <img src={selectedMember.photo} alt="" className="w-full h-full object-cover" /> : <User className="w-full h-full p-2 text-orange-400" />}
+                      {selectedMember.photo ? <Image src={selectedMember.photo} alt="" width={40} height={40} className="w-full h-full object-cover" /> : <User className="w-full h-full p-2 text-orange-400" />}
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-medium text-white">{selectedMember.firstName} {selectedMember.lastName}</p>

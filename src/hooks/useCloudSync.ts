@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { db } from '@/lib/db/dexie-db';
-import { syncAll, syncMembersToCloud, syncAllEntities, pullAllEntities } from '@/lib/supabase/sync';
+import { syncMembersToCloud, pullAllEntities } from '@/lib/supabase/sync';
 import { startTieredProcessor, stopTieredProcessor } from '@/lib/offline/queue';
 import { logger } from '@/lib/logger';
 
@@ -11,7 +11,6 @@ const SYNC_INTERVAL_MS = 120_000;
 
 export function useCloudSync() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const isSyncing = useRef(false);
   const processorStarted = useRef(false);
 
   useEffect(() => {
@@ -44,6 +43,7 @@ export function useCloudSync() {
             if (clean) localByPhone.set(clean, m);
           }
 
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           for (const cloud of data as any[]) {
             const localId = cloud.local_id;
             const cloudPhone = (cloud.phone || '').replace(/[\s\-\+\(\)]/g, '');
@@ -72,7 +72,9 @@ export function useCloudSync() {
               balanceDue: cloud.balance_due || 0,
               discount: cloud.discount || 0,
               advance: cloud.advance || 0,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               subscriptionType: (cloud.subscription_type || 'free_session') as any,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               subscriptionDuration: (cloud.subscription_duration || '') as any,
               status: (cloud.status || 'active') as 'active' | 'inactive' | 'expired',
               fidelityPoints: cloud.fidelity_points || 0,

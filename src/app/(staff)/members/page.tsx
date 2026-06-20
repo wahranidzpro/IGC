@@ -3,11 +3,11 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import IGCQRCode from '@/components/IGCQRCode';
-import { db, Member, Program, SubscriptionType, SubscriptionDuration } from '@/lib/db/dexie-db';
+import { db, Member, SubscriptionType, SubscriptionDuration } from '@/lib/db/dexie-db';
 import { useAuth } from '@/lib/auth/context';
-import { useRef, useCallback } from 'react';
-import { Scan, Search, Plus, X, Award, CheckCircle, XCircle, Camera, User, QrCode, Wallet, Star, Dumbbell, Edit, Trash2, Ban, Fingerprint } from 'lucide-react';
-import { getMemberQRValue, parseMemberIdFromQR, getQrWhatsAppMessage, openWhatsAppDirect, formatPhoneDisplay } from '@/lib/whatsapp';
+import { Scan, Search, Plus, X, CheckCircle, XCircle, Camera, User, QrCode, Wallet, Star, Dumbbell, Edit, Trash2, Ban, Fingerprint } from 'lucide-react';
+import Image from 'next/image';
+import { getMemberQRValue, getQrWhatsAppMessage, openWhatsAppDirect, formatPhoneDisplay } from '@/lib/whatsapp';
 import { ImportExportButtons, exportToXlsx, importFromXlsx } from '@/components/ui/ImportExportButtons';
 import { logAudit } from '@/lib/audit';
 import { earnPoints, getLoyaltyConfig, spendPoints, calculatePointsValue, calculateMaxDiscount } from '@/lib/loyalty';
@@ -21,41 +21,6 @@ function calculateAge(birthDate: string): number {
   if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age--;
   return age;
 }
-
-function parseQRMemberId(code: string): number | null {
-  return parseMemberIdFromQR(code);
-}
-
-function formatDate(d: Date): string {
-  const day = String(d.getDate()).padStart(2, '0');
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const year = d.getFullYear();
-  return `${day}/${month}/${year}`;
-}
-
-function toDisplayDate(iso: string): string {
-  if (!iso) return '';
-  const parts = iso.split('-');
-  if (parts.length !== 3) return iso;
-  return `${parts[2]}/${parts[1]}/${parts[0]}`;
-}
-
-function toISODate(display: string): string {
-  if (!display) return '';
-  const parts = display.split('/');
-  if (parts.length !== 3) return display;
-  const [dd, mm, yyyy] = parts;
-  if (dd.length === 2 && mm.length === 2 && yyyy.length === 4) return `${yyyy}-${mm}-${dd}`;
-  return display;
-}
-
-const durationLabels: Record<string, string> = {
-  '1_mois': '1 Mois',
-  '2_mois': '2 Mois',
-  '3_mois': '3 Mois',
-  '6_mois': '6 Mois',
-  '12_mois': '12 Mois',
-};
 
 const sessionsPerDuration: Record<string, number> = {
   '1_mois': 30,
@@ -115,7 +80,7 @@ export default function MembersPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editMember, setEditMember] = useState<Member | null>(null);
   const [showQr, setShowQr] = useState<Member | null>(null);
-  const [showScanner, setShowScanner] = useState(false);
+  const [, setShowScanner] = useState(false);
   const [showRecharge, setShowRecharge] = useState<Member | null>(null);
   const [rechargeAmount, setRechargeAmount] = useState(0);
   const [usePoints, setUsePoints] = useState(false);
@@ -235,27 +200,6 @@ email: '', emergencyContactName: '', emergencyContactPhone: '', allergies: '', a
     setEditMember(null);
   };
 
-  const openEdit = (m: Member) => {
-    setFormData({
-      firstName: m.firstName, lastName: m.lastName, phone: m.phone, birthDate: m.birthDate,
-      address: m.address || '', gender: m.gender || 'male', bloodType: m.bloodType || '',
-      photo: m.photo || '', coachId: m.coachId || 0, programId: m.programId || 0,
-      sessionsLeft: m.sessionsLeft || 0, programAmount: m.programAmount || 0,
-      amountPaid: m.amountPaid || 0,
-      balanceDue: m.balanceDue || 0, discount: m.discount || 0, advance: m.advance || 0,
-      rfidCode: m.rfidCode || '',
-      referredBy: m.referredBy || 0,
-      subscriptionType: m.subscriptionType || 'subscription',
-      subscriptionDuration: m.subscriptionDuration || '1_mois',
-      email: m.email || '', emergencyContactName: m.emergencyContactName || '', emergencyContactPhone: m.emergencyContactPhone || '',
-      allergies: m.allergies || '', allergiesOther: (m as any).allergiesOther || '', weight: m.weight !== undefined ? m.weight : undefined, weightCurrent: m.weightCurrent !== undefined ? m.weightCurrent : undefined, height: m.height !== undefined ? m.height : undefined,
-      fitnessGoal: m.fitnessGoal || '', experienceLevel: m.experienceLevel || ''
-    });
-    setPhotoPreview(m.photo || '');
-    setEditMember(m);
-    setShowAddModal(true);
-  };
-
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -357,7 +301,8 @@ email: '', emergencyContactName: '', emergencyContactPhone: '', allergies: '', a
       emergencyContactName: m.emergencyContactName || '',
       emergencyContactPhone: m.emergencyContactPhone || '',
       allergies: m.allergies || '',
-      allergiesOther: (m as any).allergiesOther || '',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      allergiesOther: ((m as unknown as Record<string, string>).allergiesOther) || '',
       weight: m.weight,
       weightCurrent: m.weightCurrent,
       height: m.height,
@@ -373,11 +318,6 @@ email: '', emergencyContactName: '', emergencyContactPhone: '', allergies: '', a
   const handleRecharge = (m: Member) => {
     setShowRecharge(m);
     setRechargeAmount(0);
-  };
-
-  const toggleStatus = async (member: Member) => {
-    const newStatus = member.status === 'active' ? 'inactive' : 'active';
-    await db.members.update(member.id!, { status: newStatus, updatedAt: new Date() });
   };
 
   const deleteMember = async (member: Member) => {
@@ -402,11 +342,9 @@ email: '', emergencyContactName: '', emergencyContactPhone: '', allergies: '', a
   const [blockReason, setBlockReason] = useState('');
   const [blockDays, setBlockDays] = useState<number>(30);
 
-  const openBlockModal = (m: Member) => { setBlockingMember(m); setShowBlockModal(true); };
-  
   const confirmBlock = async () => {
     if (!blockingMember || !blockReason) return;
-    const updates: any = {
+    const updates: Record<string, unknown> = {
       isBlocked: true,
       blockReason,
       blockDate: new Date(),
@@ -441,8 +379,6 @@ email: '', emergencyContactName: '', emergencyContactPhone: '', allergies: '', a
   };
 
   const getGenderLabel = (g?: string) => g === 'male' ? 'Homme' : g === 'female' ? 'Femme' : 'Autre';
-  const getSubLabel = (t?: string) => t === 'free_session' ? 'Séance libre' : 'Abonnement';
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -454,7 +390,7 @@ email: '', emergencyContactName: '', emergencyContactPhone: '', allergies: '', a
         {role !== 'coach' && (
           <div className="flex items-center gap-2">
             <ImportExportButtons
-              onExport={() => { const data = members?.map(({ id, ...rest }) => rest) || []; exportToXlsx(data, 'membres'); }}
+              onExport={() => { const data = members?.map(({ ...rest }) => rest) || []; exportToXlsx(data, 'membres'); }}
               onImport={() => importFromXlsx<Member>(async (items) => { await db.members.bulkAdd(items.map(item => ({ ...item, createdAt: new Date(), updatedAt: new Date() }))); })}
             />
             <button onClick={() => { resetForm(); setShowAddModal(true); }} className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-medium rounded-xl hover:from-orange-600 hover:to-orange-700"><Plus className="w-5 h-5" /> Nouveau Membre</button>
@@ -471,8 +407,8 @@ email: '', emergencyContactName: '', emergencyContactPhone: '', allergies: '', a
         <button onClick={() => setStatusFilter('blocked')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${statusFilter === 'blocked' ? 'bg-black text-red-400 border border-red-500' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>Blacklist ({members?.filter(m => m.isBlocked).length || 0})</button>
       </div>
 
-      <div className="rounded-xl" style={{ background: 'var(--surface)', borderColor: 'var(--border)', borderWidth: 1 }}>
-        <table className="w-full">
+      <div className="rounded-xl overflow-x-auto" style={{ background: 'var(--surface)', borderColor: 'var(--border)', borderWidth: 1 }}>
+        <table className="w-full min-w-[900px]">
           <thead>
             <tr style={{ borderColor: 'var(--border)' }}>
               <th className="text-center px-2 py-3 text-xs font-medium cursor-pointer hover:text-orange-400" style={{ color: 'var(--text-muted)' }} onClick={() => { setSortField('joinDate'); setSortDir(sortDir === 'asc' && sortField === 'joinDate' ? 'desc' : 'asc'); }}># {sortField === 'joinDate' && (sortDir === 'asc' ? '↑' : '↓')}</th>
@@ -501,7 +437,7 @@ email: '', emergencyContactName: '', emergencyContactPhone: '', allergies: '', a
                     <td className="px-3 py-3">
                       <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0" style={{ background: 'color-mix(in srgb, var(--text) 10%, transparent)' }}>
-                          {m.photo ? <img src={m.photo} alt="" className="w-full h-full object-cover" /> : <User className="w-full h-full p-1.5" style={{ color: 'var(--text-muted)' }} />}
+                          {m.photo ? <Image src={m.photo} alt="" width={32} height={32} className="w-full h-full object-cover" unoptimized /> : <User className="w-full h-full p-1.5" style={{ color: 'var(--text-muted)' }} />}
                         </div>
                         <div>
                           <div className="flex items-center gap-1">
@@ -604,7 +540,7 @@ email: '', emergencyContactName: '', emergencyContactPhone: '', allergies: '', a
               <div className="col-span-2 flex items-center gap-4 mb-2">
                 <div className="relative">
                   <div className="w-20 h-20 rounded-full bg-gray-800 overflow-hidden border-2 border-gray-700">
-                    {photoPreview ? <img src={photoPreview} alt="" className="w-full h-full object-cover" /> : <User className="w-full h-full p-4 text-gray-500" />}
+                    {photoPreview ? <Image src={photoPreview} alt="" width={80} height={80} className="w-full h-full object-cover" unoptimized /> : <User className="w-full h-full p-4 text-gray-500" />}
                   </div>
                   <label className="absolute bottom-0 right-0 p-1.5 bg-orange-500 rounded-full cursor-pointer hover:bg-orange-600">
                     <Camera className="w-4 h-4 text-white" />
@@ -618,7 +554,7 @@ email: '', emergencyContactName: '', emergencyContactPhone: '', allergies: '', a
               <div><label className="block text-xs font-medium text-gray-400 mb-1">Téléphone</label><input type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-orange-500" /></div>
               <div><label className="block text-xs font-medium text-gray-400 mb-1">Date de naissance (jj/mm/aaaa)</label><input type="date" value={formData.birthDate} onChange={e => setFormData({...formData, birthDate: e.target.value})} placeholder="jj/mm/aaaa" className="w-full px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-orange-500" /></div>
               <div className="col-span-2"><label className="block text-xs font-medium text-gray-400 mb-1">Adresse</label><input type="text" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="w-full px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-orange-500" /></div>
-              <div><label className="block text-xs font-medium text-gray-400 mb-1">Sexe</label><select value={formData.gender} onChange={e => setFormData({...formData, gender: e.target.value as any})} className="w-full px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-orange-500"><option value="male">Homme</option><option value="female">Femme</option><option value="other">Autre</option></select></div>
+              <div><label className="block text-xs font-medium text-gray-400 mb-1">Sexe</label><select value={formData.gender} onChange={e => setFormData({...formData, gender: e.target.value as 'male' | 'female' | 'other'})} className="w-full px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-orange-500"><option value="male">Homme</option><option value="female">Femme</option><option value="other">Autre</option></select></div>
               <div><label className="block text-xs font-medium text-gray-400 mb-1">Groupe sanguin</label><select value={formData.bloodType} onChange={e => setFormData({...formData, bloodType: e.target.value})} className="w-full px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-orange-500"><option value="">--</option><option value="A+">A+</option><option value="A-">A-</option><option value="B+">B+</option><option value="B-">B-</option><option value="AB+">AB+</option><option value="AB-">AB-</option><option value="O+">O+</option><option value="O-">O-</option></select></div>
               <div><label className="block text-xs font-medium text-gray-400 mb-1">Coach</label><select value={formData.coachId} onChange={e => setFormData({...formData, coachId: Number(e.target.value)})} className="w-full px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-orange-500"><option value={0}>Aucun</option>{coaches?.map(c => <option key={c.id} value={c.id!}>{c.name}</option>)}</select></div>
               <div><label className="block text-xs font-medium text-gray-400 mb-1">Programme</label><select value={formData.programId} onChange={e => { const pid = Number(e.target.value); const p = programs?.find(pr => pr.id === pid); const price = p?.price || 0; const newProgramAmount = price; const newBalanceDue = formData.amountPaid <= newProgramAmount ? newProgramAmount - formData.amountPaid : 0; const newAdvance = formData.amountPaid > newProgramAmount ? formData.advance + (formData.amountPaid - newProgramAmount) : formData.advance; setFormData({...formData, programId: pid, programAmount: newProgramAmount, balanceDue: newBalanceDue, advance: newAdvance }); }} className="w-full px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-orange-500"><option value={0}>Sélectionner</option>{programs?.map(p => <option key={p.id} value={p.id!}>{p.name} - {(p.price || 0).toLocaleString()} DA</option>)}</select></div>
@@ -679,7 +615,7 @@ email: '', emergencyContactName: '', emergencyContactPhone: '', allergies: '', a
               <div className="col-span-2"><label className="block text-xs font-medium text-gray-400 mb-1">Email (optionnel)</label><input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} placeholder="email@exemple.com" className="w-full px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-orange-500" /></div>
 
               <div className="col-span-2 border-t border-gray-800 pt-4 mt-2">
-                <h4 className="text-sm font-medium text-gray-300 mb-3">Contact d'urgence</h4>
+                <h4 className="text-sm font-medium text-gray-300 mb-3">Contact d&apos;urgence</h4>
               </div>
               <div><label className="block text-xs font-medium text-gray-400 mb-1">Nom du contact</label><input type="text" value={formData.emergencyContactName} onChange={e => setFormData({...formData, emergencyContactName: e.target.value})} placeholder="Nom du contact" className="w-full px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-orange-500" /></div>
               <div><label className="block text-xs font-medium text-gray-400 mb-1">Téléphone</label><input type="tel" value={formData.emergencyContactPhone} onChange={e => setFormData({...formData, emergencyContactPhone: e.target.value})} placeholder="Numéro de téléphone" className="w-full px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-orange-500" /></div>
@@ -701,7 +637,7 @@ email: '', emergencyContactName: '', emergencyContactPhone: '', allergies: '', a
                   <option value="Sulfites">Sulfites</option>
                   <option value="Pollen">Pollen</option>
                   <option value="Pénicilline">Pénicilline</option>
-                  <option value="Abeilles">Piqûre d'abeilles</option>
+                  <option value="Abeilles">Piqûre d&apos;abeilles</option>
                   <option value="Nickel">Nickel</option>
                   <option value="Latex">Latex</option>
                   <option value="Autre">Autre (à préciser)</option>
@@ -714,19 +650,19 @@ email: '', emergencyContactName: '', emergencyContactPhone: '', allergies: '', a
               <div className="col-span-2 border-t border-gray-800 pt-4 mt-2">
                 <h4 className="text-sm font-medium text-gray-300 mb-3">Informations Fitness</h4>
               </div>
-              <div><label className="block text-xs font-medium text-gray-400 mb-1">Poids d'entrée (kg)</label><input type="number" value={formData.weight || ''} onChange={e => setFormData({...formData, weight: e.target.value ? Number(e.target.value) : undefined})} placeholder="70" className="w-full px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-orange-500" /></div>
+              <div><label className="block text-xs font-medium text-gray-400 mb-1">Poids d&apos;entrée (kg)</label><input type="number" value={formData.weight || ''} onChange={e => setFormData({...formData, weight: e.target.value ? Number(e.target.value) : undefined})} placeholder="70" className="w-full px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-orange-500" /></div>
               <div><label className="block text-xs font-medium text-gray-400 mb-1">Poids actuel (kg)</label><input type="number" value={formData.weightCurrent || ''} onChange={e => setFormData({...formData, weightCurrent: e.target.value ? Number(e.target.value) : undefined})} placeholder="68" className="w-full px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-orange-500" /></div>
               <div><label className="block text-xs font-medium text-gray-400 mb-1">Taille (cm)</label><input type="number" value={formData.height || ''} onChange={e => setFormData({...formData, height: e.target.value ? Number(e.target.value) : undefined})} placeholder="175" className="w-full px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-orange-500" /></div>
 
               <div className="col-span-2 border-t border-gray-800 pt-4 mt-2">
                 <h4 className="text-sm font-medium text-gray-300 mb-3">Objectif fitness</h4>
               </div>
-              <div className="col-span-2"><label className="block text-xs font-medium text-gray-400 mb-1">Sélectionner un objectif</label><select value={formData.fitnessGoal} onChange={e => setFormData({...formData, fitnessGoal: e.target.value as any})} className="w-full px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-orange-500"><option value="">Sélectionner un objectif</option><option value="pertes_poids">Pertes poids</option><option value="prise_masse">Prise de masse</option><option value="tonification">Tonification</option><option value="endurance">Endurance</option><option value="forme_generale">Forme générale</option></select></div>
+              <div className="col-span-2"><label className="block text-xs font-medium text-gray-400 mb-1">Sélectionner un objectif</label><select value={formData.fitnessGoal} onChange={e => setFormData({...formData, fitnessGoal: e.target.value})} className="w-full px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-orange-500"><option value="">Sélectionner un objectif</option><option value="pertes_poids">Pertes poids</option><option value="prise_masse">Prise de masse</option><option value="tonification">Tonification</option><option value="endurance">Endurance</option><option value="forme_generale">Forme générale</option></select></div>
 
               <div className="col-span-2 border-t border-gray-800 pt-4 mt-2">
-                <h4 className="text-sm font-medium text-gray-300 mb-3">Niveau d'expérience</h4>
+                <h4 className="text-sm font-medium text-gray-300 mb-3">Niveau d&apos;expérience</h4>
               </div>
-              <div className="col-span-2"><label className="block text-xs font-medium text-gray-400 mb-1">Sélectionner le niveau</label><select value={formData.experienceLevel} onChange={e => setFormData({...formData, experienceLevel: e.target.value as any})} className="w-full px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-orange-500"><option value="">Sélectionner</option><option value="debutant">Débutant</option><option value="intermediaire">Intermédiaire</option><option value="avance">Avancé</option></select></div>
+              <div className="col-span-2"><label className="block text-xs font-medium text-gray-400 mb-1">Sélectionner le niveau</label><select value={formData.experienceLevel} onChange={e => setFormData({...formData, experienceLevel: e.target.value})} className="w-full px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-orange-500"><option value="">Sélectionner</option><option value="debutant">Débutant</option><option value="intermediaire">Intermédiaire</option><option value="avance">Avancé</option></select></div>
             </div>
             <button onClick={handleSave} className="w-full mt-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-orange-700">{editMember ? 'Enregistrer' : 'Ajouter'}</button>
           </div>
@@ -748,7 +684,7 @@ onClick={() => {
                     const svgData = new XMLSerializer().serializeToString(svg);
                     const canvas = document.createElement('canvas');
                     const ctx = canvas.getContext('2d');
-                    const img = new Image();
+                    const img = document.createElement('img');
                     img.onload = () => {
                       canvas.width = 300;
                       canvas.height = 300;
@@ -848,7 +784,7 @@ onClick={() => {
                   {usePoints && pointsToUse > 0 && (
                     <div className="flex items-center justify-between p-3 bg-green-500/10 rounded-xl">
                       <span className="text-sm text-green-400">Reduction points</span>
-                      <span className="text-lg font-bold text-green-400">-{calculatePointsValue(pointsToUse, { earnRateDzd: 100, earnRatePoints: 1, redemptionEnabled: true, redemptionRatePoints: 100, redemptionRateDzd: 10, redemptionMaxPercent: 50, posRedemptionEnabled: true, subscriptionRedemptionEnabled: true, earlyPaymentBonusEnabled: false, earlyPaymentMinAmount: 5000, earlyPaymentBonusPercent: 10, earlyPaymentMinMonths: 3 })} DA</span>
+                      <span className="text-lg font-bold text-green-400">-{calculatePointsValue(pointsToUse, { earnRateDzd: 100, earnRatePoints: 1, redemptionEnabled: true, redemptionRatePoints: 100, redemptionRateDzd: 10, redemptionMaxPercent: 50, posRedemptionEnabled: true, subscriptionRedemptionEnabled: true, earlyPaymentBonusEnabled: false, earlyPaymentMinAmount: 5000, earlyPaymentBonusPercent: 10, earlyPaymentMinMonths: 3, posDiscountMaxPercent: 30 })} DA</span>
                     </div>
                   )}
                 </div>
@@ -949,7 +885,7 @@ onClick={() => {
                     const svgData = new XMLSerializer().serializeToString(svg);
                     const canvas = document.createElement('canvas');
                     const ctx = canvas.getContext('2d');
-                    const img = new Image();
+                    const img = document.createElement('img');
                     img.onload = () => {
                       canvas.width = 300;
                       canvas.height = 300;
@@ -997,7 +933,7 @@ onClick={() => {
 
             <div className="flex items-center gap-3 mb-6 p-4 bg-gray-800/50 rounded-xl">
               <div className="w-12 h-12 rounded-full bg-gray-700 overflow-hidden flex-shrink-0">
-                {rfidAssociateMember.photo ? <img src={rfidAssociateMember.photo} className="w-full h-full object-cover" /> : <User className="w-full h-full p-2.5 text-gray-500" />}
+                {rfidAssociateMember.photo ? <Image src={rfidAssociateMember.photo} alt="" width={48} height={48} className="w-full h-full object-cover" unoptimized /> : <User className="w-full h-full p-2.5 text-gray-500" />}
               </div>
               <div>
                 <p className="text-white font-semibold">{rfidAssociateMember.firstName} {rfidAssociateMember.lastName}</p>

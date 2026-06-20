@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withCsrf } from '@/lib/api-middleware';
 
-export async function POST(request: NextRequest) {
+async function handlePost(request: NextRequest) {
   const isSecure = request.url.startsWith('https://') || request.headers.get('x-forwarded-proto') === 'https';
   const secureFlag = isSecure ? '; Secure' : '';
   const response = NextResponse.json({ success: true });
@@ -12,3 +13,5 @@ export async function POST(request: NextRequest) {
 
   return response;
 }
+
+export const POST = withCsrf(handlePost);

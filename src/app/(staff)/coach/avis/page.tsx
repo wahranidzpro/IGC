@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { useAuth } from "@/lib/auth/context"
 import { cn } from "@/lib/utils"
 import {
   Star, MessageSquare, ThumbsUp, Flag, Clock, TrendingUp,
@@ -49,8 +48,7 @@ function getInitials(name: string) {
 }
 
 export default function AvisPage() {
-  const { user } = useAuth()
-  const [reviews, setReviews] = useState(DEMO_REVIEWS)
+  const [reviews] = useState(DEMO_REVIEWS)
   const [sort, setSort] = useState<"recent" | "best" | "worst">("recent")
   const [ratingFilter, setRatingFilter] = useState<number | null>(null)
   const [replyModal, setReplyModal] = useState<{ review: Review; text: string } | null>(null)

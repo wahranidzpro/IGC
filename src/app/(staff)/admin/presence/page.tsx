@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react"
 import { createClient } from "@/lib/supabase/client"
 import AdminStatsCard from "@/components/admin/AdminStatsCard"
-import { DoorOpen, LogIn, LogOut, Clock, Calendar, Activity, TrendingUp, Users } from "lucide-react"
+import { DoorOpen, LogIn, LogOut, Clock, Calendar, Activity, Users } from "lucide-react"
 
 interface AttendanceRow {
   id: string
@@ -151,7 +151,7 @@ export default function AdminPresencePage() {
           {todayEntries.length === 0 ? (
             <div className="p-12 text-center">
               <Activity className="w-12 h-12 text-[#A8B2C7]/30 mx-auto mb-3" />
-              <p className="text-[#A8B2C7] text-sm">Aucune activit\u00e9 aujourd'hui</p>
+              <p className="text-[#A8B2C7] text-sm">Aucune activit\u00e9 aujourd&apos;hui</p>
             </div>
           ) : (
             <div>

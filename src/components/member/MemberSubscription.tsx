@@ -39,8 +39,6 @@ export function MemberSubscription({ member, program }: MemberSubscriptionProps)
 
   // Calculate progress
   const totalSessions = member.sessionsLeft + (member.programAmount ? Math.round(member.programAmount / 100 * 10) : 0);
-  const progressPercent = totalSessions > 0 ? ((totalSessions - member.sessionsLeft) / totalSessions) * 100 : 0;
-
   return (
     <div className="bg-black/30 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
       <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">

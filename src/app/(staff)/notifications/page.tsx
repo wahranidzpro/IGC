@@ -3,9 +3,11 @@
 import { useState, useMemo, useRef } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, Member } from '@/lib/db/dexie-db';
+import { useAuth, AuthUser } from '@/lib/auth/context';
+import { logAudit } from '@/lib/audit';
 import { WhatsAppButton } from '@/components/ui/WhatsAppButton';
 import { getTemplate, sendWhatsApp, MessageTemplate, formatPhoneDisplay } from '@/lib/whatsapp';
-import { MessageSquare, AlertTriangle, Search, X, CheckCircle, Send, Bell, CalendarClock, UserX, Upload } from 'lucide-react';
+import { MessageSquare, AlertTriangle, Search, CheckCircle, Send, Bell, CalendarClock, UserX, Cake } from 'lucide-react';
 import { ImportExportButtons, exportToXlsx } from '@/components/ui/ImportExportButtons';
 import Link from 'next/link';
 
@@ -29,11 +31,12 @@ function getDaysLeft(m: Member): number {
 }
 
 export default function NotificationsPage() {
+  const { role, user } = useAuth();
   const [selectedTemplate, setSelectedTemplate] = useState<MessageTemplate>('renewal_reminder');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'expired' | 'inactive'>('all');
   const [selectedMembers, setSelectedMembers] = useState<Set<number>>(new Set());
-  const [activeTab, setActiveTab] = useState<'all' | 'renewal' | 'expired'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'renewal' | 'expired' | 'birthday'>('all');
   const [sending, setSending] = useState(false);
   const [sentCount, setSentCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -51,15 +54,28 @@ export default function NotificationsPage() {
 
   const expiredMembers = useMemo(() => {
     if (!members) return [];
-    const now = new Date();
+    const now = +new Date();
     return members.filter(m => {
       if (m.status !== 'expired' || !m.updatedAt) return false;
-      const diff = Math.floor((now.getTime() - new Date(m.updatedAt).getTime()) / (1000 * 60 * 60 * 24));
+      const diff = Math.floor((now - new Date(m.updatedAt).getTime()) / (1000 * 60 * 60 * 24));
       return diff >= 0 && diff <= 2;
+    }).map(m => ({
+      ...m,
+      daysSince: m.updatedAt ? Math.floor((now - new Date(m.updatedAt).getTime()) / (1000 * 60 * 60 * 24)) : 0,
+    }));
+  }, [members]);
+
+  const birthdayMembers = useMemo(() => {
+    if (!members) return [];
+    const today = new Date();
+    const todayStr = `${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    return members.filter(m => {
+      if (!m.birthDate || m.birthDate.length < 5) return false;
+      return m.birthDate.substring(5) === todayStr;
     });
   }, [members]);
 
-  const notificationCount = renewalMembers.length + expiredMembers.length;
+  const notificationCount = renewalMembers.length + expiredMembers.length + birthdayMembers.length;
 
   const filtered = members?.filter(m => {
     const q = searchTerm.toLowerCase();
@@ -110,6 +126,7 @@ export default function NotificationsPage() {
           { key: 'all' as const, label: 'Toutes', count: notificationCount },
           { key: 'renewal' as const, label: 'Renouvellement', count: renewalMembers.length },
           { key: 'expired' as const, label: 'Expirés', count: expiredMembers.length },
+          { key: 'birthday' as const, label: 'Anniversaires', count: birthdayMembers.length },
         ].map(tab => (
           <button
             key={tab.key}
@@ -176,13 +193,12 @@ export default function NotificationsPage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {expiredMembers.map(m => {
-              const daysSince = m.updatedAt ? Math.floor((Date.now() - new Date(m.updatedAt).getTime()) / (1000 * 60 * 60 * 24)) : 0;
               return (
                 <div key={m.id} className="flex items-center justify-between p-3 bg-red-500/5 rounded-lg">
                   <div>
                     <p className="text-sm text-white font-medium">{m.firstName} {m.lastName}</p>
                     <p className="text-xs text-gray-400">{formatPhoneDisplay(m.phone)}</p>
-                    <p className="text-xs text-red-400">Expiré depuis {daysSince} jour{daysSince > 1 ? 's' : ''}</p>
+                    <p className="text-xs text-red-400">Expiré depuis {m.daysSince} jour{m.daysSince > 1 ? 's' : ''}</p>
                   </div>
                   <WhatsAppButton
                     phone={m.phone}
@@ -194,6 +210,36 @@ export default function NotificationsPage() {
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Birthday section */}
+      {(activeTab === 'all' || activeTab === 'birthday') && birthdayMembers.length > 0 && (
+        <div className="bg-pink-500/10 border border-pink-500/30 rounded-xl p-5">
+          <div className="flex items-center gap-3 mb-4">
+            <Cake className="w-5 h-5 text-pink-400" />
+            <h3 className="text-lg font-semibold text-pink-400">
+              Anniversaires &mdash; {birthdayMembers.length} membre{birthdayMembers.length > 1 ? 's' : ''} aujourd&apos;hui !
+            </h3>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {birthdayMembers.map(m => (
+              <div key={m.id} className="flex items-center justify-between p-3 bg-pink-500/5 rounded-lg">
+                <div>
+                  <p className="text-sm text-white font-medium">{m.firstName} {m.lastName}</p>
+                  <p className="text-xs text-gray-400">{formatPhoneDisplay(m.phone)}</p>
+                  <p className="text-xs text-pink-400">Né le {m.birthDate}</p>
+                </div>
+                <WhatsAppButton
+                  phone={m.phone}
+                  template="birthday"
+                  data={{ name: `${m.firstName} ${m.lastName}` }}
+                  size="sm"
+                  label="Souhaiter"
+                />
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -215,7 +261,11 @@ export default function NotificationsPage() {
             <p className="text-gray-400 text-sm mt-1">Envoyez des messages personnalisés à vos adhérents</p>
           </div>
           <ImportExportButtons
-            onExport={() => exportToXlsx(filtered.map(({ id, ...rest }) => rest), 'membres-notifications')}
+            onExport={() => exportToXlsx(filtered.map(m => {
+  const { id, ...data } = m;
+  void id;
+  return data;
+}), 'membres-notifications')}
             onImport={() => fileInputRef.current?.click()}
           />
           <input ref={fileInputRef} type="file" accept=".xlsx,.csv" className="hidden" onChange={async (e) => {
@@ -226,7 +276,7 @@ export default function NotificationsPage() {
               const data = await file.arrayBuffer();
               const workbook = XLSX.read(data, { type: 'array' });
               const sheet = workbook.Sheets[workbook.SheetNames[0]];
-              const rows = XLSX.utils.sheet_to_json<Record<string, any>>(sheet);
+              const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet);
               const phones = new Set(rows.map(r => String(r.phone || r.téléphone || r.Téléphone || r.tel || '').replace(/[^0-9]/g, '')));
               const matched = members?.filter(m => phones.has(m.phone)) || [];
               if (matched.length === 0) { alert('Aucun membre trouvé dans le fichier.'); return; }
@@ -254,9 +304,9 @@ export default function NotificationsPage() {
             <span className="text-sm text-gray-400">Aperçu du message</span>
           </div>
           <p className="text-gray-300 text-sm bg-gray-800/50 p-3 rounded-lg">
-            {getTemplate(selectedTemplate, { name: '[Prénom Nom]', days: 5, amount: 5000, type: 'subscription' })}
+            {getTemplate(selectedTemplate, { name: '[Prénom Nom]', days: '5', amount: '5000', type: 'subscription' })}
           </p>
-          <p className="text-xs text-gray-500 mt-2">Les messages s'ouvrent dans WhatsApp. Appuyez sur Envoyer pour confirmer.</p>
+          <p className="text-xs text-gray-500 mt-2">Les messages s&apos;ouvrent dans WhatsApp. Appuyez sur Envoyer pour confirmer.</p>
         </div>
 
         {/* Expiring alert */}
@@ -360,6 +410,7 @@ export default function NotificationsPage() {
                       template: selectedTemplate, memberId: m.id!, memberName: `${m.firstName} ${m.lastName}`,
                       phone: m.phone, message, status: 'sent', createdAt: new Date(), syncStatus: 'pending',
                     });
+                    await logAudit({ action: 'whatsapp_campaign_send', newValue: `Campagne ${selectedTemplate} → ${m.firstName} ${m.lastName}` }, (user as AuthUser)?.username ?? 'unknown', role || 'unknown');
                     setSentCount(prev => prev + 1);
                   }
                   setSelectedMembers(new Set());

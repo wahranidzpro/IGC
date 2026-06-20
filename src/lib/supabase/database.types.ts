@@ -17,8 +17,8 @@ import type {
   Message, MessageInsert, MessageUpdate,
   Schedule, ScheduleInsert, ScheduleUpdate,
   UserRole, MemberStatus, MembershipType, MembershipStatus,
-  PaymentMethod, PaymentStatus, PaymentCategory,
-  DeviceType, DeviceDirection,
+  PaymentMethod, PaymentStatus,
+  DeviceType,
   AttendanceType, AttendanceMethod,
   DashboardStats,
 } from "@/types"

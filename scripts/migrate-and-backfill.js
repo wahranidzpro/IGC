@@ -38,7 +38,7 @@ async function applyMigration(pool, filePath, name) {
 
 async function runBackfill() {
   console.log(`\n📦 Running backfill-subscriptions...`)
-  const { default: backfill } = await import("./backfill-subscriptions.mjs")
+  await import("./backfill-subscriptions.mjs")
   // backfill reads env vars directly
 }
 

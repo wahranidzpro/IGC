@@ -3,13 +3,13 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { useAuth } from "@/lib/auth/context"
 import { createClient } from "@/lib/supabase/client"
-import { mapRow, mapRows } from "@/lib/utils/transform"
+import { mapRows } from "@/lib/utils/transform"
 import AdminStatsCard from "@/components/admin/AdminStatsCard"
 import {
-  Users, DoorOpen, CreditCard, UserPlus, QrCode,
+  Users, DoorOpen, CreditCard, QrCode,
   Wallet, Gift, Search, Clock, ArrowRight,
   CheckCircle2, XCircle, Loader2, X, TrendingUp,
-  Dumbbell, Zap, Coffee,
+  Zap,
 } from "lucide-react"
 import MemberTable from "@/components/dashboard/MemberTable"
 import Link from "next/link"
@@ -55,7 +55,7 @@ export default function ReceptionPage() {
     todayPayments: number
     todayPaymentTotal: number
   } | null>(null)
-  const [statsLoading, setStatsLoading] = useState(true)
+  const [, setStatsLoading] = useState(true)
   const [checkins, setCheckins] = useState<{
     id: string
     memberName: string
@@ -75,10 +75,10 @@ export default function ReceptionPage() {
   const searchTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const resultsRef = useRef<HTMLDivElement>(null)
   const [memberTableData, setMemberTableData] = useState<{
-    members: any[]
-    payments: any[]
-    programs: any[]
-    coaches: any[]
+    members: unknown[]
+    payments: unknown[]
+    programs: unknown[]
+    coaches: unknown[]
   }>({ members: [], payments: [], programs: [], coaches: [] })
   const [membersLoading, setMembersLoading] = useState(true)
 
@@ -164,7 +164,8 @@ export default function ReceptionPage() {
         .limit(10)
 
       setCheckins(
-        mapRows<any>(data).map((c: any) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (mapRows<any>(data) as any[]).map((c: any) => {
           const profile = c.member?.profiles
           const name = profile
             ? `${profile.firstName || ""} ${profile.lastName || ""}`.trim()
@@ -203,11 +204,13 @@ export default function ReceptionPage() {
         .order("created_at", { ascending: false })
         .limit(10)
 
-      const members = mapRows<any>(membersData).map((m: any) => ({
+      const members = (mapRows<Record<string, unknown>>(membersData) as Record<string, unknown>[]).map((m: Record<string, unknown>) => {
+        const prof = m.profile as { firstName?: string; lastName?: string; phone?: string } | undefined;
+        return {
         id: m.id,
-        firstName: m.profile?.firstName || '',
-        lastName: m.profile?.lastName || '',
-        phone: m.profile?.phone || '',
+        firstName: prof?.firstName || '',
+        lastName: prof?.lastName || '',
+        phone: prof?.phone || '',
         status: m.status,
         subscriptionType: m.subscriptionType || 'subscription',
         sessionsLeft: m.sessionsLeft,
@@ -217,7 +220,7 @@ export default function ReceptionPage() {
         coachId: m.coachId,
         createdAt: m.createdAt,
         updatedAt: m.updatedAt,
-      }))
+      }})
 
       const { data: paymentsData } = await supabase
         .from("payments")
@@ -230,14 +233,17 @@ export default function ReceptionPage() {
         .select(`id, profile:profiles (first_name, last_name)`)
         .limit(50)
 
-      const coaches = mapRows<any>(coachesData).map((c: any) => ({
+      const coaches = (mapRows<Record<string, unknown>>(coachesData) as Record<string, unknown>[]).map((c: Record<string, unknown>) => {
+        const cprof = c.profile as { firstName?: string; lastName?: string } | undefined;
+        return {
         id: c.id,
-        name: `${c.profile?.firstName || ''} ${c.profile?.lastName || ''}`.trim() || 'Coach',
-      }))
+        name: `${cprof?.firstName || ''} ${cprof?.lastName || ''}`.trim() || 'Coach',
+      }})
 
       setMemberTableData({
         members,
-        payments: mapRows<any>(paymentsData) || [],
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        payments: (mapRows<any>(paymentsData) as any[]) || [],
         programs: [],
         coaches,
       })
@@ -248,9 +254,9 @@ export default function ReceptionPage() {
   }, [supabase])
 
   useEffect(() => {
-    fetchStats()
-    fetchCheckins()
-    fetchMembers()
+    Promise.resolve().then(() => fetchStats())
+    Promise.resolve().then(() => fetchCheckins())
+    Promise.resolve().then(() => fetchMembers())
   }, [fetchStats, fetchCheckins, fetchMembers])
 
   const handleSearch = useCallback(
@@ -268,7 +274,8 @@ export default function ReceptionPage() {
           .or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%,phone.ilike.%${q}%`)
           .limit(8)
 
-        setSearchResults(mapRows<any>(data))
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setSearchResults(mapRows<any>(data) as any[])
         setShowResults(true)
       } catch {
         setSearchResults([])
@@ -286,6 +293,7 @@ export default function ReceptionPage() {
 
   const userName =
     user && "name" in user
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ? (user as any).name
       : user?.email?.split("@")[0] || "\u00e0 la r\u00e9ception"
 
@@ -402,7 +410,7 @@ export default function ReceptionPage() {
           ) : checkins.length === 0 ? (
             <div className="text-center py-10">
               <DoorOpen className="w-10 h-10 text-[#A8B2C7]/30 mx-auto mb-3" />
-              <p className="text-[#A8B2C7] text-sm">Aucune pr\u00e9sence enregistr\u00e9e aujourd'hui</p>
+              <p className="text-[#A8B2C7] text-sm">Aucune pr\u00e9sence enregistr\u00e9e aujourd&apos;hui</p>
             </div>
           ) : (
             <div className="space-y-1">
@@ -543,12 +551,16 @@ export default function ReceptionPage() {
             </div>
           </div>
         ) : (
+          <>
+          {/* eslint-disable @typescript-eslint/no-explicit-any */}
           <MemberTable
-            members={memberTableData.members}
-            payments={memberTableData.payments}
-            programs={memberTableData.programs}
-            coaches={memberTableData.coaches}
+            members={memberTableData.members as any}
+            payments={memberTableData.payments as any}
+            programs={memberTableData.programs as any}
+            coaches={memberTableData.coaches as any}
           />
+          {/* eslint-enable @typescript-eslint/no-explicit-any */}
+          </>
         )}
       </div>
 

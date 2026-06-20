@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import bcrypt from 'bcryptjs';
 import { signCookie } from '@/lib/cookie-signature';
+import { withCsrf } from '@/lib/api-middleware';
+import { checkRateLimit } from '@/lib/rate-limiter';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -11,8 +13,13 @@ function getSupabase() {
   return createClient(supabaseUrl, supabaseServiceKey, { auth: { persistSession: false, autoRefreshToken: false } });
 }
 
-export async function POST(request: NextRequest) {
-  console.log('[LOGIN] POST request received');
+async function handlePost(request: NextRequest) {
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+  if (!checkRateLimit(`login:${ip}`, 10, 60000)) {
+    return NextResponse.json({ error: 'Trop de tentatives. Réessayez dans une minute.' }, { status: 429 });
+  }
+
+  
   const supabase = getSupabase();
   if (!supabase) {
     console.error('[LOGIN] Supabase not configured');
@@ -138,3 +145,5 @@ export async function POST(request: NextRequest) {
 
   return response;
 }
+
+export const POST = withCsrf(handlePost);

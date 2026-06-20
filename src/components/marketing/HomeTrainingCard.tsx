@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { Clock, Dumbbell, Target, Flame } from "lucide-react"
 
 interface HomeTrainingCardProps {
@@ -20,8 +21,8 @@ export default function HomeTrainingCard({ title, duration, difficulty, calories
   return (
     <div className="group bg-zinc-900/80 border border-zinc-800 rounded-2xl overflow-hidden hover:border-zinc-600 transition-all duration-500 hover:-translate-y-1">
       {image && (
-        <div className="aspect-video bg-zinc-800 overflow-hidden">
-          <img src={image} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+        <div className="aspect-video relative bg-zinc-800 overflow-hidden">
+          <Image src={image} alt={title} fill className="object-cover group-hover:scale-105 transition-transform duration-700" />
         </div>
       )}
       {!image && (

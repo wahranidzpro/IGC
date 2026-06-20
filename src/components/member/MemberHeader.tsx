@@ -1,6 +1,7 @@
 'use client';
 
 import IGCQRCode from '@/components/IGCQRCode';
+import Image from 'next/image';
 import { Download, CreditCard, User, Calendar } from 'lucide-react';
 import { Member } from '@/lib/db/dexie-db';
 
@@ -36,7 +37,7 @@ export function MemberHeader({ member }: MemberHeaderProps) {
     const svgData = new XMLSerializer().serializeToString(svg);
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-    const img = new Image();
+    const img = new window.Image();
 
     img.onload = () => {
       canvas.width = img.width;
@@ -59,10 +60,11 @@ export function MemberHeader({ member }: MemberHeaderProps) {
         {/* Photo */}
         <div className="relative">
           {member.photo ? (
-            <img 
+            <Image 
               src={member.photo} 
               alt={`${member.firstName} ${member.lastName}`}
-              className="w-28 h-28 rounded-full object-cover border-4 border-orange-500/50"
+              width={112} height={112}
+              className="rounded-full object-cover border-4 border-orange-500/50"
             />
           ) : (
             <div className="w-28 h-28 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center border-4 border-orange-500/50">

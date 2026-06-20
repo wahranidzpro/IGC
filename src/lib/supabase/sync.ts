@@ -1,10 +1,13 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { supabase, isSupabaseConfigured } from './client';
 import { db } from '../db/dexie-db';
-import type { Member, Payment, CheckIn, PointsLedger, PinUser } from '../db/dexie-db';
+import type { Payment, CheckIn, PointsLedger, PinUser } from '../db/dexie-db';
 import { ENTITY_REGISTRY } from '@/lib/sync/registry';
 import { logger } from '@/lib/logger';
 
 const BATCH_SIZE = 100;
+
+let isProcessing = false
 
 function checkConfig() {
   if (!isSupabaseConfigured || !supabase) {
@@ -45,7 +48,7 @@ export async function syncMembersToCloud() {
 
   for (const m of pendingMembers) {
     try {
-      const { data: resolvedLocalId, error } = await (s.rpc as any)('upsert_synced_member', {
+      const { error } = await (s.rpc as any)('upsert_synced_member', {
         p_local_id: m.id,
         p_phone: m.phone || '',
         p_first_name: m.firstName || '',
@@ -93,8 +96,8 @@ export async function syncMembersToCloud() {
 
       await db.members.update(m.id!, { syncStatus: 'synced' });
       synced++;
-    } catch (err: any) {
-      lastError = err.message;
+    } catch (err: unknown) {
+      lastError = err instanceof Error ? err.message : String(err);
       logger.error(`[Sync] Member ${m.id} exception:`, err);
     }
   }
@@ -111,12 +114,19 @@ export async function syncPaymentsToCloud() {
     return { synced: 0, message: 'No payments to sync' };
   }
 
-  const { data: existing } = await s
-    .from('synced_payments')
-    .select('local_id')
-    .in('local_id', allPayments.map((p: Payment) => p.id!).slice(0, BATCH_SIZE));
+  const existingIds = new Set<number>();
+  const allIds = allPayments.map((p: Payment) => p.id).filter((id): id is number => id != null);
+  for (let i = 0; i < allIds.length; i += BATCH_SIZE) {
+    const batch = allIds.slice(i, i + BATCH_SIZE);
+    const { data: existing } = await s
+      .from('synced_payments')
+      .select('local_id')
+      .in('local_id', batch);
+    if (existing) {
+      existing.forEach((r: { local_id: number }) => existingIds.add(r.local_id));
+    }
+  }
 
-  const existingIds = new Set((existing || []).map((r: { local_id: number }) => r.local_id));
   const pendingPayments = allPayments.filter((p: Payment) => p.id && !existingIds.has(p.id));
 
   if (pendingPayments.length === 0) {
@@ -161,12 +171,19 @@ export async function syncCheckinsToCloud() {
     return { synced: 0, message: 'No check-ins to sync' };
   }
 
-  const { data: existing } = await s
-    .from('synced_checkins')
-    .select('local_id')
-    .in('local_id', allCheckins.map((c: CheckIn) => c.id!).slice(0, BATCH_SIZE));
+  const existingIds = new Set<number>();
+  const allIds = allCheckins.map((c: CheckIn) => c.id).filter((id): id is number => id != null);
+  for (let i = 0; i < allIds.length; i += BATCH_SIZE) {
+    const batch = allIds.slice(i, i + BATCH_SIZE);
+    const { data: existing } = await s
+      .from('synced_checkins')
+      .select('local_id')
+      .in('local_id', batch);
+    if (existing) {
+      existing.forEach((r: { local_id: number }) => existingIds.add(r.local_id));
+    }
+  }
 
-  const existingIds = new Set((existing || []).map((r: { local_id: number }) => r.local_id));
   const pendingCheckins = allCheckins.filter((c: CheckIn) => c.id && !existingIds.has(c.id));
 
   if (pendingCheckins.length === 0) {
@@ -207,12 +224,19 @@ export async function syncPointsLedgerToCloud() {
     return { synced: 0, message: 'No points ledger entries to sync' };
   }
 
-  const { data: existing } = await s
-    .from('synced_points_ledger')
-    .select('local_id')
-    .in('local_id', allLedger.map((l: PointsLedger) => l.id!).slice(0, BATCH_SIZE));
+  const existingIds = new Set<number>();
+  const allIds = allLedger.map((l: PointsLedger) => l.id).filter((id): id is number => id != null);
+  for (let i = 0; i < allIds.length; i += BATCH_SIZE) {
+    const batch = allIds.slice(i, i + BATCH_SIZE);
+    const { data: existing } = await s
+      .from('synced_points_ledger')
+      .select('local_id')
+      .in('local_id', batch);
+    if (existing) {
+      existing.forEach((r: { local_id: number }) => existingIds.add(r.local_id));
+    }
+  }
 
-  const existingIds = new Set((existing || []).map((r: { local_id: number }) => r.local_id));
   const pendingLedger = allLedger.filter((l: PointsLedger) => l.id && !existingIds.has(l.id));
 
   if (pendingLedger.length === 0) {
@@ -317,27 +341,65 @@ export async function syncPinUsersFromCloud() {
   return { synced, total: data.length };
 }
 
+// ── Orchestrators ────────────────────────────────────────────
+
 export async function syncAll() {
-  const results: Record<string, any> = {};
+  if (isProcessing) return {};
+  isProcessing = true;
+  try {
+    const results: Record<string, any> = {};
 
-  const tasks = {
-    pinUsers: () => syncPinUsersToCloud(),
-    members: () => syncMembersToCloud(),
-    payments: () => syncPaymentsToCloud(),
-    checkins: () => syncCheckinsToCloud(),
-    pointsLedger: () => syncPointsLedgerToCloud(),
-  };
+    const tasks = {
+      pinUsers: () => syncPinUsersToCloud(),
+      members: () => syncMembersToCloud(),
+      payments: () => syncPaymentsToCloud(),
+      checkins: () => syncCheckinsToCloud(),
+      pointsLedger: () => syncPointsLedgerToCloud(),
+    };
 
-  const entries = Object.entries(tasks).map(async ([name, fn]) => {
-    results[name] = await syncOne(name, fn);
-  });
+    const entries = Object.entries(tasks).map(async ([name, fn]) => {
+      results[name] = await syncOne(name, fn);
+    });
 
-  const entityEntries = Object.keys(ENTITY_REGISTRY).map(async (name) => {
-    results[name] = await syncOne(name, () => syncEntityToCloud(name));
-  });
+    const entityEntries = Object.keys(ENTITY_REGISTRY).map(async (name) => {
+      results[name] = await syncOne(name, () => syncEntityToCloudImpl(name));
+    });
 
-  await Promise.all([...entries, ...entityEntries]);
-  return results;
+    await Promise.all([...entries, ...entityEntries]);
+    return results;
+  } finally {
+    isProcessing = false;
+  }
+}
+
+export async function syncAllEntities() {
+  if (isProcessing) return {};
+  isProcessing = true;
+  try {
+    const results: Record<string, SyncResult> = {};
+    const tasks = Object.keys(ENTITY_REGISTRY).map(async (name) => {
+      results[name] = await syncOne(name, () => syncEntityToCloudImpl(name));
+    });
+    await Promise.all(tasks);
+    return results;
+  } finally {
+    isProcessing = false;
+  }
+}
+
+export async function pullAllEntities() {
+  if (isProcessing) return {};
+  isProcessing = true;
+  try {
+    const results: Record<string, SyncResult> = {};
+    const tasks = Object.keys(ENTITY_REGISTRY).map(async (name) => {
+      results[name] = await syncOne(name, () => pullEntityFromCloudImpl(name));
+    });
+    await Promise.all(tasks);
+    return results;
+  } finally {
+    isProcessing = false;
+  }
 }
 
 // ── Retry helper ──────────────────────────────────────────────
@@ -346,10 +408,10 @@ async function withRetry<T>(fn: () => Promise<T>, label: string, maxRetries = 3)
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       return await fn();
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (attempt === maxRetries) throw err;
       const delay = Math.min(1000 * 2 ** attempt, 8000);
-      logger.warn(`[Sync] ${label} attempt ${attempt} failed, retrying in ${delay}ms: ${err.message}`);
+      logger.warn(`[Sync] ${label} attempt ${attempt} failed, retrying in ${delay}ms: ${err instanceof Error ? err.message : String(err)}`);
       await new Promise(r => setTimeout(r, delay));
     }
   }
@@ -359,9 +421,9 @@ async function withRetry<T>(fn: () => Promise<T>, label: string, maxRetries = 3)
 async function syncOne(entityName: string, fn: () => Promise<any>) {
   try {
     return await withRetry(fn, entityName);
-  } catch (e: any) {
+  } catch (e: unknown) {
     logger.error(`${entityName} sync failed after retries:`, e);
-    return { synced: 0, total: 0, error: e.message };
+    return { synced: 0, total: 0, error: e instanceof Error ? e.message : String(e) };
   }
 }
 
@@ -377,35 +439,71 @@ async function pushEntityBatch<T>(
   const config = ENTITY_REGISTRY[entityName];
   if (!config) return { synced: 0, total: items.length, error: `Unknown entity: ${entityName}` };
 
+  const existingIds = new Set<number>();
+  for (let i = 0; i < items.length; i += BATCH_SIZE) {
+    const batch = items.slice(i, i + BATCH_SIZE);
+    const ids = batch.map(item => item.id).filter((id): id is number => id != null);
+    if (ids.length === 0) continue;
+    const { data: existing } = await (s.from(config.supabaseTable) as any)
+      .select('local_id')
+      .in('local_id', ids);
+    if (existing) {
+      existing.forEach((e: { local_id: number }) => existingIds.add(e.local_id));
+    }
+  }
+
+  const newItems = items.filter(item => !item.id || !existingIds.has(item.id));
+
   let synced = 0;
   let lastError: string | undefined;
 
-  for (const item of items) {
-    try {
-      const params = config.toCloudRecord(item);
-      const { error } = await (s.rpc as any)(config.rpcName, {
-        ...params,
-        p_updated_at: new Date().toISOString(),
-      });
+  if (config.rpcName) {
+    for (const item of newItems) {
+      try {
+        const params = config.toCloudRecord(item);
+        const record = item as any;
+        const updatedAt = record.updatedAt;
+        const { error } = await (s.rpc as any)(config.rpcName, {
+          ...params,
+          p_updated_at: updatedAt ? new Date(updatedAt).toISOString() : new Date().toISOString(),
+        });
 
+        if (error) {
+          lastError = error.message;
+          continue;
+        }
+        await config.dexieTable.update(item.id, { syncStatus: 'synced' });
+        synced++;
+      } catch (err: unknown) {
+        lastError = err instanceof Error ? err.message : String(err);
+      }
+    }
+  } else {
+    for (let i = 0; i < newItems.length; i += BATCH_SIZE) {
+      const batch = newItems.slice(i, i + BATCH_SIZE);
+      const records = batch.map((item) => config.toCloudRecord(item));
+      const { error } = await (s.from(config.supabaseTable) as any).upsert(records, { onConflict: 'local_id' });
       if (error) {
         lastError = error.message;
-        continue;
+      } else {
+        for (const item of batch) {
+          if (item.id != null) {
+            await config.dexieTable.update(item.id, { syncStatus: 'synced' });
+          }
+        }
+        synced += batch.length;
       }
-      synced++;
-    } catch (err: any) {
-      lastError = err.message;
     }
   }
 
   return { synced, total: items.length, error: lastError };
 }
 
-export async function syncEntityToCloud(entityName: string): Promise<SyncResult> {
+async function syncEntityToCloudImpl(entityName: string): Promise<SyncResult> {
   const config = ENTITY_REGISTRY[entityName];
   if (!config) return { synced: 0, total: 0, error: `Unknown entity: ${entityName}` };
 
-  const allItems = await (config.dexieTable as any).toArray();
+  const allItems = await config.dexieTable.where('syncStatus').equals('pending').toArray();
   if (allItems.length === 0) return { synced: 0, total: 0 };
 
   const result = await pushEntityBatch(entityName, allItems);
@@ -413,57 +511,77 @@ export async function syncEntityToCloud(entityName: string): Promise<SyncResult>
   return result;
 }
 
-export async function pullEntityFromCloud(entityName: string): Promise<SyncResult> {
+export async function syncEntityToCloud(entityName: string): Promise<SyncResult> {
+  if (isProcessing) return { synced: 0, total: 0, error: `Unknown entity: ${entityName}` };
+  isProcessing = true;
+  try {
+    return await syncEntityToCloudImpl(entityName);
+  } finally {
+    isProcessing = false;
+  }
+}
+
+async function pullEntityFromCloudImpl(entityName: string): Promise<SyncResult> {
   const s = checkConfig();
   const config = ENTITY_REGISTRY[entityName];
   if (!config) return { synced: 0, total: 0, error: `Unknown entity: ${entityName}` };
 
-  const { data, error } = await (s.from(config.supabaseTable) as any)
-    .select('*')
-    .order('updated_at', { ascending: false });
-
-  if (error) {
-    return { synced: 0, total: 0, error: error.message };
-  }
-
-  if (!data || data.length === 0) {
-    return { synced: 0, total: 0 };
-  }
-
   let synced = 0;
-  const table = config.dexieTable as any;
+  const table = config.dexieTable;
+  const PAGE_SIZE = 100;
+  let page = 0;
+  let hasMore = true;
 
-  for (const record of data) {
-    const existing = record.local_id ? await table.get(record.local_id) : null;
-    const localItem = config.fromCloudRecord(record);
-    if (existing) {
-      await table.update(record.local_id, localItem);
-    } else {
-      await table.add(localItem);
+  while (hasMore) {
+    const from = page * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+    const { data: records, error } = await (s.from(config.supabaseTable) as any)
+      .select('*')
+      .range(from, to)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      return { synced, total: 0, error: error.message };
     }
-    synced++;
+
+    if (!records || records.length < PAGE_SIZE) {
+      hasMore = false;
+    }
+
+    if (!records || records.length === 0) {
+      break;
+    }
+
+    for (const record of records) {
+      const existing = record.local_id ? await table.get(record.local_id) : null;
+      const localItem = config.fromCloudRecord(record);
+      if (existing) {
+        const localRecord = await table.get(record.local_id);
+        if (localRecord && (localRecord as Record<string, unknown>).syncStatus === 'pending') {
+          continue;
+        }
+        await table.update(record.local_id, localItem);
+      } else {
+        await table.add(localItem);
+      }
+      synced++;
+    }
+
+    page++;
   }
 
   await logSync(`${entityName}_pull`, synced, 'success');
-  return { synced, total: data.length };
+  return { synced, total: synced };
 }
 
-export async function syncAllEntities() {
-  const results: Record<string, SyncResult> = {};
-  const tasks = Object.keys(ENTITY_REGISTRY).map(async (name) => {
-    results[name] = await syncOne(name, () => syncEntityToCloud(name));
-  });
-  await Promise.all(tasks);
-  return results;
-}
-
-export async function pullAllEntities() {
-  const results: Record<string, SyncResult> = {};
-  const tasks = Object.keys(ENTITY_REGISTRY).map(async (name) => {
-    results[name] = await syncOne(name, () => pullEntityFromCloud(name));
-  });
-  await Promise.all(tasks);
-  return results;
+export async function pullEntityFromCloud(entityName: string): Promise<SyncResult> {
+  if (isProcessing) return { synced: 0, total: 0, error: `Unknown entity: ${entityName}` };
+  isProcessing = true;
+  try {
+    return await pullEntityFromCloudImpl(entityName);
+  } finally {
+    isProcessing = false;
+  }
 }
 
 export async function getSyncStatus() {
@@ -473,7 +591,7 @@ export async function getSyncStatus() {
   const totalCheckins = await db.checkins.count();
   const totalPointsLedger = await db.pointsLedger.count();
 
-  let lastSyncLog: any = null;
+  let lastSyncLog: unknown[] | null = null;
   try {
     const s = checkConfig();
     const { data } = await s

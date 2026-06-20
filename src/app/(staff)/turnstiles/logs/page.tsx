@@ -2,40 +2,46 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { getAccessLogs, subscribeToAccessLogs, getTurnstiles, AccessLog } from '@/lib/supabase/turnstile-service';
-import { ArrowLeft, RefreshCw, Clock, User, ShieldCheck, ShieldX, Wifi, Filter, Loader2, Download } from 'lucide-react';
+import { getAccessLogs, subscribeToAccessLogs, AccessLog } from '@/lib/supabase/turnstile-service';
+import { ArrowLeft, RefreshCw, Clock, ShieldCheck, ShieldX, Filter, Loader2, Download } from 'lucide-react';
+import PaginationControls from '@/components/ui/PaginationControls';
 
 export default function AccessLogsPage() {
   const [logs, setLogs] = useState<AccessLog[]>([]);
-  const [turnstiles, setTurnstiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'allowed' | 'denied'>('all');
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 50;
   const logsEndRef = useRef<HTMLDivElement>(null);
 
   const fetchInitial = useCallback(async () => {
     setLoading(true);
     try {
-      const [l, t] = await Promise.all([
-        getAccessLogs(100),
-        getTurnstiles().catch(() => []),
-      ]);
+      const l = await getAccessLogs(100);
       setLogs(l);
-      setTurnstiles(t);
     } catch {}
     setLoading(false);
   }, []);
 
-  useEffect(() => { fetchInitial(); }, [fetchInitial]);
-
-  // Real-time subscription
   useEffect(() => {
+    let ignore = false;
+    (async () => {
+      try {
+        const l = await getAccessLogs(100);
+        if (!ignore) setLogs(l);
+      } catch {}
+      if (!ignore) setLoading(false);
+    })();
+
     const unsub = subscribeToAccessLogs((newLog) => {
       setLogs(prev => [newLog, ...prev].slice(0, 200));
     });
-    return unsub;
+    return () => { ignore = true; unsub(); };
   }, []);
 
   const filteredLogs = filter === 'all' ? logs : logs.filter(l => l.status === filter);
+  const paginatedLogs = filteredLogs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.ceil(filteredLogs.length / PAGE_SIZE);
 
   const exportLogs = () => {
     const csv = [
@@ -66,7 +72,7 @@ export default function AccessLogsPage() {
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <h2 className="text-2xl font-bold text-white">Journaux d'accès</h2>
+            <h2 className="text-2xl font-bold text-white">Journaux d&apos;accès</h2>
             <p className="text-gray-400 text-sm">Temps réel · {logs.length} entrées chargées</p>
           </div>
         </div>
@@ -84,7 +90,7 @@ export default function AccessLogsPage() {
       <div className="flex items-center gap-2">
         <Filter className="w-4 h-4 text-gray-500" />
         {(['all', 'allowed', 'denied'] as const).map(f => (
-          <button key={f} onClick={() => setFilter(f)}
+          <button key={f} onClick={() => { setFilter(f); setPage(1); }}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
               filter === f
                 ? f === 'allowed' ? 'bg-green-500/20 text-green-400 border border-green-500/30'
@@ -121,7 +127,7 @@ export default function AccessLogsPage() {
                 {filteredLogs.length === 0 ? (
                   <tr><td colSpan={6} className="text-center py-12 text-gray-500">Aucun accès enregistré</td></tr>
                 ) : (
-                  filteredLogs.map(log => (
+                  paginatedLogs.map(log => (
                     <tr key={log.id} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors">
                       <td className="px-4 py-3 text-white whitespace-nowrap">
                         <div className="flex items-center gap-2">
@@ -159,6 +165,8 @@ export default function AccessLogsPage() {
           </div>
         </div>
       )}
+
+      {!loading && <PaginationControls currentPage={page} totalPages={totalPages} onPageChange={setPage} />}
 
       <div ref={logsEndRef} />
 

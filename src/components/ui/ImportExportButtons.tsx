@@ -48,10 +48,10 @@ export function importFromXlsx<T extends { id?: number }>(
       const wb = XLSX.read(buffer, { type: 'array' });
       const ws = wb.Sheets[wb.SheetNames[0]];
       const items: T[] = XLSX.utils.sheet_to_json(ws);
-      const cleaned = items.map(({ id, ...rest }) => rest as Omit<T, 'id'>);
+      const cleaned = items.map(({ id: _discard, ...rest }) => { void _discard; return rest as Omit<T, 'id'>; });
       await callback(cleaned);
       window.location.reload();
-    } catch (err) {
+    } catch {
       alert('Erreur lors de l\'import : fichier XLSX invalide');
     }
   };

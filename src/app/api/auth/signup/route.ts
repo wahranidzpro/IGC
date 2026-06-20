@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import bcrypt from 'bcryptjs';
 import { verifyAdmin } from '@/lib/api-auth';
+import { withCsrf } from '@/lib/api-middleware';
+import { checkRateLimit } from '@/lib/rate-limiter';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || '';
@@ -13,7 +15,12 @@ function getServiceClient() {
   });
 }
 
-export async function POST(request: NextRequest) {
+async function handlePost(request: NextRequest) {
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+  if (!checkRateLimit(`signup:${ip}`, 30, 60000)) {
+    return NextResponse.json({ error: 'Trop de requêtes. Réessayez plus tard.' }, { status: 429 });
+  }
+
   const auth = await verifyAdmin(request);
   if (!auth.authorized) return NextResponse.json({ error: auth.error }, { status: 401 });
 
@@ -109,7 +116,10 @@ export async function POST(request: NextRequest) {
         auth_user_id: authData.user.id,
       },
     }, { status: 201 });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Unknown error' }, { status: 500 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
+
+export const POST = withCsrf(handlePost);

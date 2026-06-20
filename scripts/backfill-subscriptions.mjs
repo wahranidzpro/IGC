@@ -70,8 +70,6 @@ async function createUser(user) {
 }
 
 async function linkAndSubscribe(authUserId, user) {
-  const email = `${user.username}@infinitygym.local`;
-
   const { data: existingGym } = await supabase
     .from("gym_users")
     .select("id")

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import Image from 'next/image';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, Product } from '@/lib/db/dexie-db';
 import { useAuth } from '@/lib/auth/context';
@@ -207,7 +208,7 @@ export default function ProductsPage() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-lg bg-gray-800 overflow-hidden flex-shrink-0">
-                        {p.photo ? <img src={p.photo} alt="" className="w-full h-full object-cover" /> : <Package className="w-full h-full p-1.5 text-gray-500" />}
+                        {p.photo ? <Image src={p.photo} alt="" width={36} height={36} className="w-full h-full object-cover" unoptimized /> : <Package className="w-full h-full p-1.5 text-gray-500" />}
                       </div>
                       <div className="min-w-0">
                         <p className="text-white font-medium truncate max-w-[200px]">{p.name}</p>
@@ -270,7 +271,7 @@ export default function ProductsPage() {
             <div key={p.id} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-lg bg-gray-800 overflow-hidden flex-shrink-0">
-                  {p.photo ? <img src={p.photo} alt="" className="w-full h-full object-cover" /> : <Package className="w-full h-full p-2 text-gray-500" />}
+                  {p.photo ? <Image src={p.photo} alt="" width={40} height={40} className="w-full h-full object-cover" unoptimized /> : <Package className="w-full h-full p-2 text-gray-500" />}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-white font-medium truncate">{p.name}</p>
@@ -368,7 +369,7 @@ export default function ProductsPage() {
 
   function InlinePriceField({ product, field, autoSave, inlineEdit, setInlineEdit }: {
     product: Product; field: 'buyPrice' | 'sellPrice'; autoSave: ReturnType<typeof useAutoSave<Product>>;
-    inlineEdit: { id: number; field: string; value: string } | null; setInlineEdit: (v: any) => void;
+    inlineEdit: { id: number; field: string; value: string } | null; setInlineEdit: (v: { id: number; field: string; value: string } | null) => void;
   }) {
     const isEditing = inlineEdit?.id === product.id && inlineEdit?.field === field;
     const val = field === 'buyPrice' ? product.buyPrice : product.sellPrice;
@@ -389,7 +390,7 @@ export default function ProductsPage() {
 
   function InlineStockField({ product, autoSave, inlineEdit, setInlineEdit }: {
     product: Product; autoSave: ReturnType<typeof useAutoSave<Product>>;
-    inlineEdit: { id: number; field: string; value: string } | null; setInlineEdit: (v: any) => void;
+    inlineEdit: { id: number; field: string; value: string } | null; setInlineEdit: (v: { id: number; field: string; value: string } | null) => void;
   }) {
     const isEditing = inlineEdit?.id === product.id && inlineEdit?.field === 'stock';
     if (isEditing) {
@@ -426,7 +427,7 @@ export default function ProductsPage() {
             <div className="flex items-center gap-4 mb-2">
               <div className="relative">
                 <div className="w-20 h-20 rounded-xl bg-gray-800 overflow-hidden border-2 border-gray-700">
-                  {photoPreview ? <img src={photoPreview} alt="" className="w-full h-full object-cover" /> : <Package className="w-full h-full p-4 text-gray-500" />}
+                  {photoPreview ? <Image src={photoPreview} alt="" width={80} height={80} className="w-full h-full object-cover" unoptimized /> : <Package className="w-full h-full p-4 text-gray-500" />}
                 </div>
                 <label className="absolute bottom-0 right-0 p-1.5 bg-orange-500 rounded-full cursor-pointer hover:bg-orange-600">
                   <Camera className="w-4 h-4 text-white" />

@@ -68,7 +68,7 @@ export interface ClubInsert {
   metadata?: Record<string, unknown> | null
 }
 
-export interface ClubUpdate extends Partial<ClubInsert> {}
+export type ClubUpdate = Partial<ClubInsert>
 
 export interface Member {
   id: string
@@ -110,7 +110,7 @@ export interface MemberInsert {
   status?: MemberStatus
 }
 
-export interface MemberUpdate extends Partial<MemberInsert> {}
+export type MemberUpdate = Partial<MemberInsert>
 
 export interface Membership {
   id: string
@@ -143,7 +143,7 @@ export interface MembershipInsert {
   notes?: string | null
 }
 
-export interface MembershipUpdate extends Partial<MembershipInsert> {}
+export type MembershipUpdate = Partial<MembershipInsert>
 
 export interface Payment {
   id: string
@@ -172,7 +172,7 @@ export interface PaymentInsert {
   paidAt?: string
 }
 
-export interface PaymentUpdate extends Partial<PaymentInsert> {}
+export type PaymentUpdate = Partial<PaymentInsert>
 
 export interface Attendance {
   id: string
@@ -194,7 +194,7 @@ export interface AttendanceInsert {
   timestamp?: string
 }
 
-export interface AttendanceUpdate extends Partial<AttendanceInsert> {}
+export type AttendanceUpdate = Partial<AttendanceInsert>
 
 export interface Device {
   id: string
@@ -224,7 +224,7 @@ export interface DeviceInsert {
   firmware?: string | null
 }
 
-export interface DeviceUpdate extends Partial<DeviceInsert> {}
+export type DeviceUpdate = Partial<DeviceInsert>
 
 export interface QrToken {
   id: string
@@ -245,7 +245,7 @@ export interface QrTokenInsert {
   deviceId?: string | null
 }
 
-export interface QrTokenUpdate extends Partial<QrTokenInsert> {}
+export type QrTokenUpdate = Partial<QrTokenInsert>
 
 export interface RfidCard {
   id: string
@@ -264,7 +264,7 @@ export interface RfidCardInsert {
   isActive?: boolean
 }
 
-export interface RfidCardUpdate extends Partial<RfidCardInsert> {}
+export type RfidCardUpdate = Partial<RfidCardInsert>
 
 export interface Coach {
   id: string
@@ -287,7 +287,7 @@ export interface CoachInsert {
   isActive?: boolean
 }
 
-export interface CoachUpdate extends Partial<CoachInsert> {}
+export type CoachUpdate = Partial<CoachInsert>
 
 export interface Notification {
   id: string
@@ -309,7 +309,7 @@ export interface NotificationInsert {
   metadata?: Record<string, unknown> | null
 }
 
-export interface NotificationUpdate extends Partial<NotificationInsert> {}
+export type NotificationUpdate = Partial<NotificationInsert>
 
 export interface MemberCoach {
   id: string
@@ -326,7 +326,7 @@ export interface MemberCoachInsert {
   isActive?: boolean
 }
 
-export interface MemberCoachUpdate extends Partial<MemberCoachInsert> {}
+export type MemberCoachUpdate = Partial<MemberCoachInsert>
 
 export interface WorkoutProgram {
   id: string
@@ -347,7 +347,7 @@ export interface WorkoutProgramInsert {
   assignedTo?: string[]
 }
 
-export interface WorkoutProgramUpdate extends Partial<WorkoutProgramInsert> {}
+export type WorkoutProgramUpdate = Partial<WorkoutProgramInsert>
 
 export interface NutritionProgram {
   id: string
@@ -368,7 +368,7 @@ export interface NutritionProgramInsert {
   assignedTo?: string[]
 }
 
-export interface NutritionProgramUpdate extends Partial<NutritionProgramInsert> {}
+export type NutritionProgramUpdate = Partial<NutritionProgramInsert>
 
 export interface ProgressLog {
   id: string
@@ -394,7 +394,7 @@ export interface ProgressLogInsert {
   loggedAt?: string
 }
 
-export interface ProgressLogUpdate extends Partial<ProgressLogInsert> {}
+export type ProgressLogUpdate = Partial<ProgressLogInsert>
 
 export interface Message {
   id: string
@@ -412,7 +412,7 @@ export interface MessageInsert {
   isRead?: boolean
 }
 
-export interface MessageUpdate extends Partial<MessageInsert> {}
+export type MessageUpdate = Partial<MessageInsert>
 
 export interface Schedule {
   id: string
@@ -437,7 +437,7 @@ export interface ScheduleInsert {
   type: "coaching" | "class" | "appointment"
 }
 
-export interface ScheduleUpdate extends Partial<ScheduleInsert> {}
+export type ScheduleUpdate = Partial<ScheduleInsert>
 
 export interface Exercise {
   name: string

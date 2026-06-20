@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Box, Plus, Search, Edit, Trash2, AlertTriangle, Save, X, Wrench, DollarSign } from 'lucide-react';
+import { useState } from 'react';
+import { Box, Plus, Search, Edit, AlertTriangle, Save, X, Wrench, DollarSign } from 'lucide-react';
 
 interface Equipment {
   id: number;
@@ -78,8 +78,6 @@ export default function EquipmentPage() {
     lastMaintenance: '', nextMaintenance: '', notes: '',
   });
 
-  const categories = ['all', ...new Set(equipments.map(e => e.category))];
-  
   const filtered = equipments.filter(e => {
     const matchesSearch = e.name.toLowerCase().includes(searchQuery.toLowerCase()) || e.brand.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || e.category === selectedCategory;
@@ -93,10 +91,6 @@ export default function EquipmentPage() {
 
   const getStatusColor = (status: string) => {
     return EQUIPMENT_STATUSES.find(s => s.value === status)?.color || 'bg-gray-500/20 text-gray-400';
-  };
-
-  const getStatusLabel = (status: string) => {
-    return EQUIPMENT_STATUSES.find(s => s.value === status)?.label || status;
   };
 
   const startEdit = (eq: Equipment) => {
@@ -118,7 +112,7 @@ export default function EquipmentPage() {
   };
 
   const handleStatusChange = (id: number, newStatus: string) => {
-    setEquipments(equipments.map(e => e.id === id ? { ...e, status: newStatus as any } : e));
+    setEquipments(equipments.map(e => e.id === id ? { ...e, status: newStatus as Equipment['status'] } : e));
   };
 
   const addEquipment = () => {
@@ -318,7 +312,7 @@ export default function EquipmentPage() {
             <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-muted)' }}>Nom de l'equipement *</label>
+                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-muted)' }}>Nom de l&apos;equipement *</label>
                   <input type="text" value={newEquipment.name} onChange={e => setNewEquipment({...newEquipment, name: e.target.value})} className="w-full px-4 py-3 rounded-xl focus:outline-none focus:border-orange-500" style={{ background: 'var(--input-bg)', borderColor: 'var(--border)', color: 'var(--text)', borderWidth: 1 }} placeholder="Ex: Tapis de course" />
                 </div>
                 <div>
@@ -349,14 +343,14 @@ export default function EquipmentPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-muted)' }}>Statut</label>
-                  <select value={newEquipment.status} onChange={e => setNewEquipment({...newEquipment, status: e.target.value as any})} className="w-full px-4 py-3 rounded-xl focus:outline-none focus:border-orange-500" style={{ background: 'var(--input-bg)', borderColor: 'var(--border)', color: 'var(--text)', borderWidth: 1 }}>
+                  <select value={newEquipment.status} onChange={e => setNewEquipment({...newEquipment, status: e.target.value as Equipment['status']})} className="w-full px-4 py-3 rounded-xl focus:outline-none focus:border-orange-500" style={{ background: 'var(--input-bg)', borderColor: 'var(--border)', color: 'var(--text)', borderWidth: 1 }}>
                     {EQUIPMENT_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                   </select>
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-muted)' }}>Date d'achat</label>
+                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-muted)' }}>Date d&apos;achat</label>
                   <input type="date" value={newEquipment.purchaseDate} onChange={e => setNewEquipment({...newEquipment, purchaseDate: e.target.value})} className="w-full px-4 py-3 rounded-xl focus:outline-none focus:border-orange-500" style={{ background: 'var(--input-bg)', borderColor: 'var(--border)', color: 'var(--text)', borderWidth: 1 }} />
                 </div>
                 <div>
@@ -374,7 +368,7 @@ export default function EquipmentPage() {
               </div>
             </div>
             <button onClick={addEquipment} disabled={!newEquipment.name || !newEquipment.brand} className="w-full mt-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-orange-700 disabled:opacity-50">
-              Ajouter l'equipement
+              Ajouter l&apos;equipement
             </button>
           </div>
         </div>

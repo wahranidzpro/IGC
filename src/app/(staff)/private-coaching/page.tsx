@@ -1,13 +1,15 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import Image from 'next/image';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, Member } from '@/lib/db/dexie-db';
+import { db } from '@/lib/db/dexie-db';
 import { useAuth } from '@/lib/auth/context';
+import { logAudit } from '@/lib/audit';
 import { 
-  Users, User, Calendar, Clock, DollarSign, Search, X, Plus, ChevronDown, ChevronUp,
-  CheckCircle, XCircle, Filter, Download, TrendingUp, BarChart3, Star, Award,
-  Phone, Mail, MapPin, Dumbbell, Activity, AlertCircle, Edit, Trash2, Save, Loader2
+  User, Search, X, Plus, ChevronDown, ChevronUp,
+  CheckCircle, XCircle, Filter, Download, Star,
+  Dumbbell, Activity, Edit, Trash2
 } from 'lucide-react';
 import { formatPhoneDisplay } from '@/lib/whatsapp';
 import { exportToXlsx } from '@/components/ui/ImportExportButtons';
@@ -25,6 +27,7 @@ export default function CoachingPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<SessionStatus | 'all'>('all');
   const [showSessionModal, setShowSessionModal] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [editingSession, setEditingSession] = useState<any | null>(null);
   const [sessionForm, setSessionForm] = useState({ memberId: 0, memberName: '', coachId: 0, coachName: '', date: '', time: '10:00', price: 2000, status: 'scheduled' as SessionStatus });
   const [memberSearch, setMemberSearch] = useState('');
@@ -33,8 +36,6 @@ export default function CoachingPage() {
   const allCoaches = useLiveQuery(() => db.coaches.toArray(), []);
   const allMembers = useLiveQuery(() => db.members.toArray(), []);
   const allSessions = useLiveQuery(() => db.privateSessions.toArray(), []);
-  const allPayments = useLiveQuery(() => db.payments.toArray(), []);
-
   const coaches = useMemo(() => {
     if (isAdmin) return allCoaches || [];
     return (allCoaches || []).filter(c => c.id === coachId);
@@ -90,6 +91,8 @@ export default function CoachingPage() {
       createdAt: new Date(),
       syncStatus: 'pending',
     });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await logAudit({ action: 'session_create', newValue: `Session ${member?.firstName} ${member?.lastName} - ${sessionForm.date}` }, (user as any)?.username || 'unknown', role || 'unknown');
     setShowSessionModal(false);
     resetForm();
   };
@@ -104,6 +107,8 @@ export default function CoachingPage() {
       syncStatus: 'pending',
       updatedAt: new Date(),
     });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await logAudit({ action: 'session_edit', newValue: `Session #${editingSession.id} mise à jour - ${sessionForm.date}` }, (user as any)?.username || 'unknown', role || 'unknown');
     setEditingSession(null);
     setShowSessionModal(false);
     resetForm();
@@ -112,10 +117,14 @@ export default function CoachingPage() {
   const handleDeleteSession = async (id: number) => {
     if (!confirm('Supprimer cette session ?')) return;
     await db.privateSessions.delete(id);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await logAudit({ action: 'session_delete', newValue: `Session #${id} supprimée` }, (user as any)?.username || 'unknown', role || 'unknown');
   };
 
   const updateStatus = async (id: number, status: SessionStatus) => {
     await db.privateSessions.update(id, { status, syncStatus: 'pending', updatedAt: new Date() });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await logAudit({ action: 'session_status_change', newValue: `Session #${id} → ${status}` }, (user as any)?.username || 'unknown', role || 'unknown');
   };
 
   const resetForm = () => {
@@ -123,6 +132,7 @@ export default function CoachingPage() {
     setMemberSearch('');
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const openEditModal = (session: any) => {
     setEditingSession(session);
     setSessionForm({
@@ -170,8 +180,6 @@ export default function CoachingPage() {
     const s = map[status] || { bg: 'bg-gray-500/20', text: 'text-gray-400', label: status };
     return <span className={`px-2 py-1 rounded-full text-xs font-medium ${s.bg} ${s.text}`}>{s.label}</span>;
   };
-
-  const coachRevenue = (allPayments || []).filter(p => p.type === 'commission').reduce((s, p) => s + (p.amount || 0), 0);
 
   return (
     <div className="space-y-6">
@@ -410,7 +418,7 @@ export default function CoachingPage() {
                     className="w-full flex items-center justify-between p-4 hover:bg-gray-800/50 transition-colors text-left">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-gray-800 overflow-hidden flex-shrink-0">
-                        {m.photo ? <img src={m.photo} className="w-full h-full object-cover" /> : <User className="w-full h-full p-2 text-gray-500" />}
+                        {m.photo ? <Image src={m.photo} alt="" width={40} height={40} className="w-full h-full object-cover" unoptimized /> : <User className="w-full h-full p-2 text-gray-500" />}
                       </div>
                       <div>
                         <p className="font-medium text-white">{m.firstName} {m.lastName}</p>
@@ -427,7 +435,7 @@ export default function CoachingPage() {
                       <div className="grid grid-cols-3 gap-3 mt-3">
                         <div className="bg-gray-800 rounded-lg p-3">
                           <p className="text-xs text-gray-500">Programme</p>
-                          <p className="text-sm text-white font-medium">{(allMembers?.find(p => (allSessions || []).find(s => (db as any).programs)) ? '-' : 'À définir')}</p>
+                          <p className="text-sm text-white font-medium">{db.programs ? '-' : 'À définir'}</p>
                         </div>
                         <div className="bg-gray-800 rounded-lg p-3">
                           <p className="text-xs text-gray-500">Sessions coach</p>

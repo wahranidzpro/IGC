@@ -53,7 +53,7 @@ export default function ProgressPage() {
         </div>
       </div>
 
-      <div className="px-4 mt-6">
+      <div className="px-4 mt-6" style={{ contentVisibility: 'auto', containIntrinsicSize: '0 400px' }}>
         <h3 className="text-xs font-bold tracking-[0.15em] text-gray-400 mb-3 px-1">ÉVOLUTION DU POIDS</h3>
         <div className="rounded-[20px] p-5 border" style={{ background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.08)" }}>
           <div className="flex items-end justify-between gap-2" style={{ height: 120 }}>
@@ -83,7 +83,7 @@ export default function ProgressPage() {
         </div>
       </div>
 
-      <div className="px-4 mt-6 pb-28">
+      <div className="px-4 mt-6 pb-28" style={{ contentVisibility: 'auto', containIntrinsicSize: '0 200px' }}>
         <h3 className="text-xs font-bold tracking-[0.15em] text-gray-400 mb-3 px-1">BADGES</h3>
         <div className="grid grid-cols-4 gap-3">
           {badges.map((b) => (

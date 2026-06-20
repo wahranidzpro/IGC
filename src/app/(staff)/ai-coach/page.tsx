@@ -13,7 +13,7 @@ interface Message {
 
 export default function AICoachPage() {
   const { user } = useAuth();
-  const { t, dir, lang } = useLanguage();
+  const { lang } = useLanguage();
   const memberCtx: MemberContext | undefined = user && 'firstName' in user ? {
     firstName: user.firstName || '',
     fitnessGoal: (user as { username?: string; fitnessGoal?: string; experienceLevel?: string; sessionsLeft?: number }).fitnessGoal,
@@ -40,7 +40,7 @@ export default function AICoachPage() {
     setInput('');
     setIsTyping(true);
     setTimeout(() => {
-      const reply = getCoachResponse(text, memberCtx, lang);
+      const reply = getCoachResponse(text, memberCtx);
       setMessages(prev => [...prev, { role: 'coach', content: reply }]);
       setIsTyping(false);
     }, 600 + Math.random() * 400);

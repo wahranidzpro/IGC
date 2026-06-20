@@ -64,7 +64,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const saved = localStorage.getItem("gym-lang") as Language
-    if (saved === "fr" || saved === "ar") setLangState(saved)
+    if (saved === "fr" || saved === "ar") setTimeout(() => setLangState(saved))
   }, [])
 
   const setLang = useCallback((l: Language) => {

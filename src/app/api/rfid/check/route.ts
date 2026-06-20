@@ -6,31 +6,39 @@ const CLEANUP_THRESHOLD = 1000;
 
 export const runtime = 'nodejs';
 
+function respond(data: unknown, status = 200) {
+  return Response.json({ success: true, data }, { status });
+}
+
+function respondError(message: string, status: number, code: string) {
+  return Response.json({ success: false, error: { code, message } }, { status });
+}
+
 export async function POST(request: Request) {
   try {
     const apiKey = process.env.RFID_API_KEY;
     if (!apiKey) {
-      return Response.json({ success: false, reason: 'SERVER_MISCONFIGURED', openDoor: false }, { status: 500 });
+      return respondError('Serveur mal configuré', 500, 'SERVER_MISCONFIGURED');
     }
     const headerKey = request.headers.get('x-api-key');
     if (!headerKey || headerKey !== apiKey) {
-      return Response.json({ success: false, reason: 'UNAUTHORIZED', openDoor: false }, { status: 401 });
+      return respondError('Non autorisé', 401, 'UNAUTHORIZED');
     }
 
     const supabase = await createServerSupabaseClient();
 
     const body = await request.json();
-    const { rfid, uid, cardno, device_id, method, timestamp } = body;
+    const { rfid, uid, cardno, device_id, timestamp } = body;
 
     const rfidUid = rfid || uid || cardno;
     if (!rfidUid) {
-      return Response.json({ success: false, reason: 'NO_IDENTIFIER', openDoor: false }, { status: 400 });
+      return respondError('Identifiant RFID manquant', 400, 'NO_IDENTIFIER');
     }
 
     const now = Date.now();
     const lastScan = recentScans.get(rfidUid);
     if (lastScan && now - lastScan < ANTIPASSBACK_WINDOW) {
-      return Response.json({ success: false, reason: 'ANTIPASSBACK', openDoor: false }, { status: 429 });
+      return respondError('Anti-passback actif', 429, 'ANTIPASSBACK');
     }
     recentScans.set(rfidUid, now);
 
@@ -40,48 +48,56 @@ export async function POST(request: Request) {
       }
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const blockedCard = await (supabase.from('blocked_cards') as any)
       .select('id')
       .eq('rfid_uid', rfidUid)
       .eq('is_active', true)
       .maybeSingle()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .then((r: any) => r.data);
 
     if (blockedCard) {
-      return Response.json({ success: false, reason: 'CARD_BLOCKED', openDoor: false }, { status: 403 });
+      return respondError('Carte bloquée', 403, 'CARD_BLOCKED');
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const turnstileMember = await (supabase.from('turnstile_members') as any)
       .select('*')
       .eq('rfid_code', rfidUid)
       .eq('is_active', true)
       .maybeSingle()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .then((r: any) => r.data);
 
     if (!turnstileMember) {
-      return Response.json({ success: false, reason: 'CARD_NOT_FOUND', openDoor: false }, { status: 404 });
+      return respondError('Carte non trouvée', 404, 'CARD_NOT_FOUND');
     }
 
     const memberLocalId = turnstileMember.member_local_id;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const syncedMember = await (supabase.from('synced_members') as any)
       .select('*')
       .eq('local_id', memberLocalId)
       .maybeSingle()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .then((r: any) => r.data);
 
     if (!syncedMember) {
-      return Response.json({ success: false, reason: 'MEMBER_NOT_FOUND', openDoor: false }, { status: 404 });
+      return respondError('Membre introuvable', 404, 'MEMBER_NOT_FOUND');
     }
 
     if (syncedMember.is_blocked || syncedMember.status === 'blocked') {
-      return Response.json({ success: false, reason: 'MEMBER_BLOCKED', openDoor: false }, { status: 403 });
+      return respondError('Membre bloqué', 403, 'MEMBER_BLOCKED');
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const restrictions = await (supabase.from('access_restrictions') as any)
       .select('*')
       .eq('member_local_id', memberLocalId)
       .maybeSingle()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .then((r: any) => r.data);
 
     if (restrictions) {
@@ -90,25 +106,27 @@ export async function POST(request: Request) {
         const startHour = restrictions.hour_start ?? 0;
         const endHour = restrictions.hour_end ?? 24;
         if (currentHour < startHour || currentHour >= endHour) {
-          return Response.json({ success: false, reason: 'ACCESS_RESTRICTED', openDoor: false }, { status: 403 });
+          return respondError('Accès restreint', 403, 'ACCESS_RESTRICTED');
         }
       }
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const activeSession = await (supabase.from('active_sessions') as any)
       .select('id')
       .eq('member_local_id', memberLocalId)
       .eq('is_active', true)
       .maybeSingle()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .then((r: any) => r.data);
 
     if (activeSession) {
-      return Response.json({ success: false, reason: 'ALREADY_INSIDE', openDoor: false }, { status: 409 });
+      return respondError('Déjà à l\'intérieur', 409, 'ALREADY_INSIDE');
     }
 
     const turnstileId = device_id ? (Number.isNaN(parseInt(device_id, 10)) ? null : parseInt(device_id, 10)) : null;
-    const eventMethod = method || 'rfid';
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase.from('access_logs') as any).insert({
       turnstile_id: turnstileId,
       member_local_id: memberLocalId,
@@ -118,6 +136,7 @@ export async function POST(request: Request) {
       timestamp: timestamp || new Date().toISOString(),
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase.from('active_sessions') as any).insert({
       member_local_id: memberLocalId,
       turnstile_id: turnstileId,
@@ -129,14 +148,13 @@ export async function POST(request: Request) {
       ? `${syncedMember.first_name} ${syncedMember.last_name || ''}`.trim()
       : `Member #${memberLocalId}`;
 
-    return Response.json({
-      success: true,
+    return respond({
       member: { name: displayName, local_id: memberLocalId },
       access: 'GRANTED',
       openDoor: true,
     });
   } catch (err) {
     console.error('RFID check error:', err);
-    return Response.json({ success: false, reason: 'SERVER_ERROR', openDoor: false }, { status: 500 });
+    return respondError('Erreur serveur', 500, 'SERVER_ERROR');
   }
 }

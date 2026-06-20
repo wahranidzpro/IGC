@@ -8,17 +8,29 @@ import { cn } from "@/lib/utils"
 import CoachSetupPrompt from "@/components/coach/CoachSetupPrompt"
 import {
   TrendingUp, Weight, Activity, Ruler, Heart, AlertCircle, RefreshCw,
-  ChevronRight, Users, LineChart, Scale, Plus, X, Star,
+  ChevronRight, Users, LineChart, Plus, X,
 } from "lucide-react"
 import {
   AreaChart, Area, LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Legend,
 } from "recharts"
-import type { ProgressLog, Profile, Member, ProgressLogInsert } from "@/types"
+import type { ProgressLog, Profile, ProgressLogInsert } from "@/types"
 
 interface MemberOption {
   id: string
   name: string
+}
+
+const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: { value: number; name: string; color: string }[]; label?: string }) => {
+  if (!active || !payload) return null
+  return (
+    <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-3 shadow-2xl">
+      <p className="text-xs text-gray-300 mb-2">{new Date(label as string).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}</p>
+      {payload.map((entry, i) => (
+        <p key={i} className="text-xs font-bold" style={{ color: entry.color }}>{entry.name}: {entry.value}</p>
+      ))}
+    </div>
+  )
 }
 
 export default function ProgressPage() {
@@ -37,12 +49,12 @@ export default function ProgressPage() {
   const [savingMeasurement, setSavingMeasurement] = useState(false)
 
   useEffect(() => {
-    if (!user) { setLoading(false); return }
-    const uid = user?.id as string
     const supabase = createClient()
 
     async function load() {
       try {
+        const uid = user?.id as string
+        if (!uid) { setLoading(false); return }
         const cRow = await supabase.from("coaches").select("id").eq("profile_id", uid).maybeSingle()
           .then(r => mapRow<{ id: string }>(r.data))
         const cId = cRow?.id
@@ -219,18 +231,6 @@ export default function ProgressPage() {
       change: diff(latest?.bodyFat, previous?.bodyFat),
     },
   ]
-
-  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: { value: number; name: string; color: string }[]; label?: string }) => {
-    if (!active || !payload) return null
-    return (
-      <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-3 shadow-2xl">
-        <p className="text-xs text-gray-300 mb-2">{new Date(label as string).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}</p>
-        {payload.map((entry, i) => (
-          <p key={i} className="text-xs font-bold" style={{ color: entry.color }}>{entry.name}: {entry.value}</p>
-        ))}
-      </div>
-    )
-  }
 
   return (
     <div className="p-4 md:p-6 lg:p-8 space-y-6">

@@ -22,12 +22,13 @@ interface AIChatCoachProps {
 }
 
 export function AIChatCoach({ memberId, memberName, memberGoal, memberLevel, sessionsLeft }: AIChatCoachProps) {
-  const { t, lang } = useLanguage();
+  const { lang } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const msgIdRef = useRef(0);
 
   const memberCtx: MemberContext = {
     firstName: memberName,
@@ -58,7 +59,8 @@ export function AIChatCoach({ memberId, memberName, memberGoal, memberLevel, ses
       : `Salut ${memberName}! 👋\n\nJe suis ton Coach AI personnel Infinity Gym!\n\nJe peux t'aider avec :\n• 💪 Exercices et programmes\n• 🏠 Entraînement à la maison\n• 🍎 Nutrition et régime\n• 🎯 Atteindre tes objectifs\n\nTu as ${sessionsLeft || 0} sessions restantes cette semaine.\n\nN'hésite pas à me poser des questions!`;
 
     const initialMsg: Message = { id: '1', role: 'assistant', content: msg, timestamp: new Date() };
-    setMessages([initialMsg]);
+    const t = setTimeout(() => setMessages([initialMsg]), 0);
+    return () => clearTimeout(t);
   }, [memberName, sessionsLeft, lang]);
 
   useEffect(() => {
@@ -70,7 +72,7 @@ export function AIChatCoach({ memberId, memberName, memberGoal, memberLevel, ses
     if (!messageText.trim()) return;
 
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: `msg-${++msgIdRef.current}`,
       role: 'user',
       content: messageText,
       timestamp: new Date(),
@@ -95,32 +97,35 @@ export function AIChatCoach({ memberId, memberName, memberGoal, memberLevel, ses
       if (lowerMsg.includes(keyword)) { detectedTopic = topic; break; }
     }
 
-    setTimeout(async () => {
-      const response = getCoachResponse(messageText, memberCtx, lang);
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: response,
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, aiMessage]);
+    setTimeout(() => {
+      const delay = 600 + Math.random() * 600;
+      setTimeout(async () => {
+        const response = getCoachResponse(messageText, memberCtx);
+        const aiMessage: Message = {
+          id: `msg-${++msgIdRef.current}`,
+          role: 'assistant',
+          content: response,
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, aiMessage]);
 
-      if (memberId) {
-        try {
-          await db.aiChatLogs.add({
-            memberId,
-            memberName,
-            topic: detectedTopic,
-            query: messageText,
-            timestamp: new Date(),
-          });
-        } catch (e) {
-          // Silently fail if DB not ready
+        if (memberId) {
+          try {
+            await db.aiChatLogs.add({
+              memberId,
+              memberName,
+              topic: detectedTopic,
+              query: messageText,
+              timestamp: new Date(),
+            });
+          } catch {
+            // Silently fail if DB not ready
+          }
         }
-      }
 
-      setIsTyping(false);
-    }, 600 + Math.random() * 600);
+        setIsTyping(false);
+      }, delay);
+    }, 0);
   };
 
   return (

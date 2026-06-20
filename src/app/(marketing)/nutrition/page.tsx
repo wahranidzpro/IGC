@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { ArrowRight, Apple, Book, Calculator, Sparkles } from "lucide-react"
 import AlgerianRecipes from "@/components/nutrition/AlgerianRecipes"
 
@@ -71,8 +72,8 @@ export default function NutritionPage() {
                 })}
               </div>
             </div>
-            <div className="aspect-square rounded-2xl bg-gradient-to-br from-zinc-800 to-zinc-900 border border-zinc-700 overflow-hidden shadow-2xl">
-              <img src="https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800&h=800&fit=crop" alt="Nutrition sportive" className="w-full h-full object-cover opacity-70 hover:opacity-100 transition-opacity" />
+            <div className="aspect-square relative rounded-2xl bg-gradient-to-br from-zinc-800 to-zinc-900 border border-zinc-700 overflow-hidden shadow-2xl">
+              <Image src="https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800&h=800&fit=crop" alt="Nutrition sportive" fill className="object-cover opacity-70 hover:opacity-100 transition-opacity" />
             </div>
           </div>
         </div>

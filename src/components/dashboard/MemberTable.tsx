@@ -12,7 +12,7 @@ interface Member {
   balanceDue?: number;
   createdAt: string | Date;
   updatedAt: string | Date;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface Payment {
@@ -23,19 +23,19 @@ interface Payment {
   mode: string;
   date: string | Date;
   description?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface Program {
   id?: number;
   name: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface Coach {
   id?: number;
   name: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface MemberTableProps {
@@ -51,7 +51,7 @@ const badgeStyles: Record<string, string> = {
   'Non payé': 'bg-[rgba(239,68,68,0.1)] text-[#EF4444] border border-[rgba(239,68,68,0.2)]',
 };
 
-export default function MemberTable({ members, payments, programs, coaches }: MemberTableProps) {
+export default function MemberTable({ members, payments, programs }: MemberTableProps) {
   const recentMembers = members
     ? [...members].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 10)
     : [];

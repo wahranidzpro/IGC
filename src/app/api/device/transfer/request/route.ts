@@ -1,9 +1,15 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 import crypto from "crypto"
+import { verifyAuthenticated } from "@/lib/api-auth"
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const auth = await verifyAuthenticated(request)
+  if (!auth.authorized) {
+    return NextResponse.json({ success: false, error: auth.error || "Non authentifié" }, { status: 401 })
+  }
+
   let body;
   try {
     body = await request.json()

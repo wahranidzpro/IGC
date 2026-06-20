@@ -13,7 +13,7 @@ interface CarteAbonnementProps {
   isActive: boolean
 }
 
-export default function CarteAbonnement({ gender, planName, startDate, endDate, daysLeft, isActive }: CarteAbonnementProps) {
+export default function CarteAbonnement({ gender, planName, endDate, daysLeft, isActive }: CarteAbonnementProps) {
   const router = useRouter()
   const primary = gender === "male" ? "#0A84FF" : gender === "female" ? "#10B981" : "#7C3AED"
 

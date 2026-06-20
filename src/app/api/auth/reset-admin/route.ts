@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import bcrypt from 'bcryptjs';
+import { withCsrf } from '@/lib/api-middleware';
+import { checkRateLimit } from '@/lib/rate-limiter';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || '';
@@ -13,8 +15,11 @@ function getServiceClient() {
   });
 }
 
-export async function POST(request: NextRequest) {
-  console.log('[RESET] POST received');
+async function handlePost(request: NextRequest) {
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+  if (!checkRateLimit(`reset-admin:${ip}`, 5, 3600000)) {
+    return NextResponse.json({ error: 'Trop de tentatives. Réessayez plus tard.' }, { status: 429 });
+  }
 
   if (!RESET_SECRET) {
     console.error('[RESET] RESET_SECRET not configured');
@@ -88,6 +93,7 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  console.log('[RESET] Password reset complete for:', username);
   return NextResponse.json({ success: true, message: `Password reset for ${username}` });
 }
+
+export const POST = withCsrf(handlePost);

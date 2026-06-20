@@ -2,20 +2,32 @@
 
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { mapRow, mapRows } from "@/lib/utils/transform"
+import { mapRows } from "@/lib/utils/transform"
 import AdminStatsCard from "@/components/admin/AdminStatsCard"
-import { DollarSign, TrendingUp, TrendingDown, BarChart3, PieChart, CreditCard, Wallet, Calendar } from "lucide-react"
+import { DollarSign, TrendingUp, TrendingDown, BarChart3, PieChart, Wallet, Calendar } from "lucide-react"
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
+  XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
   PieChart as RePieChart, Pie, Cell, Legend,
   AreaChart, Area,
 } from "recharts"
 
 const CHART_COLORS = ["#0A84FF", "#00D4FF", "#10B981", "#C89B3C", "#7C3AED", "#FF4D4D"]
 
+const ChartTooltip = ({ active, payload, label }: { active?: boolean; payload?: { value: number }[]; label?: string }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="glass-strong rounded-xl px-4 py-3 border border-[rgba(255,255,255,0.1)] shadow-2xl">
+        <p className="text-[#A8B2C7] text-xs font-semibold mb-1">{label}</p>
+        <p className="text-white font-bold text-lg">{Number(payload[0].value).toLocaleString()} DA</p>
+      </div>
+    )
+  }
+  return null
+}
+
 export default function AdminRevenusPage() {
-  const [monthlyData, setMonthlyData] = useState<any[]>([])
-  const [byMethod, setByMethod] = useState<any[]>([])
+  const [monthlyData, setMonthlyData] = useState<{ month: string; revenu: number }[]>([])
+  const [byMethod, setByMethod] = useState<{ name: string; value: number }[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -23,7 +35,7 @@ export default function AdminRevenusPage() {
       const supabase = createClient()
       const now = new Date()
 
-      const months: any[] = []
+      const months: { month: string; revenu: number }[] = []
       for (let i = 11; i >= 0; i--) {
         const m = new Date(now.getFullYear(), now.getMonth() - i, 1)
         const label = m.toLocaleDateString("fr-FR", { month: "short", year: "2-digit" })
@@ -31,7 +43,7 @@ export default function AdminRevenusPage() {
         const mEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 1).toISOString()
         const { data: pts } = await supabase
           .from("payments").select("amount").gte("paid_at", mStart).lt("paid_at", mEnd)
-        months.push({ month: label, revenu: (mapRows<any>(pts)).reduce((s: number, p: any) => s + p.amount, 0) })
+        months.push({ month: label, revenu: (mapRows<{ amount: number }>(pts)).reduce((s: number, p) => s + (p.amount ?? 0), 0) })
       }
       setMonthlyData(months)
 
@@ -41,7 +53,7 @@ export default function AdminRevenusPage() {
 
       if (allPayments && allPayments.length > 0) {
         const grouped: Record<string, number> = {}
-        allPayments.forEach((p: any) => {
+        allPayments.forEach((p: { method: string; amount: number }) => {
           grouped[p.method] = (grouped[p.method] || 0) + p.amount
         })
         const labels: Record<string, string> = {
@@ -60,22 +72,10 @@ export default function AdminRevenusPage() {
 
   const total = monthlyData.reduce((s, m) => s + m.revenu, 0)
   const avgMonthly = monthlyData.length > 0 ? Math.round(total / monthlyData.length) : 0
-  const bestMonth = monthlyData.reduce((best, m) => m.revenu > (best?.revenu || 0) ? m : best, null as any)
+  const bestMonth = monthlyData.reduce<{ month: string; revenu: number } | null>((best, m) => m.revenu > (best?.revenu || 0) ? m : best, null)
   const growth = monthlyData.length >= 2
     ? monthlyData[monthlyData.length - 1].revenu - monthlyData[monthlyData.length - 2].revenu
     : 0
-
-  const ChartTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="glass-strong rounded-xl px-4 py-3 border border-[rgba(255,255,255,0.1)] shadow-2xl">
-          <p className="text-[#A8B2C7] text-xs font-semibold mb-1">{label}</p>
-          <p className="text-white font-bold text-lg">{Number(payload[0].value).toLocaleString()} DA</p>
-        </div>
-      )
-    }
-    return null
-  }
 
   if (loading) {
     return (
@@ -177,6 +177,7 @@ export default function AdminRevenusPage() {
                       formatter={(value) => <span className="text-[#A8B2C7] text-xs">{value}</span>}
                     />
                     <Tooltip
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
                       content={({ active, payload }: any) => {
                         if (active && payload && payload.length) {
                           return (

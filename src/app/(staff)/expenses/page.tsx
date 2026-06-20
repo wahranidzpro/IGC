@@ -3,31 +3,43 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, Expense } from '@/lib/db/dexie-db';
-import { Plus, X, Trash2, Edit } from 'lucide-react';
+import { useAuth } from '@/lib/auth/context';
+import { logAudit } from '@/lib/audit';
+import { Plus, X, Trash2 } from 'lucide-react';
 import { ImportExportButtons, exportToXlsx, importFromXlsx } from '@/components/ui/ImportExportButtons';
+import PaginationControls from '@/components/ui/PaginationControls';
 
 const categories = ['Loyer', 'Salaires', 'Électricité', 'Eau', 'Équipement', 'Entretien', 'Marketing', 'Assurance', 'Taxes', 'Autre'];
 
 export default function ExpensesPage() {
+  const { user, role } = useAuth();
   const [showAddModal, setShowAddModal] = useState(false);
   const [filterCat, setFilterCat] = useState('all');
   const [formData, setFormData] = useState({ category: 'Loyer', amount: 0, description: '' });
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 20;
 
   const expenses = useLiveQuery(() => db.expenses.orderBy('date').reverse().toArray(), []);
 
   const filtered = expenses?.filter(e => filterCat === 'all' || e.category === filterCat);
   const totalAmount = filtered?.reduce((s, e) => s + e.amount, 0) || 0;
 
+  const totalPages = Math.max(1, Math.ceil((filtered?.length || 0) / PAGE_SIZE));
+  const paginatedExpenses = filtered?.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE) || [];
+
   const handleSave = async () => {
     if (!formData.amount || !formData.category) return;
     const now = new Date();
     await db.expenses.add({ ...formData, date: now, createdAt: now, syncStatus: 'pending' });
+    logAudit({ action: 'expense_create', newValue: `${formData.category}: ${formData.amount} DA` }, (user as { username?: string })?.username || 'unknown', role || 'unknown');
     setFormData({ category: 'Loyer', amount: 0, description: '' });
     setShowAddModal(false);
   };
 
   const handleDelete = async (id: number) => {
+    const exp = expenses?.find(e => e.id === id);
     await db.expenses.delete(id);
+    logAudit({ action: 'expense_delete', newValue: exp ? `${exp.category}: ${exp.amount} DA` : `#${id}` }, (user as { username?: string })?.username || 'unknown', role || 'unknown');
   };
 
   return (
@@ -48,12 +60,12 @@ export default function ExpensesPage() {
         {categories.map(c => <button key={c} onClick={() => setFilterCat(c)} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filterCat === c ? 'bg-orange-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>{c}</button>)}
       </div>
 
-      <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-        <table className="w-full">
+      <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden overflow-x-auto">
+        <table className="w-full min-w-[600px]">
           <thead><tr className="border-b border-gray-800"><th className="text-left px-6 py-4 text-sm font-medium text-gray-400">Catégorie</th><th className="text-left px-6 py-4 text-sm font-medium text-gray-400">Description</th><th className="text-right px-6 py-4 text-sm font-medium text-gray-400">Montant</th><th className="text-right px-6 py-4 text-sm font-medium text-gray-400">Date</th><th className="text-center px-6 py-4 text-sm font-medium text-gray-400">Actions</th></tr></thead>
           <tbody>
-            {filtered?.length === 0 ? <tr><td colSpan={5} className="px-6 py-12 text-center text-gray-500">Aucune dépense</td></tr> : (
-              filtered?.map(e => (
+            {paginatedExpenses.length === 0 ? <tr><td colSpan={5} className="px-6 py-12 text-center text-gray-500">Aucune dépense</td></tr> : (
+              paginatedExpenses.map(e => (
                 <tr key={e.id} className="border-b border-gray-800/50 hover:bg-gray-800/30">
                   <td className="px-6 py-4"><span className="px-3 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400">{e.category}</span></td>
                   <td className="px-6 py-4 text-gray-300">{e.description || '-'}</td>
@@ -67,6 +79,7 @@ export default function ExpensesPage() {
             )}
           </tbody>
         </table>
+        <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
       </div>
 
       {showAddModal && (

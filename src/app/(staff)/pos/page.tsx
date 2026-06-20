@@ -2,13 +2,13 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { db, type Sale } from '@/lib/db/dexie-db'
+import { db, type Sale, type SaleItem } from '@/lib/db/dexie-db'
 import { useAuth } from '@/lib/auth/context'
 import {
   Search, ShoppingCart, Barcode, Minus, Plus, X, Printer, CreditCard, Star,
-  Banknote, Receipt, User, Wallet, Wifi, WifiOff,
+  Banknote, Receipt, User, Wifi, WifiOff,
   History, QrCode,
-  Percent, Smartphone, Send, FileText, Mail,
+  Send, FileText, Mail,
 } from 'lucide-react'
 import { Sidebar } from "@/components/layout/Sidebar"
 import { logAudit } from '@/lib/audit'
@@ -100,9 +100,6 @@ export default function PosPage() {
   const [isOnline, setIsOnline] = useState(true)
   const barcodeRef = useRef<HTMLInputElement>(null)
   const salesPageSize = 20
-
-  const today = new Date()
-
 
   useEffect(() => {
     const handler = () => setIsOnline(navigator.onLine)
@@ -226,6 +223,8 @@ export default function PosPage() {
     setTimeout(() => setShowSuccess(false), 4000)
   }
 
+  const escapeHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;')
+
   const printReceipt = () => {
     if (!lastSale) return
     const w = window.open('', '_blank', 'width=300,height=600')
@@ -255,7 +254,7 @@ export default function PosPage() {
       <div class="divider"></div>
       <table>
         <tr><th>Article</th><th class="qty">Qté</th><th class="price">Prix</th></tr>
-        ${lastSale.items.map(i => `<tr><td>${i.name}</td><td class="qty">${i.qty}</td><td class="price">${(i.price * i.qty).toLocaleString()}</td></tr>`).join('')}
+        ${lastSale.items.map(i => `<tr><td>${escapeHtml(i.name)}</td><td class="qty">${i.qty}</td><td class="price">${(i.price * i.qty).toLocaleString()}</td></tr>`).join('')}
       </table>
       <div class="divider"></div>
       <table>
@@ -701,7 +700,7 @@ export default function PosPage() {
                 todaySales.map(sale => (
                   <div key={sale.id} className="flex items-center justify-between px-4 py-3 rounded-xl transition-all" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-white truncate font-medium">{sale.items.map((i: any) => `${i.name} x${i.qty}`).join(', ')}</p>
+                      <p className="text-sm text-white truncate font-medium">{sale.items.map((i: SaleItem) => `${i.name} x${i.qty}`).join(', ')}</p>
                       <p className="text-xs text-white/30 mt-0.5">{new Date(sale.createdAt).toLocaleString('fr-FR')}</p>
                     </div>
                     <div className="flex items-center gap-2.5 ml-3 shrink-0">
@@ -716,7 +715,7 @@ export default function PosPage() {
               ) : (
                 <div className="flex flex-col items-center justify-center py-16 text-white/20">
                   <Receipt className="w-12 h-12 mb-3" />
-                  <p className="text-sm">Aucune vente aujourd'hui</p>
+                  <p className="text-sm">Aucune vente aujourd&apos;hui</p>
                 </div>
               )}
             </div>

@@ -85,6 +85,7 @@ export interface Payment {
   date: Date;
   description: string;
   createdAt: Date;
+  syncStatus?: 'pending' | 'synced';
 }
 
 export interface Task {
@@ -125,6 +126,7 @@ export interface CheckIn {
   memberId: number;
   timestamp: Date;
   type: 'checkin' | 'checkout';
+  syncStatus?: 'pending' | 'synced';
 }
 
 export interface PinUser {
@@ -138,6 +140,7 @@ export interface PinUser {
   coachId?: number;
   isLocked: boolean;
   createdAt: Date;
+  syncStatus?: 'pending' | 'synced';
 }
 
 export type AuditAction =
@@ -169,7 +172,37 @@ export type AuditAction =
   | 'event_edit'
   | 'event_delete'
   | 'event_register'
-  | 'event_cancel';
+  | 'event_cancel'
+  | 'personnel_create'
+  | 'personnel_edit'
+  | 'personnel_delete'
+  | 'absence_create'
+  | 'absence_approve'
+  | 'absence_reject'
+  | 'payroll_generate'
+  | 'payroll_mark_paid'
+  | 'expense_create'
+  | 'expense_delete'
+  | 'access_user_create'
+  | 'access_user_edit'
+  | 'access_user_delete'
+  | 'access_user_lock'
+  | 'checkin_manual'
+  | 'sale_create'
+  | 'sale_delete'
+  | 'coach_create'
+  | 'coach_edit'
+  | 'coach_delete'
+  | 'product_category_create'
+  | 'product_category_delete'
+  | 'reward_create'
+  | 'reward_edit'
+  | 'reward_delete'
+  | 'session_create'
+  | 'session_edit'
+  | 'session_delete'
+  | 'session_status_change'
+  | 'whatsapp_campaign_send';
 
 export interface AuditLog {
   id?: number;
@@ -243,6 +276,7 @@ export interface PointsLedger {
   referenceType?: 'payment' | 'subscription' | 'pos' | 'admin';
   balanceAfter: number;
   createdAt: Date;
+  syncStatus?: 'pending' | 'synced';
 }
 
 export interface AIChatLog {
@@ -254,16 +288,30 @@ export interface AIChatLog {
   timestamp: Date;
 }
 
+export interface SyncConflict {
+  id?: number;
+  table: string;
+  recordId: string;
+  localData: Record<string, unknown>;
+  cloudData: Record<string, unknown>;
+  localUpdatedAt: string;
+  cloudUpdatedAt: string;
+  detectedAt: string;
+  resolvedAt?: string;
+  resolution?: 'local_wins' | 'remote_wins' | 'manual';
+}
+
 export interface OfflineQueueItem {
   id?: number;
   entity: string;
   action: 'create' | 'update' | 'delete';
-  payload: any;
+  payload: unknown;
   recordId?: string | number;
   priority: 'critical' | 'important' | 'heavy';
   status: 'pending' | 'processing' | 'failed' | 'completed';
   retryCount: number;
   maxRetries: number;
+  syncStatus?: 'pending' | 'synced';
   lastError?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -440,7 +488,6 @@ export async function validateRecoveryAttempt(): Promise<{ allowed: boolean; rem
   if (attempts >= 3) {
     const elapsed = now - lastAttempt;
     if (elapsed < lockoutWindow) {
-      const remaining = Math.ceil((lockoutWindow - elapsed) / 60000);
       return { allowed: false, remaining: 0, lockedUntil: lastAttempt + lockoutWindow };
     }
     await db.settings.where('key').equals('recovery_attempts').modify({ value: '0' });
@@ -642,6 +689,7 @@ export class GymDatabase extends Dexie {
   employees!: Table<Employee>;
   absences!: Table<Absence>;
   payrollRecords!: Table<PayrollRecord>;
+  syncConflicts!: Table<SyncConflict>;
 
   constructor() {
     super('InfinityGymDB');
@@ -693,6 +741,13 @@ export class GymDatabase extends Dexie {
     });
     this.version(22).stores({
       whatsappCampaigns: '++id, template, memberId, status, createdAt, syncStatus',
+    });
+    this.version(23).stores({
+      payments: '++id, memberId, type, mode, date, createdAt, syncStatus',
+      checkins: '++id, memberId, timestamp, type, syncStatus',
+      pinUsers: '++id, username, pin, role, syncStatus',
+      pointsLedger: '++id, memberId, type, referenceId, createdAt, syncStatus',
+      syncConflicts: '++id, table, recordId, detectedAt, resolvedAt',
     });
   }
 }
@@ -939,7 +994,7 @@ export async function seedMembers() {
       now, // today
     ];
 
-    dates1.forEach((date, i) => {
+    dates1.forEach((date) => {
       const checkinTime = new Date(date);
       checkinTime.setHours(9 + Math.floor(Math.random() * 3), Math.floor(Math.random() * 60));
       checkinsData.push({

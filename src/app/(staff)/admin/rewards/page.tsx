@@ -4,11 +4,13 @@ import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type Reward } from '@/lib/db/dexie-db';
 import { useAuth } from '@/lib/auth/context';
+import { logAudit } from '@/lib/audit';
 import { useRouter } from 'next/navigation';
-import { Gift, Plus, X, Edit, Trash2, Save, Image, Package, Star } from 'lucide-react';
+import Image from 'next/image';
+import { Gift, Plus, X, Edit, Trash2, Save, Package, Star } from 'lucide-react';
 
 export default function RewardsAdminPage() {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const router = useRouter();
   const [showModal, setShowModal] = useState(false);
   const [editReward, setEditReward] = useState<Reward | null>(null);
@@ -27,8 +29,10 @@ export default function RewardsAdminPage() {
     if (!form.name || form.pointsRequired <= 0) return;
     if (editReward?.id) {
       await db.rewards.update(editReward.id, { ...form });
+      await logAudit({ action: 'reward_edit', newValue: `Récompense #${editReward.id} - ${form.name}` }, (user as { username?: string })?.username || 'unknown', role || 'unknown');
     } else {
       await db.rewards.add({ ...form, createdAt: new Date(), syncStatus: 'pending' });
+      await logAudit({ action: 'reward_create', newValue: `Récompense - ${form.name}` }, (user as { username?: string })?.username || 'unknown', role || 'unknown');
     }
     resetForm();
     setShowModal(false);
@@ -37,6 +41,7 @@ export default function RewardsAdminPage() {
   const handleDelete = async (id: number) => {
     if (confirm('Supprimer cette récompense ?')) {
       await db.rewards.delete(id);
+      await logAudit({ action: 'reward_delete', newValue: `Récompense #${id} supprimée` }, (user as { username?: string })?.username || 'unknown', role || 'unknown');
     }
   };
 
@@ -60,7 +65,7 @@ export default function RewardsAdminPage() {
           <div key={r.id} className="bg-gray-900 border border-gray-800 rounded-xl p-5">
             <div className="flex items-start justify-between mb-3">
               <div className="w-14 h-14 rounded-xl bg-orange-500/20 flex items-center justify-center">
-                {r.image ? <img src={r.image} alt={r.name} className="w-10 h-10 object-contain" /> : <Gift className="w-7 h-7 text-orange-400" />}
+                {r.image ? <Image src={r.image} alt={r.name} width={40} height={40} className="object-contain" /> : <Gift className="w-7 h-7 text-orange-400" />}
               </div>
               <div className="flex gap-1">
                 <button onClick={() => { setForm({ name: r.name, description: r.description, pointsRequired: r.pointsRequired, stock: r.stock, image: r.image }); setEditReward(r); setShowModal(true); }} className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20"><Edit className="w-3.5 h-3.5" /></button>

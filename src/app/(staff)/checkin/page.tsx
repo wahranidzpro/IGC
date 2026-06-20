@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type CheckIn, type Member } from '@/lib/db/dexie-db';
 import IGCQRCode from '@/components/IGCQRCode';
-import { Camera, QrCode, User, CheckCircle, Clock, Scan, Award, RefreshCw, Fingerprint, Calendar, XCircle, Search, Maximize2, Minimize2, ShieldAlert, Unlock, Ban, UserCheck, Download, Filter, History, Radio, Info, ArrowUpDown, ChevronDown, ChevronUp, ExternalLink, Monitor } from 'lucide-react';
+import { Camera, QrCode, User, CheckCircle, Clock, Scan, Award, RefreshCw, Fingerprint, Calendar, XCircle, Search, Maximize2, Minimize2, ShieldAlert, Unlock, Ban, UserCheck, Download, History, Radio, Info, ChevronDown, ChevronUp, ExternalLink, Monitor } from 'lucide-react';
 import { getMemberQRValue, parseMemberIdFromQR, formatPhoneDisplay } from '@/lib/whatsapp';
 import { ImportExportButtons, exportToXlsx, importFromXlsx } from '@/components/ui/ImportExportButtons';
 import { logger } from '@/lib/logger';
@@ -12,6 +12,7 @@ import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/auth/context';
 import type { Html5Qrcode } from 'html5-qrcode';
 import ScreenSaver from "@/components/ui/ScreenSaver";
+import Image from 'next/image';
 
 type AccessMode = 'qr' | 'birthdate' | 'rfid' | 'phone';
 
@@ -87,7 +88,7 @@ function KioskOverlay({ members, accessMode, setAccessMode, scanStatus, setScanS
     performCheckin(id);
   }, [stopKScanner, performCheckin]);
 
-  kProcRef.current = processId;
+  useEffect(() => { kProcRef.current = processId; }, [processId]);
 
   const startKScanner = useCallback(async () => {
     if (kStartRef.current) return;
@@ -143,12 +144,6 @@ function KioskOverlay({ members, accessMode, setAccessMode, scanStatus, setScanS
       setKScanning(false);
     } finally { kStartRef.current = false; }
   }, [stopKScanner]);
-
-  useEffect(() => {
-    if (accessMode === 'qr') startKScanner();
-    else stopKScanner();
-    return () => { stopKScanner(); };
-  }, [accessMode, startKScanner, stopKScanner]);
 
   const statusBg = scanStatus === 'success' ? 'from-green-700 to-green-900' :
     scanStatus === 'blocked' ? 'from-red-800 to-red-950' :
@@ -259,7 +254,7 @@ function KioskOverlay({ members, accessMode, setAccessMode, scanStatus, setScanS
           {scannedMember && (
             <div className="flex flex-col items-center gap-4 mt-8">
               <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-green-400 shadow-2xl">
-                {scannedMember.photo ? <img src={scannedMember.photo} className="w-full h-full object-cover" style={{ imageRendering: 'crisp-edges' }} /> : <div className="w-full h-full bg-green-400/20 flex items-center justify-center"><User className="w-14 h-14 text-green-400" /></div>}
+                {scannedMember.photo ? <Image src={scannedMember.photo} alt="" width={112} height={112} className="w-full h-full object-cover" style={{ imageRendering: 'crisp-edges' }} /> : <div className="w-full h-full bg-green-400/20 flex items-center justify-center"><User className="w-14 h-14 text-green-400" /></div>}
               </div>
               <p className="text-4xl font-bold text-white">{scannedMember.firstName} {scannedMember.lastName}</p>
               <p className="text-xl text-green-300">+{earnedPoints} points fidélité</p>
@@ -285,7 +280,7 @@ function KioskOverlay({ members, accessMode, setAccessMode, scanStatus, setScanS
           <div className="flex flex-col items-center gap-4 mt-6">
             <div className="relative">
               <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-red-500 shadow-2xl">
-                {scannedMember.photo ? <img src={scannedMember.photo} className="w-full h-full object-cover" style={{ imageRendering: 'crisp-edges' }} /> : <div className="w-full h-full bg-red-500/20 flex items-center justify-center"><Ban className="w-14 h-14 text-red-500" /></div>}
+                {scannedMember.photo ? <Image src={scannedMember.photo} alt="" width={112} height={112} className="w-full h-full object-cover" style={{ imageRendering: 'crisp-edges' }} /> : <div className="w-full h-full bg-red-500/20 flex items-center justify-center"><Ban className="w-14 h-14 text-red-500" /></div>}
               </div>
               <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 text-white text-xs font-bold px-3 py-0.5 rounded-full border ${scannedMember.blockedUntil ? 'bg-red-600 border-red-400' : 'bg-black border-red-500'}`}>{scannedMember.blockedUntil ? 'BLOQUÉ' : 'BANNI'}</div>
             </div>
@@ -325,7 +320,7 @@ function KioskOverlay({ members, accessMode, setAccessMode, scanStatus, setScanS
           <div className="flex flex-col items-center gap-4 mt-6">
             <div className="relative">
               <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-blue-500 shadow-2xl">
-                {scannedMember.photo ? <img src={scannedMember.photo} className="w-full h-full object-cover" style={{ imageRendering: 'crisp-edges' }} /> : <div className="w-full h-full bg-blue-500/20 flex items-center justify-center"><UserCheck className="w-14 h-14 text-blue-500" /></div>}
+                {scannedMember.photo ? <Image src={scannedMember.photo} alt="" width={112} height={112} className="w-full h-full object-cover" style={{ imageRendering: 'crisp-edges' }} /> : <div className="w-full h-full bg-blue-500/20 flex items-center justify-center"><UserCheck className="w-14 h-14 text-blue-500" /></div>}
               </div>
               <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs font-bold px-3 py-0.5 rounded-full border border-blue-400">EN SALLE</div>
             </div>
@@ -343,21 +338,6 @@ function KioskOverlay({ members, accessMode, setAccessMode, scanStatus, setScanS
   );
 }
 
-function doCheckin(memberId: number, members: Member[]) {
-  return async function performCheckin() {
-    const member = members?.find(m => m.id === memberId);
-    if (!member) return;
-    const pointsAwarded = 10;
-    await db.checkins.add({ memberId, timestamp: new Date(), type: 'checkin' });
-    await db.members.update(memberId, {
-      sessionsLeft: member.subscriptionType === 'free_session' ? Math.max(0, (member.sessionsLeft || 1) - 1) : (member.sessionsLeft ?? 0),
-      fidelityPoints: (member.fidelityPoints || 0) + pointsAwarded,
-      updatedAt: new Date()
-    });
-    return { member, pointsAwarded };
-  };
-}
-
 export default function CheckinPage() {
   const { role, user } = useAuth();
   const coachId = role === 'coach' ? user?.coachId : undefined;
@@ -373,6 +353,7 @@ export default function CheckinPage() {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const startingRef = useRef(false);
   const handleScanRef = useRef<((code: string) => Promise<void>) | null>(null);
+  const startScannerRef = useRef<(() => Promise<void>) | null>(null);
 
   const [birthDateInput, setBirthDateInput] = useState('');
   const [rfidInput, setRfidInput] = useState('');
@@ -382,15 +363,12 @@ export default function CheckinPage() {
   const [checkinSearch, setCheckinSearch] = useState('');
   const [showExpiredModal, setShowExpiredModal] = useState<{ id: number; name: string } | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [renderNow, setRenderNow] = useState<number>(() => Date.now());
   const [exportDateFrom, setExportDateFrom] = useState(() => new Date().toISOString().split('T')[0]);
   const [exportDateTo, setExportDateTo] = useState(() => new Date().toISOString().split('T')[0]);
   const scanBufferRef = useRef('');
   const scanTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastKeyTimeRef = useRef(0);
-
-  useEffect(() => {
-    if (kioskMode) stopScanner();
-  }, [kioskMode]);
 
   const members = useLiveQuery(() => {
     if (role === 'coach' && coachId) return db.members.where('coachId').equals(Number(coachId)).toArray();
@@ -407,7 +385,7 @@ export default function CheckinPage() {
   const [invDateTo, setInvDateTo] = useState(() => new Date().toISOString().split('T')[0]);
   const [invSearch, setInvSearch] = useState('');
   const [invFilterMode, setInvFilterMode] = useState<'name' | 'phone' | 'birthdate'>('name');
-  const [invRefresh, setInvRefresh] = useState(0);
+  const [invRefresh] = useState(0);
   const [showRfidModule, setShowRfidModule] = useState(false);
 
   // For paired history data
@@ -456,25 +434,11 @@ export default function CheckinPage() {
     return m > 0 ? `${h}h ${m}min` : `${h}h`;
   };
 
-  const getMemberSession = (memberId: number) => {
-    const memberCheckins = todayCheckins?.filter(c => c.memberId === memberId) || [];
-    const lastCheckin = memberCheckins.find(c => c.type === 'checkin');
-    const lastCheckout = memberCheckins.find(c => c.type === 'checkout');
-    return { lastCheckin, lastCheckout, memberCheckins };
-  };
-
   const performCheckout = async (memberId: number) => {
     const m = members?.find(m => m.id === memberId);
     if (!m) return;
     await db.checkins.add({ memberId, timestamp: new Date(), type: 'checkout' });
     setRefreshKey(k => k + 1);
-  };
-
-  const deleteCheckin = async (checkinId: number) => {
-    if (confirm('Supprimer ce pointage?')) {
-      await db.checkins.delete(checkinId);
-      setRefreshKey(k => k + 1);
-    }
   };
 
   const deleteOrphanCheckins = async () => {
@@ -523,7 +487,7 @@ export default function CheckinPage() {
   const syncCheckinToSupabase = useCallback(async (memberId: number, member: Member, method: string, status: string, reason: string) => {
     if (!isSupabaseConfigured || !supabase) return;
     try {
-      await (supabase.from('access_logs') as any).insert({
+      await supabase.from('access_logs').insert({
         member_local_id: memberId,
         event_type: status === 'allowed' ? 'entry' : 'denied',
         access_granted: status === 'allowed',
@@ -531,7 +495,7 @@ export default function CheckinPage() {
         reason,
         rfid_uid: member.rfidCode || null,
         timestamp: new Date().toISOString(),
-      });
+      } as unknown as never[]);
     } catch {}
   }, []);
 
@@ -587,12 +551,12 @@ export default function CheckinPage() {
     syncCheckinToSupabase(memberId, member, getCurrentMethod(member), 'allowed', 'checkin_success');
     if (isSupabaseConfigured && supabase) {
       try {
-        await (supabase.from('synced_checkins') as any).insert({
+        await supabase.from('synced_checkins').insert({
           local_id: Date.now(),
           member_id: memberId,
           timestamp: new Date().toISOString(),
           type: 'checkin',
-        });
+        } as unknown as never[]);
       } catch {}
     }
     setRefreshKey(k => k + 1);
@@ -603,7 +567,7 @@ export default function CheckinPage() {
     setTimeout(() => {
       setScanStatus('idle'); setSelectedMember(null); setEarnedPoints(0); setManualCode(''); setCameraError('');
       setBirthDateInput(''); setRfidInput(''); setFoundMembers([]);
-      if (accessMode === 'qr' && qrSubMode === 'scan') startScanner();
+      if (accessMode === 'qr' && qrSubMode === 'scan') startScannerRef.current?.();
     }, 10000);
   }, [members, accessMode, qrSubMode, getCurrentMethod, syncCheckinToSupabase]);
 
@@ -627,11 +591,11 @@ export default function CheckinPage() {
       await performCheckin(memberId);
     } else {
       setScanStatus('error');
-      setTimeout(() => { setScanStatus('idle'); startScanner(); }, 10000);
+      setTimeout(() => { setScanStatus('idle'); startScannerRef.current?.(); }, 10000);
     }
   }, [members, performCheckin]);
 
-  handleScanRef.current = handleScan;
+  useEffect(() => { handleScanRef.current = handleScan; }, [handleScan]);
 
   const startScanner = useCallback(async () => {
     if (startingRef.current) return;
@@ -704,6 +668,8 @@ export default function CheckinPage() {
     }
   }, []);
 
+  useEffect(() => { startScannerRef.current = startScanner; }, [startScanner]);
+
   const stopScanner = useCallback(async () => {
     if (scannerRef.current) {
       try { await scannerRef.current.stop(); } catch {}
@@ -713,8 +679,17 @@ export default function CheckinPage() {
   }, []);
 
   useEffect(() => {
+    if (kioskMode) setTimeout(() => stopScanner(), 0);
+  }, [kioskMode, stopScanner]);
+
+  useEffect(() => {
     return () => { stopScanner(); };
   }, [stopScanner]);
+
+  useEffect(() => {
+    const interval = setInterval(() => setRenderNow(Date.now()), 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Hardware QR/Barcode scanner support
   useEffect(() => {
@@ -859,7 +834,7 @@ export default function CheckinPage() {
       <div className="mb-3">
         <div className={`relative w-40 h-40 mx-auto rounded-full overflow-hidden border-[3px] ${borderColor} shadow-xl`}>
           {scannedMember.photo ? (
-            <img src={scannedMember.photo} alt="" className="w-full h-full object-cover" />
+            <Image src={scannedMember.photo} alt="" width={160} height={160} className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full bg-gray-700 flex items-center justify-center">
               <User className="w-16 h-16 text-gray-500" />
@@ -899,7 +874,7 @@ const renderBlocked = () => {
           {scannedMember && renderPhoto('blocked')}
           <p className="text-red-400 text-sm">{scannedMember?.blockReason ? `Motif: ${scannedMember.blockReason}` : ''}</p>
           <XCircle className="w-10 h-10 text-red-500 mx-auto mb-2" />
-          <p className="text-red-500 font-bold text-lg">INTERDIT D'ACCÈS</p>
+          <p className="text-red-500 font-bold text-lg">INTERDIT D&apos;ACCÈS</p>
           <p className="text-gray-400 text-xs mt-2">Contactez la direction</p>
           {kioskMode && (
             <button onClick={handleBypass} className="mt-4 px-6 py-3 bg-white/20 hover:bg-white/30 text-white rounded-xl text-sm font-semibold transition-colors flex items-center gap-2 mx-auto">
@@ -916,7 +891,7 @@ const renderBlocked = () => {
           <XCircle className="w-10 h-10 text-red-400 mx-auto mb-2" />
           <p className="text-red-400 font-bold text-lg">ABONNEMENT EXPIRÉ</p>
           <p className="text-red-300 text-sm mt-2">Veuillez renouveler votre abonnement</p>
-          <p className="text-gray-400 text-xs mt-2">Allez à "Adhérents" pour voir les détails</p>
+          <p className="text-gray-400 text-xs mt-2">Allez à &quot;Adhérents&quot; pour voir les détails</p>
           {kioskMode && (
             <button onClick={handleBypass} className="mt-4 px-6 py-3 bg-white/20 hover:bg-white/30 text-white rounded-xl text-sm font-semibold transition-colors flex items-center gap-2 mx-auto">
               <Unlock className="w-4 h-4" /> Autoriser une fois
@@ -947,7 +922,7 @@ const renderBlocked = () => {
             <div className="mb-3">
               <div className="relative w-24 h-24 mx-auto rounded-full overflow-hidden border-[3px] border-blue-500 shadow-lg">
                 {scannedMember.photo ? (
-            <img src={scannedMember.photo} alt="" className="w-full h-full object-cover" style={{ imageRendering: 'crisp-edges' }} />
+            <Image src={scannedMember.photo} alt="" width={96} height={96} className="w-full h-full object-cover" style={{ imageRendering: 'crisp-edges' }} />
                 ) : (
                   <div className="w-full h-full bg-gray-700 flex items-center justify-center">
                     <User className="w-12 h-12 text-gray-500" />
@@ -960,7 +935,7 @@ const renderBlocked = () => {
           )}
           <UserCheck className="w-10 h-10 text-blue-400 mx-auto mb-2" />
           <p className="text-blue-400 font-bold text-lg">DÉJÀ EN SALLE</p>
-          <p className="text-blue-300 text-xs mt-2">Ce membre a déjà pointé son entrée aujourd'hui</p>
+          <p className="text-blue-300 text-xs mt-2">Ce membre a déjà pointé son entrée aujourd&apos;hui</p>
         </div>
       );
     }
@@ -991,7 +966,7 @@ const renderBlocked = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-white">Pointage</h2>
-          <p className="text-gray-400 mt-1">{todayCount} check-ins aujourd'hui</p>
+          <p className="text-gray-400 mt-1">{todayCount} check-ins aujourd&apos;hui</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="hidden md:flex items-center gap-1.5">
@@ -1229,7 +1204,7 @@ const renderBlocked = () => {
                 return (
                   <>
                     <div className="bg-gray-800/50 rounded-lg p-2 text-center">
-                      <p className="text-xs text-gray-500">Pic d'affluence</p>
+                      <p className="text-xs text-gray-500">Pic d&apos;affluence</p>
                       <p className="text-sm font-bold text-white">{peakHour !== null ? `${peakHour}h` : '-'}</p>
                     </div>
                     <div className="bg-gray-800/50 rounded-lg p-2 text-center">
@@ -1289,8 +1264,8 @@ const renderBlocked = () => {
                   
                   const checkinTime = lastCheckin ? new Date(lastCheckin.timestamp).getTime() : 0;
                   const checkoutTime = lastCheckout ? new Date(lastCheckout.timestamp).getTime() : 0;
-                  const now = Date.now();
                   const isInside = lastCheckin && (!lastCheckout || checkoutTime < checkinTime);
+                  const now = isInside ? renderNow : 0;
                   const duration = isInside ? now - checkinTime : (lastCheckout ? checkoutTime - checkinTime : 0);
                   
                   return (
@@ -1298,7 +1273,7 @@ const renderBlocked = () => {
                       <div className="flex items-center gap-3">
                         <div className={`w-12 h-12 rounded-full overflow-hidden border-2 ${isInside ? 'border-green-500' : 'border-gray-600'} flex-shrink-0`}>
                           {memberPhoto ? (
-                            <img src={memberPhoto} alt="" className="w-full h-full object-cover" style={{ imageRendering: 'crisp-edges' }} />
+                            <Image src={memberPhoto} alt="" width={48} height={48} className="w-full h-full object-cover" style={{ imageRendering: 'crisp-edges' }} />
                           ) : (
                             <div className={`w-full h-full flex items-center justify-center ${isInside ? 'bg-green-500/20' : 'bg-gray-700'}`}>
                               <User className={`w-6 h-6 ${isInside ? 'text-green-400' : 'text-gray-400'}`} />

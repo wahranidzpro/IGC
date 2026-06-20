@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { motion } from "framer-motion"
 import { Heart, ArrowRight, Camera } from "lucide-react"
 import { socialPosts } from "@/lib/galerie/mockData"
@@ -34,11 +35,12 @@ export default function ReseauxSociaux() {
               whileHover={{ scale: 1.03 }}
               className="group relative aspect-square rounded-xl overflow-hidden border border-white/5"
             >
-              <img
+              <Image
                 src={post.image}
                 alt={`Post ${post.platform}`}
-                loading="lazy"
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                fill
+                className="object-cover transition-transform duration-500 group-hover:scale-110"
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">

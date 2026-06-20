@@ -2,7 +2,7 @@
 
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db/dexie-db';
-import { DollarSign, CreditCard, Wallet, TrendingUp } from 'lucide-react';
+import { DollarSign, CreditCard, Wallet } from 'lucide-react';
 
 interface MemberPaymentsProps {
   memberId: number;

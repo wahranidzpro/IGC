@@ -62,9 +62,10 @@ const messageTemplates: Record<string, string> = {
   receipt_reminder: "Bonjour {{name}}, vous avez un solde restant de {{balance}} DA.",
   subscription_reminder: "Bonjour {{name}}, votre abonnement expire bientôt.",
   attendance: "Bonjour {{name}}, merci pour votre visite aujourd'hui !",
+  birthday: "Joyeux anniversaire {{name}} ! Toute l'équipe IGC vous souhaite une excellente journée. Profitez d'une séance offerte pour célébrer votre anniversaire !",
 }
 
-export function getTemplate(templateName: string, data: Record<string, any>): string {
+export function getTemplate(templateName: string, data: Record<string, string>): string {
   const template = messageTemplates[templateName] || 'Bonjour {{name}} !'
   return Object.entries(data).reduce((msg, [key, value]) => {
     return msg.replace(new RegExp(`{{${key}}}`, 'g'), String(value))

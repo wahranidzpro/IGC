@@ -23,7 +23,7 @@ export default function NutritionPage() {
       <BackButton />
       <div className="px-4 pt-2 pb-2">
         <h1 className="text-lg font-bold text-white">Nutrition</h1>
-        <p className="text-xs text-gray-400 mt-0.5">Aujourd'hui</p>
+        <p className="text-xs text-gray-400 mt-0.5">Aujourd&apos;hui</p>
       </div>
 
       <div className="px-4 mt-4">
@@ -49,7 +49,7 @@ export default function NutritionPage() {
         </div>
       </div>
 
-      <div className="px-4 mt-6 pb-28 space-y-3">
+      <div className="px-4 mt-6 pb-28 space-y-3" style={{ contentVisibility: 'auto', containIntrinsicSize: '0 500px' }}>
         <h3 className="text-xs font-bold tracking-[0.15em] text-gray-400 mb-2 px-1">REPAS</h3>
         {meals.map((meal) => (
           <div

@@ -79,7 +79,7 @@ export default function PlansPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-white">Plans d'abonnement</h2>
+          <h2 className="text-2xl font-bold text-white">Plans d&apos;abonnement</h2>
           <p className="text-gray-400 mt-1">{plans?.length || 0} offre(s)</p>
         </div>
         <div className="flex items-center gap-2">
@@ -155,7 +155,7 @@ export default function PlansPage() {
             )}
           </div>
         ))}
-        {plans?.length === 0 && <div className="col-span-full text-center py-12 text-gray-500">Aucun plan d'abonnement</div>}
+        {plans?.length === 0 && <div className="col-span-full text-center py-12 text-gray-500">Aucun plan d&apos;abonnement</div>}
       </div>
 
       {showAddModal && (

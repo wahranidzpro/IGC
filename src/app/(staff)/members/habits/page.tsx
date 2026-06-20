@@ -8,7 +8,6 @@ import { MemberHabits } from '@/components/member/MemberHabits';
 import { Search, BarChart3, ChevronRight, X, Clock, DollarSign, Trophy, Medal, RefreshCw, ExternalLink, Download, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import * as XLSX from 'xlsx';
-import { formatPhoneDisplay } from '@/lib/whatsapp';
 
 const RANK_COLORS = ['text-yellow-500', 'text-gray-300', 'text-orange-400'];
 

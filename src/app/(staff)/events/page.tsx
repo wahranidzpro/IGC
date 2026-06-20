@@ -3,6 +3,8 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, GymEvent, EventRegistration } from '@/lib/db/dexie-db';
+import { useAuth } from '@/lib/auth/context';
+import { logAudit } from '@/lib/audit';
 import { Calendar, Users, DollarSign, Trophy, Plus, MapPin, Clock, X, Edit3, Trash2, UserPlus, CheckCircle, Search, AlertTriangle } from 'lucide-react';
 
 type EventFormData = {
@@ -98,6 +100,7 @@ function splitDateTime(dateStr: string): { date: string; time: string } {
 }
 
 export default function EventsPage() {
+  const { user, role } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [editEvent, setEditEvent] = useState<GymEvent | null>(null);
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
@@ -107,9 +110,12 @@ export default function EventsPage() {
   const [registerMemberName, setRegisterMemberName] = useState('');
   const [searchMember, setSearchMember] = useState('');
 
-  const events = useLiveQuery(() => db.events.orderBy('date').toArray(), []) || [];
-  const registrations = useLiveQuery(() => db.eventRegistrations.toArray(), []) || [];
-  const members = useLiveQuery(() => db.members.toArray(), []) || [];
+  const eventsQuery = useLiveQuery(() => db.events.orderBy('date').toArray(), []);
+  const registrationsQuery = useLiveQuery(() => db.eventRegistrations.toArray(), []);
+  const membersQuery = useLiveQuery(() => db.members.toArray(), []);
+  const events = useMemo(() => eventsQuery || [], [eventsQuery]);
+  const registrations = useMemo(() => registrationsQuery || [], [registrationsQuery]);
+  const members = useMemo(() => membersQuery || [], [membersQuery]);
 
   const now = useMemo(() => new Date(), []);
 
@@ -165,8 +171,9 @@ export default function EventsPage() {
       updatedAt: now,
       syncStatus: 'pending',
     } as GymEvent);
+    logAudit({ action: 'event_create', newValue: form.name }, (user as { username?: string })?.username || 'unknown', role || 'unknown');
     setShowModal(false);
-  }, []);
+  }, [user, role]);
 
   const handleUpdate = useCallback(async (id: number, form: EventFormData) => {
     const now = new Date();
@@ -181,15 +188,17 @@ export default function EventsPage() {
       updatedAt: now,
       syncStatus: 'pending',
     });
+    logAudit({ action: 'event_edit', newValue: form.name }, (user as { username?: string })?.username || 'unknown', role || 'unknown');
     setShowModal(false);
     setEditEvent(null);
-  }, []);
+  }, [user, role]);
 
   const handleDelete = useCallback(async (event: GymEvent) => {
     await db.events.delete(event.id!);
     await db.eventRegistrations.where('eventId').equals(event.id!).delete();
+    logAudit({ action: 'event_delete', newValue: event.name }, (user as { username?: string })?.username || 'unknown', role || 'unknown');
     setDeleteConfirm(null);
-  }, []);
+  }, [user, role]);
 
   const handleRegister = useCallback(
     async (eventId: number) => {
@@ -213,23 +222,26 @@ export default function EventsPage() {
       } as EventRegistration);
 
       const newCount = (event.participants || 0) + 1;
-      const updates: Record<string, any> = { participants: newCount, syncStatus: 'pending' };
+      const updates: Record<string, unknown> = { participants: newCount, syncStatus: 'pending' };
       if (newCount >= (event.maxParticipants || 999)) {
         updates.status = 'full';
       }
       await db.events.update(eventId, updates);
+
+      logAudit({ action: 'event_register', memberId: mid, memberName: name, newValue: event.name }, (user as { username?: string })?.username || 'unknown', role || 'unknown');
 
       setRegisterEventId(null);
       setRegisterMemberId('');
       setRegisterMemberName('');
       setSearchMember('');
     },
-    [members, events, registerMemberId]
+    [members, events, registerMemberId, user, role]
   );
 
   const handleCheckin = useCallback(async (regId: number) => {
     await db.eventRegistrations.update(regId, { status: 'checked_in', checkedInAt: new Date(), syncStatus: 'pending' });
-  }, []);
+    logAudit({ action: 'checkin_manual', reason: `Registration #${regId}` }, (user as { username?: string })?.username || 'unknown', role || 'unknown');
+  }, [user, role]);
 
   const openCreate = () => {
     setEditEvent(null);
@@ -495,7 +507,7 @@ function DeleteConfirmModal({
           <div className="w-10 h-10 bg-red-500/20 rounded-lg flex items-center justify-center">
             <AlertTriangle className="w-5 h-5 text-red-400" />
           </div>
-          <h3 className="text-lg font-semibold text-white">Supprimer l'événement</h3>
+          <h3 className="text-lg font-semibold text-white">Supprimer l&apos;événement</h3>
         </div>
         <p className="text-gray-400 text-sm mb-2">
           Êtes-vous sûr de vouloir supprimer <span className="text-white font-medium">{eventName}</span> ?
@@ -547,7 +559,7 @@ function EventModal({
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-400 mb-1.5">Nom de l'événement</label>
+            <label className="block text-sm font-medium text-gray-400 mb-1.5">Nom de l&apos;événement</label>
             <input
               type="text"
               value={form.name}
@@ -730,7 +742,7 @@ function RegisterMemberModal({
             disabled={!selectedId}
             className="w-full py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-orange-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
           >
-            Confirmer l'inscription
+            Confirmer l&apos;inscription
           </button>
         </div>
       </div>

@@ -4,6 +4,7 @@ import { useState, useMemo, useRef } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db/dexie-db';
 import { useLanguage } from '@/lib/context/language-context';
+import Image from 'next/image';
 import { Printer, FileText, Calendar, CalendarRange } from 'lucide-react';
 
 export default function FinanceAssistantPage() {
@@ -18,7 +19,7 @@ export default function FinanceAssistantPage() {
   const expenses = useLiveQuery(() => db.expenses.toArray(), []);
   const sales = useLiveQuery(() => db.sales.toArray(), []);
 
-  const now = new Date();
+  const now = useMemo(() => new Date(), []);
 
   const filteredByPeriod = useMemo(() => {
     if (!payments || !expenses) return { payments: [], expenses: [], sales: [] };
@@ -143,7 +144,7 @@ export default function FinanceAssistantPage() {
 
       {/* PDF Content */}
       <div ref={pdfRef} className="space-y-6" style={{ background: 'white', color: '#111827', padding: '20px', borderRadius: '12px' }}>
-        <img src="/logo-transparent.png" alt="" className="print-watermark" />
+        <Image src="/logo-transparent.png" alt="" width={400} height={400} className="print-watermark" />
         {/* Header */}
         <div className="relative overflow-hidden rounded-xl" style={{ background: 'linear-gradient(135deg, #059669, #047857)' }}>
           <div className="relative p-6 text-center text-white">

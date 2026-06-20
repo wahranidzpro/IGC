@@ -1,11 +1,12 @@
 "use client"
 
-import { useAuth } from "@/lib/auth/context"
+import { useAuth, type AuthUser } from "@/lib/auth/context"
+import type { Member } from "@/lib/db/dexie-db"
 import { Search, Bell, MessageCircle, ChevronDown } from "lucide-react"
 
 export function CoachHeader() {
   const { user } = useAuth()
-  const coachName = user && 'name' in user ? (user as any).name : user && 'firstName' in user ? `${(user as any).firstName} ${(user as any).lastName}`.trim() : 'Coach'
+  const coachName = user && 'name' in user ? (user as AuthUser).name : user && 'firstName' in user ? `${(user as Member).firstName} ${(user as Member).lastName}`.trim() : 'Coach'
 
   return (
     <header className="sticky top-0 z-30 w-full h-16">

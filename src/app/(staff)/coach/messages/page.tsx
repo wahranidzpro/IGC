@@ -6,9 +6,9 @@ import { createClient } from "@/lib/supabase/client"
 import { mapRow, mapRows } from "@/lib/utils/transform"
 import Image from "next/image"
 import {
-  MessageSquare, Search, Send, ChevronRight, AlertCircle, RefreshCw, Users,
+  MessageSquare, Search, Send, ChevronRight, AlertCircle, RefreshCw,
 } from "lucide-react"
-import type { Message, Profile, Member } from "@/types"
+import type { Message, Profile } from "@/types"
 
 interface ConversationMember {
   id: string
@@ -23,7 +23,6 @@ export default function CoachMessagesPage() {
   const { user } = useAuth()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [coachId, setCoachId] = useState<string | null>(null)
   const [conversations, setConversations] = useState<ConversationMember[]>([])
   const [selectedMember, setSelectedMember] = useState<string | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
@@ -37,16 +36,15 @@ export default function CoachMessagesPage() {
   }, [messages])
 
   useEffect(() => {
-    if (!user) { setLoading(false); return }
-    const uid = user?.id as string
     const supabase = createClient()
-
     async function load() {
       try {
-        const { data: cData } = await supabase.from("coaches").select("*").eq("profile_id", uid).maybeSingle()
-        const cId = mapRow<{ id: string }>(cData as Record<string, unknown> | null)?.id
-        if (!cId) { setLoading(false); return }
-        setCoachId(cId)
+        if (!user) return
+        const uid = user.id
+        const { data: cData } = await supabase.from("coaches").select("*").eq("profile_id", uid as string).maybeSingle()
+        const cId = mapRow<{ id: string }>(cData as unknown as Record<string, unknown> | null)?.id
+        if (!cId) return
+        if (!cId) return
 
         const { data: mcData } = await supabase
           .from("member_coaches")

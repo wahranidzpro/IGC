@@ -13,6 +13,18 @@ export interface LoyaltyConfig {
   earlyPaymentMinAmount: number;
   earlyPaymentBonusPercent: number;
   earlyPaymentMinMonths: number;
+  posDiscountMaxPercent: number;
+}
+
+const REFERRAL_POINTS: Record<string, number> = {
+  '12_mois': 6000,
+  '6_mois': 3000,
+  '3_mois': 1500,
+  '1_mois': 500,
+};
+
+export function getReferralPoints(duration: string): number {
+  return REFERRAL_POINTS[duration] || 0;
 }
 
 export async function getLoyaltyConfig(): Promise<LoyaltyConfig> {
@@ -32,6 +44,7 @@ export async function getLoyaltyConfig(): Promise<LoyaltyConfig> {
     earlyPaymentMinAmount: Number(map.get('early_payment_min_amount') || '5000'),
     earlyPaymentBonusPercent: Number(map.get('early_payment_bonus_percent') || '10'),
     earlyPaymentMinMonths: Number(map.get('early_payment_min_months') || '3'),
+    posDiscountMaxPercent: Number(map.get('pos_discount_max_percent') || '30'),
   };
 }
 
@@ -49,6 +62,7 @@ export async function saveLoyaltyConfig(config: Partial<LoyaltyConfig>): Promise
   if (config.earlyPaymentMinAmount !== undefined) map.early_payment_min_amount = String(config.earlyPaymentMinAmount);
   if (config.earlyPaymentBonusPercent !== undefined) map.early_payment_bonus_percent = String(config.earlyPaymentBonusPercent);
   if (config.earlyPaymentMinMonths !== undefined) map.early_payment_min_months = String(config.earlyPaymentMinMonths);
+  if (config.posDiscountMaxPercent !== undefined) map.pos_discount_max_percent = String(config.posDiscountMaxPercent);
 
   for (const [key, value] of Object.entries(map)) {
     const existing = await db.loyaltySettings.where('key').equals(key).first();
@@ -65,9 +79,11 @@ export function calculatePointsEarned(amount: number, config: LoyaltyConfig): nu
   return Math.floor((amount / config.earnRateDzd) * config.earnRatePoints);
 }
 
-export function calculatePointsValue(points: number, config: LoyaltyConfig): number {
+export function calculatePointsValue(points: number, config?: LoyaltyConfig): number {
   if (points <= 0) return 0;
-  return Math.floor((points / config.redemptionRatePoints) * config.redemptionRateDzd);
+  const c = config || { redemptionRatePoints: 100, redemptionRateDzd: 10, earnRateDzd: 100, earnRatePoints: 1, redemptionEnabled: true, redemptionMaxPercent: 50, posRedemptionEnabled: true, subscriptionRedemptionEnabled: true, earlyPaymentBonusEnabled: false, earlyPaymentMinAmount: 5000, earlyPaymentBonusPercent: 10, earlyPaymentMinMonths: 3, posDiscountMaxPercent: 30 };
+  if (c.redemptionRatePoints <= 0) return 0;
+  return Math.floor((points / c.redemptionRatePoints) * c.redemptionRateDzd);
 }
 
 export function calculateMaxDiscount(total: number, config: LoyaltyConfig): number {

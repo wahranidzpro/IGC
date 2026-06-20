@@ -89,7 +89,7 @@ export function MemberCoach({ member }: MemberCoachProps) {
         <div className="text-center py-8 text-gray-400">
           <User className="w-12 h-12 mx-auto mb-2 opacity-30" />
           <p>Aucun coach assigné</p>
-          <p className="text-sm">Contactez l'administration pour en assigner un</p>
+          <p className="text-sm">Contactez l&apos;administration pour en assigner un</p>
         </div>
       )}
     </div>

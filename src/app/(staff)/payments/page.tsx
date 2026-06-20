@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/auth/context';
 import { Plus, X } from 'lucide-react';
 import { ImportExportButtons, exportToXlsx, importFromXlsx } from '@/components/ui/ImportExportButtons';
 import { logAudit } from '@/lib/audit';
-import { earnPoints, getLoyaltyConfig } from '@/lib/loyalty';
+import { earnPoints } from '@/lib/loyalty';
 
 export default function PaymentsPage() {
   const { user, role } = useAuth();
@@ -41,7 +41,6 @@ export default function PaymentsPage() {
     await logAudit({ action: 'payment_create', memberId: formData.memberId, memberName, newValue: `${formData.amount} DA - ${formData.type} - ${formData.mode}`, reason: formData.description }, (user as { username?: string })?.username || 'unknown', role || 'unknown');
 
     if (formData.type === 'subscription') {
-      const config = await getLoyaltyConfig();
       const earned = await earnPoints(formData.memberId, memberName, formData.amount, paymentId, 'payment');
       setPointsEarned(earned);
     }
@@ -104,8 +103,8 @@ export default function PaymentsPage() {
             <div className="space-y-4">
               <div><label className="block text-sm font-medium text-gray-400 mb-2">Membre</label><select value={formData.memberId} onChange={e => setFormData({...formData, memberId: Number(e.target.value)})} className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white focus:outline-none focus:border-orange-500"><option value={0}>Sélectionner</option>{members?.map(m => <option key={m.id} value={m.id!}>{m.firstName} {m.lastName}</option>)}</select></div>
               <div><label className="block text-sm font-medium text-gray-400 mb-2">Montant (DA)</label><input type="number" value={formData.amount || ''} onChange={e => setFormData({...formData, amount: Number(e.target.value)})} className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white focus:outline-none focus:border-orange-500" /></div>
-              <div><label className="block text-sm font-medium text-gray-400 mb-2">Type</label><select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value as any})} className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white focus:outline-none focus:border-orange-500"><option value="subscription">Abonnement</option><option value="product">Produit</option></select></div>
-              <div><label className="block text-sm font-medium text-gray-400 mb-2">Mode</label><select value={formData.mode} onChange={e => setFormData({...formData, mode: e.target.value as any})} className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white focus:outline-none focus:border-orange-500"><option value="cash">Espèces</option><option value="card">Carte</option></select></div>
+              <div><label className="block text-sm font-medium text-gray-400 mb-2">Type</label><select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value as 'subscription' | 'product'})} className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white focus:outline-none focus:border-orange-500"><option value="subscription">Abonnement</option><option value="product">Produit</option></select></div>
+              <div><label className="block text-sm font-medium text-gray-400 mb-2">Mode</label><select value={formData.mode} onChange={e => setFormData({...formData, mode: e.target.value as 'cash' | 'card'})} className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white focus:outline-none focus:border-orange-500"><option value="cash">Espèces</option><option value="card">Carte</option></select></div>
               <div><label className="block text-sm font-medium text-gray-400 mb-2">Description</label><input type="text" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white focus:outline-none focus:border-orange-500" /></div>
             </div>
             <button onClick={handleSave} disabled={!formData.memberId || !formData.amount} className="w-full mt-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-orange-700 disabled:opacity-50">Enregistrer</button>

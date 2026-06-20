@@ -1,8 +1,9 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import { motion } from "framer-motion"
-import { Clock, Flame, BarChart3, ChevronRight } from "lucide-react"
+import { Clock, Flame, ChevronRight } from "lucide-react"
 import { exercises } from "@/lib/galerie/mockData"
 
 const difficultyColors: Record<string, string> = {
@@ -44,11 +45,12 @@ export default function ExercicesPopulaires() {
               className="group relative rounded-2xl overflow-hidden bg-brand-black/40 border border-white/5 hover:border-brand-red/20 transition-all duration-500"
             >
               <div className="relative h-44 overflow-hidden">
-                <img
+                <Image
                   src={exo.image}
                   alt={exo.name}
-                  loading="lazy"
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  fill
+                  className="object-cover transition-transform duration-500 group-hover:scale-110"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-brand-black via-brand-black/20 to-transparent" />
                 <span className={`absolute top-3 left-3 text-xs font-semibold px-2.5 py-1 rounded-full border ${difficultyColors[exo.difficulty]}`}>

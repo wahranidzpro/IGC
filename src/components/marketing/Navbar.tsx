@@ -5,7 +5,6 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { useTheme } from "@/lib/context/theme-context"
-import { ThemeToggle } from "@/components/ui/ThemeToggle"
 import { Menu, X, ChevronDown, Dumbbell, Users, CreditCard, Image as ImageIcon, Phone, Sparkles } from "lucide-react"
 
 const megaMenuItems = [
@@ -95,8 +94,10 @@ export default function Navbar() {
   }, [])
 
   useEffect(() => {
-    setMobileOpen(false)
-    setOpenMega(null)
+    setTimeout(() => {
+      setMobileOpen(false)
+      setOpenMega(null)
+    }, 0)
   }, [pathname])
 
   return (

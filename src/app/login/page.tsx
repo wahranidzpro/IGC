@@ -55,7 +55,7 @@ function LoginContent() {
     if (!mounted || !role || !user) return;
     const path = role === 'adherent' ? '/dashboard' : (dashboardPath || '/members');
     router.push(path);
-  }, [user, role, router, mounted]);
+  }, [user, role, router, mounted, dashboardPath]);
 
   const handleCardConfirm = async () => {
     await db.settings.add({ key: 'recovery_card_shown', value: 'true' });

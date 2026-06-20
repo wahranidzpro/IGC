@@ -6,7 +6,7 @@ import { db, Program, SubscriptionPlan, SubscriptionType, SubscriptionDuration }
 import { useAuth } from '@/lib/auth/context';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { Plus, X, Dumbbell, ToggleLeft, ToggleRight, Trash2, Package, Edit } from 'lucide-react';
-import { ImportExportButtons, exportToXlsx, importFromXlsx } from '@/components/ui/ImportExportButtons';
+ 
 
 const durationLabels: Record<string, string> = {
   '1_mois': '1 Mois', '2_mois': '2 Mois', '3_mois': '3 Mois',

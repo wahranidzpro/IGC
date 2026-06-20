@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import Hero from "@/components/marketing/Hero"
-import SectionWrapper, { SectionHeader } from "@/components/marketing/SectionWrapper"
+import SectionWrapper from "@/components/marketing/SectionWrapper"
 import Newsletter from "@/components/marketing/Newsletter"
 import { ArrowRight } from "lucide-react"
 

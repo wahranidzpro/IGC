@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useQueueStatus, useQueueActions } from '@/hooks/useQueueStatus';
 import { useAuth } from '@/lib/auth/context';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -8,7 +8,7 @@ import { db } from '@/lib/db/dexie-db';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
 import {
   Activity, Wifi, WifiOff, Clock, RefreshCw, AlertTriangle, CheckCircle,
-  XCircle, HardDrive, Database, ArrowUp, Download, Trash2
+  XCircle, Database, ArrowUp, Trash2
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -122,7 +122,7 @@ export default function MonitoringPage() {
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-4">
           <h3 className="text-lg font-semibold text-white flex items-center gap-2">
             <Activity className="w-5 h-5 text-orange-400" />
-            File d'attente par priorité
+            File d&apos;attente par priorité
           </h3>
           <div className="space-y-3">
             <PriorityRow label="Critical" count={status.byPriority.critical} color="text-red-400" barColor="bg-red-500" />

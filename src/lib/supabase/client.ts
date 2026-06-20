@@ -44,6 +44,7 @@ export async function signInUser(username: string, password: string) {
 
 export async function signInWithPin(pin: string) {
   if (!supabase) throw new Error('Supabase not configured');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: users, error } = await (supabase.from('gym_users') as any)
     .select('*')
     .eq('pin', pin)
@@ -62,6 +63,7 @@ export async function getCurrentUser() {
   if (!supabase) return null;
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: gymUser } = await (supabase.from('gym_users') as any)
     .select('*')
     .eq('auth_user_id', user.id)
@@ -70,6 +72,7 @@ export async function getCurrentUser() {
   return { ...user, gym_user: gymUser };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function onAuthStateChange(callback: (event: string, session: any) => void) {
   if (!supabase) return { data: { subscription: { unsubscribe: () => {} } } };
   return supabase.auth.onAuthStateChange(callback);

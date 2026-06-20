@@ -71,7 +71,7 @@ export default function InstallBridgePage() {
             <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-sm">1</div>
             <h3 className="text-lg font-semibold text-white">Télécharger le Bridge</h3>
           </div>
-          <p className="text-sm text-gray-400 mb-4">Téléchargez l'application Bridge pour le système d'exploitation du PC qui restera allumé en permanence à proximité du tourniquet.</p>
+          <p className="text-sm text-gray-400 mb-4">Téléchargez l&apos;application Bridge pour le système d&apos;exploitation du PC qui restera allumé en permanence à proximité du tourniquet.</p>
           
           <div className="flex gap-2 mb-4">
             {(['windows', 'macos', 'linux'] as const).map(os => (
@@ -96,9 +96,9 @@ export default function InstallBridgePage() {
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 font-bold text-sm">2</div>
-            <h3 className="text-lg font-semibold text-white">Lancer l'application</h3>
+            <h3 className="text-lg font-semibold text-white">Lancer l&apos;application</h3>
           </div>
-          <p className="text-sm text-gray-400">Exécutez le fichier téléchargé. L'application Bridge s'ouvrira automatiquement dans votre navigateur par défaut à l'adresse :</p>
+          <p className="text-sm text-gray-400">Exécutez le fichier téléchargé. L&apos;application Bridge s&apos;ouvrira automatiquement dans votre navigateur par défaut à l&apos;adresse :</p>
           <code className="block mt-2 px-4 py-2 bg-gray-800 rounded-lg text-sm text-green-300 font-mono w-fit">http://localhost:5173</code>
         </div>
 
@@ -109,11 +109,11 @@ export default function InstallBridgePage() {
           </div>
           <div className="space-y-3 text-sm text-gray-400">
             <p>1. Connectez-vous avec un compte <strong className="text-white">administrateur</strong></p>
-            <p>2. Cliquez sur <strong className="text-white">"Ajouter un appareil"</strong></p>
-            <p>3. Saisissez l'<strong className="text-white">adresse IP</strong> du tourniquet (ex: 192.168.1.100)</p>
+            <p>2. Cliquez sur <strong className="text-white">&quot;Ajouter un appareil&quot;</strong></p>
+            <p>3. Saisissez l&apos;<strong className="text-white">adresse IP</strong> du tourniquet (ex: 192.168.1.100)</p>
             <p>4. Entrez le <strong className="text-white">port</strong> de communication (défaut: 80 pour HTTP, 4370 pour ZKTeco)</p>
-            <p>5. Sélectionnez le <strong className="text-white">type d'appareil</strong> (ZKTeco, Hikvision, Dahua, HTTP)</p>
-            <p>6. Cliquez sur <strong className="text-white">"Confirmer le pairage"</strong></p>
+            <p>5. Sélectionnez le <strong className="text-white">type d&apos;appareil</strong> (ZKTeco, Hikvision, Dahua, HTTP)</p>
+            <p>6. Cliquez sur <strong className="text-white">&quot;Confirmer le pairage&quot;</strong></p>
           </div>
         </div>
 
@@ -122,14 +122,14 @@ export default function InstallBridgePage() {
             <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 font-bold text-sm">4</div>
             <h3 className="text-lg font-semibold text-white">Configuration du webhook</h3>
           </div>
-          <p className="text-sm text-gray-400 mb-3">Le Bridge configurera automatiquement le webhook. Vérifiez que l'URL de destination est correcte :</p>
+          <p className="text-sm text-gray-400 mb-3">Le Bridge configurera automatiquement le webhook. Vérifiez que l&apos;URL de destination est correcte :</p>
           <code className="block px-4 py-3 bg-gray-800 rounded-xl text-sm text-blue-300 font-mono break-all mb-3">
             {process.env.NEXT_PUBLIC_SUPABASE_URL || 'VOTRE_URL_SUPABASE'}/functions/v1/turnstile-access
           </code>
           <div className="bg-gray-800/50 rounded-lg p-3 text-xs text-gray-400">
             <p className="font-medium text-gray-300 mb-1">Headers requis :</p>
             <p><code className="text-orange-400">Content-Type: application/json</code></p>
-            <p><code className="text-orange-400">X-Device-Id</code> : l'ID du tourniquet (UUID)</p>
+            <p><code className="text-orange-400">X-Device-Id</code> : l&apos;ID du tourniquet (UUID)</p>
             <p><code className="text-orange-400">X-Signature</code> : HMAC-SHA256 optionnel pour sécuriser</p>
           </div>
         </div>
@@ -146,11 +146,11 @@ export default function InstallBridgePage() {
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle className="w-4 h-4 text-green-400" />
-              <span>Vérifiez le statut dans <Link href="/turnstiles/logs" className="text-orange-400 hover:text-orange-300">Journaux d'accès</Link></span>
+              <span>Vérifiez le statut dans <Link href="/turnstiles/logs" className="text-orange-400 hover:text-orange-300">Journaux d&apos;accès</Link></span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle className="w-4 h-4 text-green-400" />
-              <span>Le statut "allowed" confirme que le système fonctionne</span>
+              <span>Le statut &quot;allowed&quot; confirme que le système fonctionne</span>
             </div>
           </div>
         </div>
@@ -178,7 +178,7 @@ export default function InstallBridgePage() {
         <code className="block px-4 py-2 bg-gray-800 rounded-lg text-xs text-blue-300 font-mono break-all">
           POST {process.env.NEXT_PUBLIC_SUPABASE_URL || 'VOTRE_URL_SUPABASE'}/functions/v1/turnstile-access
         </code>
-        <p className="text-xs text-gray-500 mt-2">Payload attendu : <code className="text-gray-300">{"{"}"cardno": "RFID_UID", "device_id": "TURNSTILE_ID", "method": "rfid"{"}"}</code></p>
+        <p className="text-xs text-gray-500 mt-2">Payload attendu : <code className="text-gray-300">{'{"cardno": "RFID_UID", "device_id": "TURNSTILE_ID", "method": "rfid"}'}</code></p>
       </div>
     </div>
   );

@@ -70,11 +70,6 @@ function formatDateTime(dateStr: string): string {
   });
 }
 
-function getTodayISO(): string {
-  const d = new Date();
-  return d.toISOString().slice(0, 10);
-}
-
 export default function StaffSessionsPage() {
   const { role } = useAuth();
   const router = useRouter();
@@ -122,7 +117,10 @@ export default function StaffSessionsPage() {
   }, [searchUsername, roleFilter, statusFilter, dateFrom, dateTo]);
 
   useEffect(() => {
-    if (role === 'admin') fetchSessions(1);
+    if (role === 'admin') {
+      const id = setTimeout(() => fetchSessions(1), 0);
+      return () => clearTimeout(id);
+    }
   }, [role, fetchSessions]);
 
   const handleFilter = () => {
@@ -283,7 +281,7 @@ export default function StaffSessionsPage() {
           <div>
             {/* Table Header */}
             <div className="hidden lg:grid grid-cols-12 gap-4 px-6 py-4 text-xs font-bold uppercase tracking-wider text-[#A8B2C7] border-b border-[rgba(255,255,255,0.06)]">
-              <div className="col-span-2">Nom d'utilisateur</div>
+              <div className="col-span-2">Nom d&apos;utilisateur</div>
               <div className="col-span-1">Rôle</div>
               <div className="col-span-2">Connexion</div>
               <div className="col-span-2">Déconnexion</div>

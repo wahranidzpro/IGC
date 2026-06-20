@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { ChevronLeft, ChevronRight, MapPin, Users, Clock } from "lucide-react"
+import { Users, Clock } from "lucide-react"
 import BackButton from "@/components/dashboard/mobile/BackButton"
 
 const days = ["LUN", "MAR", "MER", "JEU", "VEN", "SAM", "DIM"]
@@ -19,6 +19,7 @@ const filters = ["Tous", "Cardio", "Force", "Yoga", "Boxe"]
 export default function PlanningPage() {
   const [selectedDay, setSelectedDay] = useState(3)
   const [activeFilter, setActiveFilter] = useState("Tous")
+  const [visibleCount, setVisibleCount] = useState(4)
 
   return (
     <div
@@ -72,7 +73,7 @@ export default function PlanningPage() {
       </div>
 
       <div className="px-4 mt-4 space-y-3 pb-28">
-        {classes.map((c) => {
+        {classes.slice(0, visibleCount).map((c) => {
           const full = c.spots === 0
           return (
             <div
@@ -133,6 +134,15 @@ export default function PlanningPage() {
             </div>
           )
         })}
+        {visibleCount < classes.length && (
+          <button
+            onClick={() => setVisibleCount(prev => prev + 10)}
+            className="w-full py-3 rounded-2xl text-xs font-bold transition-all duration-200"
+            style={{ background: "rgba(10,132,255,0.1)", color: "#0A84FF", border: "1px solid rgba(10,132,255,0.2)" }}
+          >
+            Voir plus
+          </button>
+        )}
       </div>
     </div>
   )

@@ -1,28 +1,23 @@
-import { NextResponse } from "next/server"
-import { createServerClient } from "@supabase/ssr"
-import { cookies } from "next/headers"
+import { NextRequest, NextResponse } from "next/server"
+import { verifyDeviceKey } from "@/lib/api-auth"
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const deviceAuth = verifyDeviceKey(request)
+  if (!deviceAuth.valid) {
+    return NextResponse.json({ ok: false, reason: deviceAuth.error }, { status: 401 })
+  }
+
   const { fingerprint } = await request.json()
 
   if (!fingerprint) {
     return NextResponse.json({ ok: false }, { status: 400 })
   }
 
-  const cookieStore = await cookies()
-  const supabase = createServerClient(
+  const { createClient } = await import("@supabase/supabase-js")
+  const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return cookieStore.getAll() },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          )
-        },
-      },
-    }
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false, autoRefreshToken: false } }
   )
 
   const { error } = await supabase
