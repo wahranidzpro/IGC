@@ -20,6 +20,9 @@ function LoginContent() {
     pin: string;
     recoveryCode: string;
   } | null>(null);
+  const [redirectParam] = useState(() =>
+    typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('redirect') : null
+  );
 
   useEffect(() => {
     initializeDatabase().then(async () => {
@@ -53,9 +56,10 @@ function LoginContent() {
 
   useEffect(() => {
     if (!mounted || !role || !user) return;
-    const path = role === 'adherent' ? '/dashboard' : (dashboardPath || '/members');
+    const path = redirectParam || (role === 'adherent' ? '/dashboard' : (dashboardPath || '/members'));
+    if (redirectParam) console.log('[LOGIN] Redirecting to:', redirectParam);
     router.push(path);
-  }, [user, role, router, mounted, dashboardPath]);
+  }, [user, role, router, mounted, dashboardPath, redirectParam]);
 
   const handleCardConfirm = async () => {
     await db.settings.add({ key: 'recovery_card_shown', value: 'true' });

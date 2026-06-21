@@ -417,7 +417,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        authLog('LOGIN', `Cloud login failed: ${data.error}, trying local fallback`);
+        authLog('LOGIN', `Cloud login failed: status=${res.status} body=${JSON.stringify(data)}, trying local fallback`);
         const localUser = await db.pinUsers.where('username').equals(username).first();
         if (localUser) {
           const isHashed = localUser.password.startsWith('$2a$') || localUser.password.startsWith('$2b$') || localUser.password.startsWith('$2$');
